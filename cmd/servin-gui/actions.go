@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -11,29 +14,215 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// refreshContainers gets the current list of containers
-func (gui *ServinDesktopGUI) refreshContainers() {
-	// Try to get real data, but fall back to mock data if command fails
-	cmd := exec.Command("servin", "ls", "--json")
-	_, err := cmd.Output()
+// getServinExecutable finds the servin executable path
+func getServinExecutable() string {
+	// Get the current executable directory
+	exePath, err := os.Executable()
 	if err != nil {
-		// Use mock data for demo purposes
-		gui.updateStatus("Using demo data (servin CLI not available)")
-	} else {
-		gui.updateStatus("Containers refreshed")
+		return "servin" // fallback to PATH lookup
 	}
 
-	// Always populate with demo data for now
-	gui.containers = []ContainerInfo{
-		{ID: "abc123", Name: "test-container", Image: "alpine:latest", Status: "running", State: "running", Ports: "8080:80", Created: "2 hours ago"},
-		{ID: "def456", Name: "web-server", Image: "nginx:latest", Status: "stopped", State: "exited", Ports: "-", Created: "1 day ago"},
-		{ID: "ghi789", Name: "database", Image: "postgres:13", Status: "running", State: "running", Ports: "5432:5432", Created: "3 hours ago"},
+	exeDir := filepath.Dir(exePath)
+
+	// Check for servin.exe in the same directory as the GUI
+	servinPath := filepath.Join(exeDir, "servin.exe")
+	if _, err := os.Stat(servinPath); err == nil {
+		return servinPath
+	}
+
+	// Check for servin in the same directory (Unix-style)
+	servinPath = filepath.Join(exeDir, "servin")
+	if _, err := os.Stat(servinPath); err == nil {
+		return servinPath
+	}
+
+	// Fallback to PATH lookup
+	return "servin"
+}
+
+// ContainerData represents the JSON response from servin ls --json
+type ContainerData struct {
+	ID       string   `json:"id"`
+	Names    []string `json:"names"`
+	Image    string   `json:"image"`
+	Command  string   `json:"command"`
+	Created  string   `json:"created"`
+	Status   string   `json:"status"`
+	State    string   `json:"state"`
+	Ports    string   `json:"ports"`
+	Networks string   `json:"networks"`
+	Mounts   string   `json:"mounts"`
+	PID      string   `json:"pid"`
+	Uptime   string   `json:"uptime"`
+}
+
+// refreshContainers gets the current list of containers
+func (gui *ServinDesktopGUI) refreshContainers() {
+	// Try to get real data from servin CLI
+	servinCmd := getServinExecutable()
+	cmd := exec.Command(servinCmd, "ls", "--json")
+	output, err := cmd.Output()
+
+	if err != nil {
+		// Use demo data if command fails
+		gui.updateStatus("Using demo data (servin CLI not available)")
+		gui.containers = []ContainerInfo{
+			{
+				ID: "abc123def456", Name: "test-container", Image: "alpine", Tag: "latest",
+				Status: "running", State: "running", Ports: "8080:80", Created: "2 hours ago",
+				Uptime: "2h 15m", PID: "1234", Command: "/bin/sh", Networks: "bridge", Mounts: "/data:/app/data",
+			},
+			{
+				ID: "def456ghi789", Name: "web-server", Image: "nginx", Tag: "latest",
+				Status: "stopped", State: "exited", Ports: "-", Created: "1 day ago",
+				Uptime: "0", PID: "-", Command: "nginx -g daemon off;", Networks: "bridge", Mounts: "/etc/nginx:/etc/nginx:ro",
+			},
+			{
+				ID: "ghi789abc123", Name: "database", Image: "postgres", Tag: "13",
+				Status: "running", State: "running", Ports: "5432:5432", Created: "3 hours ago",
+				Uptime: "3h 42m", PID: "5678", Command: "postgres", Networks: "bridge", Mounts: "/var/lib/postgresql/data:/data",
+			},
+			{
+				ID: "jkl012mno345", Name: "redis-cache", Image: "redis", Tag: "alpine",
+				Status: "running", State: "running", Ports: "6379:6379", Created: "1 hour ago",
+				Uptime: "1h 23m", PID: "9012", Command: "redis-server", Networks: "bridge", Mounts: "-",
+			},
+		}
+	} else {
+		// Parse real data from JSON output
+		var containerData []ContainerData
+		if err := json.Unmarshal(output, &containerData); err != nil {
+			// If JSON parsing fails, try to parse text output
+			gui.parseTextContainers(string(output))
+		} else {
+			// Convert JSON data to ContainerInfo
+			gui.containers = make([]ContainerInfo, len(containerData))
+			for i, container := range containerData {
+				name := container.ID[:12] // Use short ID as fallback
+				if len(container.Names) > 0 {
+					name = container.Names[0]
+				}
+
+				// Split image into name and tag
+				imageParts := strings.Split(container.Image, ":")
+				imageName := imageParts[0]
+				imageTag := "latest"
+				if len(imageParts) > 1 {
+					imageTag = imageParts[1]
+				}
+
+				gui.containers[i] = ContainerInfo{
+					ID:       container.ID,
+					Name:     name,
+					Image:    imageName,
+					Tag:      imageTag,
+					Status:   container.Status,
+					State:    container.State,
+					Ports:    container.Ports,
+					Created:  container.Created,
+					Uptime:   container.Uptime,
+					PID:      container.PID,
+					Command:  container.Command,
+					Networks: container.Networks,
+					Mounts:   container.Mounts,
+				}
+			}
+		}
+		gui.updateStatus(fmt.Sprintf("Loaded %d containers from Servin", len(gui.containers)))
 	}
 
 	if gui.containerList != nil {
 		gui.containerList.Refresh()
 	}
-	// Status already updated above based on command result
+}
+
+// parseTextContainers parses the text output from servin ls command
+func (gui *ServinDesktopGUI) parseTextContainers(output string) {
+	lines := strings.Split(output, "\n")
+	gui.containers = []ContainerInfo{}
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// Skip header, empty lines, and info messages
+		if line == "" || strings.HasPrefix(line, "CONTAINER ID") ||
+			strings.HasPrefix(line, "State directory:") ||
+			strings.Contains(line, "[INFO]") ||
+			strings.Contains(line, "Note:") {
+			continue
+		}
+
+		// Parse container line (space-separated)
+		fields := strings.Fields(line)
+		if len(fields) >= 6 {
+			container := ContainerInfo{
+				ID:      fields[0],
+				Image:   fields[1],
+				Status:  fields[4],
+				Created: strings.Join(fields[3:5], " "),
+			}
+
+			// Extract container name (last field)
+			if len(fields) > 5 {
+				container.Name = fields[len(fields)-1]
+			} else {
+				container.Name = container.ID[:12]
+			}
+
+			// Determine state from status
+			if strings.Contains(container.Status, "running") {
+				container.State = "running"
+			} else if strings.Contains(container.Status, "exited") {
+				container.State = "exited"
+			} else {
+				container.State = container.Status
+			}
+
+			gui.containers = append(gui.containers, container)
+		}
+	}
+}
+
+// parseTextImages parses the text output from servin images command
+func (gui *ServinDesktopGUI) parseTextImages(output string) {
+	lines := strings.Split(output, "\n")
+	gui.images = []ImageInfo{}
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// Skip header, empty lines, and info messages
+		if line == "" || strings.HasPrefix(line, "REPOSITORY") ||
+			strings.Contains(line, "[INFO]") ||
+			strings.Contains(line, "Note:") {
+			continue
+		}
+
+		// Parse image line (space-separated)
+		fields := strings.Fields(line)
+		if len(fields) >= 5 {
+			repository := fields[0]
+			tag := fields[1]
+			imageID := fields[2]
+			created := strings.Join(fields[3:len(fields)-1], " ")
+			size := fields[len(fields)-1]
+
+			// Handle <none> tags
+			if tag == "<none>" {
+				tag = "none"
+			}
+
+			image := ImageInfo{
+				ID:      imageID,
+				Name:    repository,
+				Tag:     tag,
+				Size:    size,
+				Created: created,
+			}
+
+			gui.images = append(gui.images, image)
+		}
+	}
 }
 
 func (gui *ServinDesktopGUI) runContainer() {
@@ -219,22 +408,24 @@ func (gui *ServinDesktopGUI) inspectContainer() {
 
 // Image management methods
 func (gui *ServinDesktopGUI) refreshImages() {
-	// Try to get real data, but fall back to mock data if command fails
-	cmd := exec.Command("servin", "images", "--json")
-	_, err := cmd.Output()
-	if err != nil {
-		// Use mock data for demo purposes
-		gui.updateStatus("Using demo data (servin CLI not available)")
-	} else {
-		gui.updateStatus("Images refreshed")
-	}
+	// Try to get real data from servin CLI
+	servinCmd := getServinExecutable()
+	cmd := exec.Command(servinCmd, "images")
+	output, err := cmd.Output()
 
-	// Always populate with demo data for now
-	gui.images = []ImageInfo{
-		{ID: "sha256:abc123", Name: "alpine", Tag: "latest", Size: "5.6MB", Created: "2 hours ago"},
-		{ID: "sha256:def456", Name: "nginx", Tag: "latest", Size: "133MB", Created: "1 day ago"},
-		{ID: "sha256:ghi789", Name: "postgres", Tag: "13", Size: "314MB", Created: "3 days ago"},
-		{ID: "sha256:jkl012", Name: "redis", Tag: "alpine", Size: "28MB", Created: "5 hours ago"},
+	if err != nil {
+		// Use demo data if command fails
+		gui.updateStatus("Using demo data (servin CLI not available)")
+		gui.images = []ImageInfo{
+			{ID: "sha256:abc123", Name: "alpine", Tag: "latest", Size: "5.6MB", Created: "2 hours ago"},
+			{ID: "sha256:def456", Name: "nginx", Tag: "latest", Size: "133MB", Created: "1 day ago"},
+			{ID: "sha256:ghi789", Name: "postgres", Tag: "13", Size: "314MB", Created: "3 days ago"},
+			{ID: "sha256:jkl012", Name: "redis", Tag: "alpine", Size: "28MB", Created: "5 hours ago"},
+		}
+	} else {
+		// Parse real data from text output
+		gui.parseTextImages(string(output))
+		gui.updateStatus(fmt.Sprintf("Loaded %d images from Servin", len(gui.images)))
 	}
 
 	if gui.imageList != nil {

@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -31,10 +32,24 @@ type ServinDesktopGUI struct {
 	criStatusLabel  *widget.Label
 	criToggleButton *widget.Button
 
+	// Sidebar navigation
+	sidebarTabs *container.AppTabs
+	mainContent *fyne.Container
+
+	// Container details
+	containerDetailTabs *container.AppTabs
+	containerLogs       *widget.Entry
+	containerEnv        *widget.Entry
+	containerFiles      *widget.Entry
+	containerExec       *widget.Entry
+	containerVolumes    *widget.Entry
+
 	// Selection tracking
 	selectedContainer int
 	selectedImage     int
 	selectedVolume    int
+	currentSidebarTab string
+	currentContainer  *ContainerInfo
 
 	// Refresh timer
 	refreshTimer *time.Ticker
@@ -42,13 +57,19 @@ type ServinDesktopGUI struct {
 
 // ContainerInfo represents container information for the GUI
 type ContainerInfo struct {
-	ID      string
-	Name    string
-	Image   string
-	Status  string
-	State   string
-	Ports   string
-	Created string
+	ID       string
+	Name     string
+	Image    string
+	Tag      string
+	Status   string
+	State    string
+	Ports    string
+	Created  string
+	Uptime   string
+	PID      string
+	Command  string
+	Networks string
+	Mounts   string
 }
 
 // ImageInfo represents image information for the GUI
@@ -89,6 +110,8 @@ func NewServinDesktopGUI() *ServinDesktopGUI {
 func (gui *ServinDesktopGUI) Run() {
 	gui.setupWindow()
 	gui.createMainLayout()
+	// Use simple close instead of confirmation dialog for now
+	gui.setupWindowEventsSimple()
 
 	// Do initial refresh on main thread
 	gui.refreshAllData()
@@ -101,12 +124,66 @@ func (gui *ServinDesktopGUI) Run() {
 
 // setupWindow configures the main window
 func (gui *ServinDesktopGUI) setupWindow() {
-	gui.window.Resize(fyne.NewSize(1400, 900))
-	gui.window.SetMaster()
+	gui.window.SetTitle("Servin Desktop - Container Management")
+	gui.window.Resize(fyne.NewSize(800, 600))
+
+	// Set window properties to ensure proper window controls
+	gui.window.SetFixedSize(false) // Allow resizing
+
+	// Center the window on screen after all other properties are set
 	gui.window.CenterOnScreen()
 }
 
-// createMainLayout sets up the main application layout
+// setupWindowEvents configures window event handlers
+func (gui *ServinDesktopGUI) setupWindowEvents() {
+	// Set up close confirmation with proper callback handling
+	gui.window.SetCloseIntercept(func() {
+		// Create confirmation dialog
+		confirm := dialog.NewConfirm("Exit Application",
+			"Are you sure you want to exit Servin Desktop?",
+			func(response bool) {
+				if response {
+					// Stop any timers first
+					if gui.refreshTimer != nil {
+						gui.refreshTimer.Stop()
+					}
+					// Then quit the application
+					gui.app.Quit()
+				}
+				// If response is false, do nothing (stay open)
+			}, gui.window)
+
+		// Show the dialog
+		confirm.Show()
+	})
+
+	// Add keyboard shortcuts
+	gui.window.Canvas().SetOnTypedKey(func(key *fyne.KeyEvent) {
+		// F5 to refresh
+		if key.Name == fyne.KeyF5 {
+			gui.refreshAllData()
+		}
+		// Escape to close confirmation dialogs
+		if key.Name == fyne.KeyEscape {
+			// This helps with dialog navigation
+		}
+	})
+}
+
+// Alternative: setupWindowEventsSimple - direct close without confirmation
+func (gui *ServinDesktopGUI) setupWindowEventsSimple() {
+	// Direct close without confirmation (for testing)
+	gui.window.SetCloseIntercept(func() {
+		// Stop any timers first
+		if gui.refreshTimer != nil {
+			gui.refreshTimer.Stop()
+		}
+		// Quit directly
+		gui.app.Quit()
+	})
+}
+
+// createMainLayout sets up the main application layout with vertical sidebar
 func (gui *ServinDesktopGUI) createMainLayout() {
 	// Create status bar
 	gui.statusBar = widget.NewLabel("Ready")
@@ -122,86 +199,131 @@ func (gui *ServinDesktopGUI) createMainLayout() {
 		gui.criToggleButton,
 	)
 
-	// Create main tabs
-	tabs := container.NewAppTabs(
-		container.NewTabItem("Containers", gui.createContainerTab()),
-		container.NewTabItem("Images", gui.createImageTab()),
-		container.NewTabItem("Volumes", gui.createVolumeTab()),
-		container.NewTabItem("CRI Server", gui.createCRITab()),
-		container.NewTabItem("Logs", gui.createLogTab()),
+	// Create vertical sidebar with tabs
+	gui.sidebarTabs = container.NewAppTabs(
+		container.NewTabItem("📦 Containers", gui.createContainerSidebar()),
+		container.NewTabItem("💿 Images", gui.createImageTab()),
+		container.NewTabItem("💾 Volumes", gui.createVolumeTab()),
+		container.NewTabItem("⚙️ CRI Server", gui.createCRITab()),
+		container.NewTabItem("📋 Logs", gui.createLogTab()),
 	)
 
-	// Create main layout
+	// Set tabs to appear on the left (vertical)
+	gui.sidebarTabs.SetTabLocation(container.TabLocationLeading)
+
+	// Create main content area (initially empty)
+	gui.mainContent = container.NewBorder(nil, nil, nil, nil,
+		widget.NewLabel("Select a container to view details"))
+
+	// Create main layout with sidebar and content
+	mainLayout := container.NewHSplit(
+		gui.sidebarTabs,
+		gui.mainContent,
+	)
+	mainLayout.SetOffset(0.3) // 30% for sidebar, 70% for content
+
+	// Create full layout with status bar
 	content := container.NewBorder(
 		nil,             // top
 		statusContainer, // bottom
 		nil,             // left
 		nil,             // right
-		tabs,            // center
+		mainLayout,      // center
 	)
 
 	gui.window.SetContent(content)
+	gui.currentSidebarTab = "containers"
 }
 
-// createContainerTab creates the container management tab
-func (gui *ServinDesktopGUI) createContainerTab() fyne.CanvasObject {
-	// Create list widget
+// createContainerSidebar creates the container list with detailed info for sidebar
+func (gui *ServinDesktopGUI) createContainerSidebar() fyne.CanvasObject {
+	// Create list widget with enhanced display
 	gui.containerList = widget.NewList(
 		func() int {
 			return len(gui.containers)
 		},
 		func() fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewIcon(theme.DocumentIcon()),
-				widget.NewLabel("Container Name"),
-				widget.NewLabel("Status"),
+			// Create a more detailed container item
+			nameLabel := widget.NewLabel("Container Name")
+			nameLabel.TextStyle.Bold = true
+
+			tagLabel := widget.NewLabel("image:tag")
+			tagLabel.TextStyle.Italic = true
+
+			statusLabel := widget.NewLabel("Status")
+			portsLabel := widget.NewLabel("Ports: 8080:80")
+			uptimeLabel := widget.NewLabel("Uptime: 2h 30m")
+
+			// Action menu button (3 dots)
+			actionBtn := widget.NewButton("⋮", nil)
+			actionBtn.Resize(fyne.NewSize(30, 30))
+
+			// Container info in vertical layout
+			infoBox := container.NewVBox(
+				nameLabel,
+				tagLabel,
+				container.NewHBox(statusLabel, actionBtn),
+				portsLabel,
+				uptimeLabel,
 			)
+
+			return container.NewBorder(nil, nil, nil, nil, infoBox)
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
 			if id >= len(gui.containers) {
 				return
 			}
-			container_info := gui.containers[id]
-			hbox := obj.(*fyne.Container)
-			nameLabel := hbox.Objects[1].(*widget.Label)
-			statusLabel := hbox.Objects[2].(*widget.Label)
+			containerInfo := gui.containers[id]
 
-			nameLabel.SetText(fmt.Sprintf("%s (%s)", container_info.Name, container_info.Image))
-			statusLabel.SetText(container_info.Status)
+			// Get the container from border layout
+			border := obj.(*fyne.Container)
+			infoBox := border.Objects[0].(*fyne.Container)
+
+			nameLabel := infoBox.Objects[0].(*widget.Label)
+			tagLabel := infoBox.Objects[1].(*widget.Label)
+			statusRow := infoBox.Objects[2].(*fyne.Container)
+			statusLabel := statusRow.Objects[0].(*widget.Label)
+			actionBtn := statusRow.Objects[1].(*widget.Button)
+			portsLabel := infoBox.Objects[3].(*widget.Label)
+			uptimeLabel := infoBox.Objects[4].(*widget.Label)
+
+			// Update labels with container info
+			nameLabel.SetText(containerInfo.Name)
+			tagLabel.SetText(fmt.Sprintf("%s:%s", containerInfo.Image, containerInfo.Tag))
+			statusLabel.SetText(containerInfo.Status)
+			portsLabel.SetText(fmt.Sprintf("Ports: %s", containerInfo.Ports))
+			uptimeLabel.SetText(fmt.Sprintf("Uptime: %s", containerInfo.Uptime))
+
+			// Set status color
+			if containerInfo.Status == "running" {
+				statusLabel.Importance = widget.SuccessImportance
+			} else {
+				statusLabel.Importance = widget.DangerImportance
+			}
+
+			// Setup action button with container-specific menu
+			actionBtn.OnTapped = func() {
+				gui.showContainerActionMenu(id, containerInfo)
+			}
 		},
 	)
 
 	gui.containerList.OnSelected = func(id widget.ListItemID) {
 		gui.selectedContainer = id
+		if id < len(gui.containers) {
+			gui.currentContainer = &gui.containers[id]
+			gui.showContainerDetails(gui.containers[id])
+		}
 	}
 
-	// Action buttons
-	startBtn := widget.NewButton("Start", func() {
-		gui.startContainer()
-	})
-	stopBtn := widget.NewButton("Stop", func() {
-		gui.stopContainer()
-	})
-	restartBtn := widget.NewButton("Restart", func() {
-		gui.restartContainer()
-	})
-	removeBtn := widget.NewButton("Remove", func() {
-		gui.removeContainer()
-	})
-	inspectBtn := widget.NewButton("Inspect", func() {
-		gui.inspectContainer()
-	})
-	refreshBtn := widget.NewButton("Refresh", func() {
+	// Refresh button at the bottom
+	refreshBtn := widget.NewButton("🔄 Refresh Containers", func() {
 		gui.refreshContainers()
 	})
 
-	buttonContainer := container.NewHBox(
-		startBtn, stopBtn, restartBtn, removeBtn, inspectBtn, refreshBtn,
-	)
-
 	return container.NewBorder(
 		nil,               // top
-		buttonContainer,   // bottom
+		refreshBtn,        // bottom
 		nil,               // left
 		nil,               // right
 		gui.containerList, // center
@@ -472,6 +594,213 @@ func (gui *ServinDesktopGUI) getSelectedVolume() *VolumeInfo {
 		return &gui.volumes[gui.selectedVolume]
 	}
 	return nil
+}
+
+// showContainerActionMenu displays the action menu for a container
+func (gui *ServinDesktopGUI) showContainerActionMenu(_ widget.ListItemID, containerInfo ContainerInfo) {
+	// Create popup menu with container actions
+	var menuItems []*fyne.MenuItem
+
+	if containerInfo.Status == "running" {
+		menuItems = append(menuItems,
+			fyne.NewMenuItem("⏹️ Stop", func() {
+				gui.stopContainerByID(containerInfo.ID)
+			}),
+			fyne.NewMenuItem("🔄 Restart", func() {
+				gui.restartContainerByID(containerInfo.ID)
+			}),
+		)
+	} else {
+		menuItems = append(menuItems,
+			fyne.NewMenuItem("▶️ Start", func() {
+				gui.startContainerByID(containerInfo.ID)
+			}),
+		)
+	}
+
+	menuItems = append(menuItems,
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("🔍 Inspect", func() {
+			gui.inspectContainerByID(containerInfo.ID)
+		}),
+		fyne.NewMenuItem("📋 Logs", func() {
+			gui.showContainerLogsTab(containerInfo.ID)
+		}),
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("🗑️ Delete", func() {
+			gui.deleteContainerByID(containerInfo.ID)
+		}),
+	)
+
+	menu := fyne.NewMenu("Container Actions", menuItems...)
+	popupMenu := widget.NewPopUpMenu(menu, gui.window.Canvas())
+	popupMenu.ShowAtPosition(fyne.CurrentApp().Driver().AbsolutePositionForObject(gui.containerList))
+}
+
+// showContainerDetails displays detailed container information in the main content area
+func (gui *ServinDesktopGUI) showContainerDetails(containerInfo ContainerInfo) {
+	// Create container detail tabs
+	gui.containerDetailTabs = container.NewAppTabs()
+
+	// Overview tab
+	overviewContent := gui.createContainerOverview(containerInfo)
+	gui.containerDetailTabs.Append(container.NewTabItem("📊 Overview", overviewContent))
+
+	// Logs tab
+	gui.containerLogs = widget.NewMultiLineEntry()
+	gui.containerLogs.SetText("Loading container logs...")
+	gui.containerLogs.Wrapping = fyne.TextWrapWord
+	logsScroll := container.NewScroll(gui.containerLogs)
+	logsScroll.SetMinSize(fyne.NewSize(400, 300))
+
+	logsRefreshBtn := widget.NewButton("🔄 Refresh Logs", func() {
+		gui.refreshContainerLogs(containerInfo.ID)
+	})
+	logsContent := container.NewBorder(nil, logsRefreshBtn, nil, nil, logsScroll)
+	gui.containerDetailTabs.Append(container.NewTabItem("📋 Logs", logsContent))
+
+	// Exec tab
+	gui.containerExec = widget.NewMultiLineEntry()
+	gui.containerExec.SetPlaceHolder("Enter commands to execute in container...")
+	execBtn := widget.NewButton("▶️ Execute", func() {
+		gui.executeInContainer(containerInfo.ID, gui.containerExec.Text)
+	})
+	execContent := container.NewBorder(nil, execBtn, nil, nil, gui.containerExec)
+	gui.containerDetailTabs.Append(container.NewTabItem("💻 Exec", execContent))
+
+	// Files tab
+	gui.containerFiles = widget.NewMultiLineEntry()
+	gui.containerFiles.SetText("Container filesystem browser - Feature coming soon")
+	gui.containerDetailTabs.Append(container.NewTabItem("📁 Files", gui.containerFiles))
+
+	// Environment tab
+	gui.containerEnv = widget.NewMultiLineEntry()
+	gui.containerEnv.SetText("Loading environment variables...")
+	gui.containerDetailTabs.Append(container.NewTabItem("🌍 Environment", gui.containerEnv))
+
+	// Volumes tab
+	gui.containerVolumes = widget.NewMultiLineEntry()
+	gui.containerVolumes.SetText("Loading volume information...")
+	gui.containerDetailTabs.Append(container.NewTabItem("💾 Volumes", gui.containerVolumes))
+
+	// Update main content
+	gui.mainContent.RemoveAll()
+	gui.mainContent.Add(gui.containerDetailTabs)
+
+	// Load initial data
+	gui.refreshContainerLogs(containerInfo.ID)
+	gui.refreshContainerEnv(containerInfo.ID)
+	gui.refreshContainerVolumes(containerInfo.ID)
+}
+
+// createContainerOverview creates the overview tab content for a container
+func (gui *ServinDesktopGUI) createContainerOverview(containerInfo ContainerInfo) fyne.CanvasObject {
+	// Container info grid
+	infoGrid := container.NewGridWithColumns(2,
+		widget.NewLabel("Name:"), widget.NewLabel(containerInfo.Name),
+		widget.NewLabel("ID:"), widget.NewLabel(containerInfo.ID[:12]+"..."),
+		widget.NewLabel("Image:"), widget.NewLabel(fmt.Sprintf("%s:%s", containerInfo.Image, containerInfo.Tag)),
+		widget.NewLabel("Status:"), widget.NewLabel(containerInfo.Status),
+		widget.NewLabel("Ports:"), widget.NewLabel(containerInfo.Ports),
+		widget.NewLabel("Uptime:"), widget.NewLabel(containerInfo.Uptime),
+		widget.NewLabel("PID:"), widget.NewLabel(containerInfo.PID),
+		widget.NewLabel("Command:"), widget.NewLabel(containerInfo.Command),
+		widget.NewLabel("Networks:"), widget.NewLabel(containerInfo.Networks),
+	)
+
+	// Action buttons
+	var actionButtons *fyne.Container
+	if containerInfo.Status == "running" {
+		actionButtons = container.NewHBox(
+			widget.NewButton("⏹️ Stop", func() { gui.stopContainerByID(containerInfo.ID) }),
+			widget.NewButton("🔄 Restart", func() { gui.restartContainerByID(containerInfo.ID) }),
+			widget.NewButton("⏸️ Pause", func() { gui.pauseContainerByID(containerInfo.ID) }),
+		)
+	} else {
+		actionButtons = container.NewHBox(
+			widget.NewButton("▶️ Start", func() { gui.startContainerByID(containerInfo.ID) }),
+			widget.NewButton("🗑️ Delete", func() { gui.deleteContainerByID(containerInfo.ID) }),
+		)
+	}
+
+	return container.NewVBox(
+		widget.NewCard("Container Information", "", infoGrid),
+		widget.NewCard("Actions", "", actionButtons),
+	)
+}
+
+// Container action functions (placeholder implementations)
+func (gui *ServinDesktopGUI) startContainerByID(id string) {
+	gui.logMessage(fmt.Sprintf("Starting container %s...", id[:12]))
+	// TODO: Implement actual container start
+}
+
+func (gui *ServinDesktopGUI) stopContainerByID(id string) {
+	gui.logMessage(fmt.Sprintf("Stopping container %s...", id[:12]))
+	// TODO: Implement actual container stop
+}
+
+func (gui *ServinDesktopGUI) restartContainerByID(id string) {
+	gui.logMessage(fmt.Sprintf("Restarting container %s...", id[:12]))
+	// TODO: Implement actual container restart
+}
+
+func (gui *ServinDesktopGUI) pauseContainerByID(id string) {
+	gui.logMessage(fmt.Sprintf("Pausing container %s...", id[:12]))
+	// TODO: Implement actual container pause
+}
+
+func (gui *ServinDesktopGUI) deleteContainerByID(id string) {
+	// Show confirmation dialog
+	confirm := dialog.NewConfirm("Delete Container",
+		fmt.Sprintf("Are you sure you want to delete container %s?", id[:12]),
+		func(confirmed bool) {
+			if confirmed {
+				gui.logMessage(fmt.Sprintf("Deleting container %s...", id[:12]))
+				// TODO: Implement actual container deletion
+			}
+		}, gui.window)
+	confirm.Show()
+}
+
+func (gui *ServinDesktopGUI) inspectContainerByID(id string) {
+	gui.logMessage(fmt.Sprintf("Inspecting container %s...", id[:12]))
+	// TODO: Implement container inspection
+}
+
+func (gui *ServinDesktopGUI) showContainerLogsTab(id string) {
+	// Switch to logs tab if container details are shown
+	if gui.containerDetailTabs != nil {
+		gui.containerDetailTabs.SelectTab(gui.containerDetailTabs.Items[1]) // Logs tab
+		gui.refreshContainerLogs(id)
+	}
+}
+
+func (gui *ServinDesktopGUI) refreshContainerLogs(id string) {
+	if gui.containerLogs != nil {
+		gui.containerLogs.SetText(fmt.Sprintf("Logs for container %s:\n\n[INFO] Container started\n[INFO] Application running on port 8080\n[DEBUG] Processing request...\n", id[:12]))
+	}
+}
+
+func (gui *ServinDesktopGUI) refreshContainerEnv(id string) {
+	if gui.containerEnv != nil {
+		gui.containerEnv.SetText(fmt.Sprintf("Environment variables for container %s:\n\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\nHOSTNAME=%s\nTERM=xterm\n", id[:12], id[:8]))
+	}
+}
+
+func (gui *ServinDesktopGUI) refreshContainerVolumes(id string) {
+	if gui.containerVolumes != nil {
+		gui.containerVolumes.SetText(fmt.Sprintf("Volume mounts for container %s:\n\n/var/lib/data -> /host/data (rw)\n/etc/config -> /host/config (ro)\n", id[:12]))
+	}
+}
+
+func (gui *ServinDesktopGUI) executeInContainer(id string, command string) {
+	if command == "" {
+		gui.logMessage("Please enter a command to execute")
+		return
+	}
+	gui.logMessage(fmt.Sprintf("Executing '%s' in container %s...", command, id[:12]))
+	// TODO: Implement actual command execution
 }
 
 func main() {
