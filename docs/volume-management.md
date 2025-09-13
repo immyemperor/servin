@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Volume Management
+permalink: /volume-management/
 ---
 
 # Volume Management

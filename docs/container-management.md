@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Container Management
+permalink: /container-management/
 ---
 
 # Container Management

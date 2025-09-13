@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Logging and Monitoring
+permalink: /logging-monitoring/
 ---
 
 # Logging and Monitoring

@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Registry Operations
+permalink: /registry-operations/
 ---
 
 # Registry Operations

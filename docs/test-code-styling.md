@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Test Code Styling
+permalink: /test-code-styling/
 ---
 
 # Test Code Styling

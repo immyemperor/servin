@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Project Overview
-permalink: /overview/
+title: Complete Project Overview
+permalink: /overview-complete/
 ---
 
 # 🚀 Project Overview

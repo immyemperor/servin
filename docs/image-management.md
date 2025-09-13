@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Image Management
+permalink: /image-management/
 ---
 
 # Image Management

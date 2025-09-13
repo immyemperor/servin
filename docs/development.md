@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Development Guide
+permalink: /development/
 ---
 
 # Development Guide
