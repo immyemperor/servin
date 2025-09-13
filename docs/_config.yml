@@ -13,7 +13,7 @@ github:
 # Build settings
 markdown: kramdown
 highlighter: rouge
-theme: minima
+# theme: minima  # Commented out to use custom styling
 
 # Plugin settings
 plugins:
@@ -26,8 +26,13 @@ kramdown:
   input: GFM
   syntax_highlighter: rouge
   syntax_highlighter_opts:
+    default_lang: bash
+    css_class: 'highlight'
+    span:
+      line_numbers: false
     block:
       line_numbers: false
+      start_line: 1
 
 # Collections
 collections:

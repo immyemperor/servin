@@ -1,3 +1,5 @@
+---
+---
 /* Sidebar Styles for Servin Documentation */
 
 :root {
@@ -22,30 +24,10 @@
   min-height: calc(100vh - 56px);
 }
 
-.site-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.site-header .site-title {
-  color: white !important;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.site-header .page-link {
-  color: rgba(255,255,255,0.9) !important;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.site-header .page-link:hover {
-  color: white !important;
+/* Layout adjustments */
+.page-wrapper {
+  display: flex;
+  min-height: calc(100vh - 56px);
 }
 
 /* Sidebar Styles */
@@ -192,36 +174,45 @@
 }
 
 /* Code blocks */
-.page-content pre {
-  background: #1f2937;
-  color: #f8f8f2;
-  padding: 1.5rem;
-  border-radius: 8px;
-  overflow-x: auto;
-  margin: 1.5rem 0;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  border: 1px solid #374151;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  position: relative;
+.page-content pre,
+.page-content .highlight pre,
+.wrapper pre,
+.content pre {
+  background: #1f2937 !important;
+  color: #f8f8f2 !important;
+  padding: 1.5rem !important;
+  border-radius: 8px !important;
+  overflow-x: auto !important;
+  margin: 1.5rem 0 !important;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  border: 1px solid #374151 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+  position: relative !important;
 }
 
-.page-content code {
-  background: #f3f4f6;
-  color: #2563eb;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.875rem;
-  border: 1px solid #e5e7eb;
+.page-content code,
+.page-content .highlight code,
+.wrapper code,
+.content code {
+  background: #f3f4f6 !important;
+  color: #2563eb !important;
+  padding: 0.25rem 0.5rem !important;
+  border-radius: 4px !important;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 0.875rem !important;
+  border: 1px solid #e5e7eb !important;
 }
 
-.page-content pre code {
-  background: none;
-  color: inherit;
-  padding: 0;
-  border: none;
+.page-content pre code,
+.page-content .highlight pre code,
+.wrapper pre code,
+.content pre code {
+  background: none !important;
+  color: inherit !important;
+  padding: 0 !important;
+  border: none !important;
 }
 
 /* Dark theme support for code blocks */
@@ -378,15 +369,24 @@ h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
 
 /* Architecture diagram */
 .architecture-diagram {
-  background: var(--bg-secondary);
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  padding: 20px;
-  margin: 2rem 0;
-  font-family: monospace;
-  white-space: pre;
-  overflow-x: auto;
-  line-height: 1.4;
+  background: #1f2937 !important;
+  color: #f8f8f2 !important;
+  padding: 1.5rem !important;
+  border-radius: 8px !important;
+  font-family: 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Consolas', monospace !important;
+  font-size: 0.8rem !important;
+  line-height: 1.2 !important;
+  overflow-x: auto !important;
+  margin: 1.5rem 0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #374151 !important;
+  white-space: pre !important;
+  font-variant-ligatures: none !important;
+  text-rendering: optimizeLegibility !important;
+  font-feature-settings: "liga" 0 !important;
+  letter-spacing: 0 !important;
+  word-spacing: 0 !important;
+  font-weight: 400 !important;
 }
 
 /* Responsive Design */
