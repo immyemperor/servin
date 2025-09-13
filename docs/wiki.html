@@ -1,0 +1,4054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servin Container Runtime - Complete Wiki</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-accent: #eff6ff;
+            --border-color: #e5e7eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header .version {
+            margin-left: auto;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: 280px;
+            height: calc(100vh - 60px);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding: 20px 0;
+            z-index: 999;
+        }
+
+        .nav-section {
+            margin-bottom: 10px;
+        }
+
+        .nav-title {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 8px 20px;
+            margin-bottom: 5px;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 8px 20px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-accent);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-item.active {
+            background: var(--bg-accent);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            margin-top: 60px;
+            padding: 40px;
+            max-width: calc(100vw - 280px);
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.75rem 0;
+            color: var(--text-primary);
+        }
+
+        h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 1rem 0 0.5rem 0;
+            color: var(--text-primary);
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+
+        /* Code Blocks */
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        code {
+            background: var(--bg-secondary);
+            color: var(--primary-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+            font-size: 0.875rem;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 1rem 0 1rem 2rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        tr:hover {
+            background: var(--bg-accent);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 1rem 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .badge-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .badge-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            gap: 20px;
+            margin: 1.5rem 0;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        /* Feature boxes */
+        .feature-box {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .feature-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        /* Architecture diagram */
+        .architecture-diagram {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 2rem 0;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Search */
+        .search-box {
+            padding: 10px 20px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Scroll to top button */
+        .scroll-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .scroll-top.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🚀 Servin Container Runtime</h1>
+        <div class="version">v1.0.0</div>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Search documentation..." id="searchInput">
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Overview</div>
+                <a href="#overview" class="nav-item active" data-section="overview">Project Overview</a>
+                <a href="#architecture" class="nav-item" data-section="architecture">Architecture</a>
+                <a href="#features" class="nav-item" data-section="features">Features</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Getting Started</div>
+                <a href="#installation" class="nav-item" data-section="installation">Installation</a>
+                <a href="#quick-start" class="nav-item" data-section="quick-start">Quick Start</a>
+                <a href="#configuration" class="nav-item" data-section="configuration">Configuration</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">User Interfaces</div>
+                <a href="#cli" class="nav-item" data-section="cli">Command Line (CLI)</a>
+                <a href="#tui" class="nav-item" data-section="tui">Terminal UI (TUI)</a>
+                <a href="#gui" class="nav-item" data-section="gui">Desktop GUI</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Core Features</div>
+                <a href="#containers" class="nav-item" data-section="containers">Container Management</a>
+                <a href="#images" class="nav-item" data-section="images">Image Management</a>
+                <a href="#volumes" class="nav-item" data-section="volumes">Volume Management</a>
+                <a href="#registry" class="nav-item" data-section="registry">Registry Operations</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Integration</div>
+                <a href="#cri" class="nav-item" data-section="cri">Kubernetes CRI</a>
+                <a href="#api" class="nav-item" data-section="api">API Reference</a>
+                <a href="#monitoring" class="nav-item" data-section="monitoring">Logging & Monitoring</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Development</div>
+                <a href="#building" class="nav-item" data-section="building">Building from Source</a>
+                <a href="#development" class="nav-item" data-section="development">Development Guide</a>
+                <a href="#contributing" class="nav-item" data-section="contributing">Contributing</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Support</div>
+                <a href="#troubleshooting" class="nav-item" data-section="troubleshooting">Troubleshooting</a>
+                <a href="#faq" class="nav-item" data-section="faq">FAQ</a>
+                <a href="#resources" class="nav-item" data-section="resources">Resources</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Overview Section -->
+            <section id="overview" class="content-section active">
+                <h1>🚀 Servin Container Runtime</h1>
+                <p class="lead">A Docker-compatible container runtime with Kubernetes CRI support and professional desktop interface.</p>
+
+                <div class="grid grid-3">
+                    <div class="feature-box">
+                        <div class="feature-icon">🐳</div>
+                        <h4>Docker Compatible</h4>
+                        <p>Seamless migration from Docker workflows with full API compatibility.</p>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">☸️</div>
+                        <h4>Kubernetes CRI</h4>
+                        <p>Full Container Runtime Interface v1alpha2 implementation for Kubernetes clusters.</p>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">🖥️</div>
+                        <h4>Multiple Interfaces</h4>
+                        <p>CLI, Terminal UI, and Desktop GUI applications for every workflow.</p>
+                    </div>
+                </div>
+
+                <h2>Key Capabilities</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🎯 Core Runtime Features</div>
+                        <ul>
+                            <li><span class="badge badge-success">✓</span> Container lifecycle management</li>
+                            <li><span class="badge badge-success">✓</span> Image management (pull, push, build)</li>
+                            <li><span class="badge badge-success">✓</span> Volume management</li>
+                            <li><span class="badge badge-success">✓</span> Network management</li>
+                            <li><span class="badge badge-success">✓</span> Registry operations</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔌 Integration Features</div>
+                        <ul>
+                            <li><span class="badge badge-success">✓</span> Kubernetes CRI v1alpha2</li>
+                            <li><span class="badge badge-success">✓</span> Cross-platform support</li>
+                            <li><span class="badge badge-success">✓</span> Service integration</li>
+                            <li><span class="badge badge-success">✓</span> Professional installers</li>
+                            <li><span class="badge badge-success">✓</span> REST and gRPC APIs</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Target Users</h2>
+                <div class="grid grid-4">
+                    <div class="feature-box">
+                        <div class="feature-icon">👨‍💻</div>
+                        <h4>Developers</h4>
+                        <p>Container-based application development</p>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">⚙️</div>
+                        <h4>DevOps Engineers</h4>
+                        <p>Container orchestration and deployment</p>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">🔧</div>
+                        <h4>System Admins</h4>
+                        <p>Container infrastructure management</p>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">☸️</div>
+                        <h4>Kubernetes Users</h4>
+                        <p>CRI-compatible runtime for clusters</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Architecture Section -->
+            <section id="architecture" class="content-section">
+                <h1>🏗 Architecture</h1>
+
+                <h2>System Overview</h2>
+                <div class="architecture-diagram">
+┌─────────────────────────────────────────────────────────────┐
+│                    Servin Container Runtime                  │
+├─────────────────────────────────────────────────────────────┤
+│  Interfaces                                                 │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
+│  │    CLI      │ │     TUI     │ │      Desktop GUI        ││
+│  │  Command    │ │  Terminal   │ │   Fyne-based Visual     ││
+│  │   Line      │ │ Interface   │ │      Application        ││
+│  └─────────────┘ └─────────────┘ └─────────────────────────┘│
+├─────────────────────────────────────────────────────────────┤
+│  Core Runtime Services                                      │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
+│  │ Container   │ │   Image     │ │       Volume            ││
+│  │ Management  │ │ Management  │ │     Management          ││
+│  └─────────────┘ └─────────────┘ └─────────────────────────┘│
+├─────────────────────────────────────────────────────────────┤
+│  API Layer                                                  │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
+│  │ CRI Server  │ │ HTTP API    │ │    gRPC Services        ││
+│  │ (gRPC)      │ │ (REST)      │ │   (Internal Comms)      ││
+│  └─────────────┘ └─────────────┘ └─────────────────────────┘│
+├─────────────────────────────────────────────────────────────┤
+│  Storage & Runtime                                          │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
+│  │ Container   │ │   Image     │ │      Configuration      ││
+│  │   Storage   │ │   Store     │ │       & Metadata        ││
+│  └─────────────┘ └─────────────┘ └─────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+                </div>
+
+                <h2>Component Architecture</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🎯 Core Components</div>
+                        <ul>
+                            <li><strong>Runtime Engine</strong> - Container lifecycle management</li>
+                            <li><strong>Image Manager</strong> - OCI image handling and storage</li>
+                            <li><strong>Volume Manager</strong> - Persistent storage management</li>
+                            <li><strong>Network Manager</strong> - Container networking</li>
+                            <li><strong>Registry Client</strong> - Image registry operations</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔌 Interface Layer</div>
+                        <ul>
+                            <li><strong>CLI Interface</strong> - Command-line tool</li>
+                            <li><strong>TUI Interface</strong> - Interactive terminal UI</li>
+                            <li><strong>GUI Interface</strong> - Desktop application</li>
+                            <li><strong>HTTP API</strong> - REST endpoints</li>
+                            <li><strong>gRPC CRI</strong> - Kubernetes integration</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Directory Structure</h2>
+                <pre><code>servin/
+├── cmd/                          # Application entry points
+│   ├── servin-desktop/          # Terminal UI application
+│   ├── servin-gui/              # Desktop GUI application
+│   └── gui.go                   # GUI command integration
+├── pkg/                         # Core packages
+│   ├── cri/                     # Container Runtime Interface
+│   ├── container/              # Container management
+│   ├── image/                  # Image management
+│   ├── volume/                 # Volume management
+│   └── registry/               # Registry operations
+├── installers/                 # Installation wizards
+│   ├── windows/               # NSIS-based Windows installer
+│   ├── linux/                 # Python/Tkinter Linux installer
+│   └── macos/                 # Python/Tkinter macOS installer
+├── build/                     # Build artifacts
+├── dist/                      # Distribution packages
+└── docs/                      # Documentation</code></pre>
+            </section>
+
+            <!-- Features Section -->
+            <section id="features" class="content-section">
+                <h1>✨ Features</h1>
+
+                <h2>🎯 Core Runtime Features</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">Container Operations</div>
+                        <ul>
+                            <li><span class="badge badge-success">✓</span> Create, start, stop, delete containers</li>
+                            <li><span class="badge badge-success">✓</span> Container logs and monitoring</li>
+                            <li><span class="badge badge-success">✓</span> Resource management (CPU, memory)</li>
+                            <li><span class="badge badge-success">✓</span> Health checks and restart policies</li>
+                            <li><span class="badge badge-success">✓</span> Container exec and attach</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">Image Operations</div>
+                        <ul>
+                            <li><span class="badge badge-success">✓</span> Pull, push, build, tag images</li>
+                            <li><span class="badge badge-success">✓</span> Multi-architecture support</li>
+                            <li><span class="badge badge-success">✓</span> Layer caching and optimization</li>
+                            <li><span class="badge badge-success">✓</span> Registry authentication</li>
+                            <li><span class="badge badge-success">✓</span> Image inspection and history</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>🔌 Kubernetes Integration</h2>
+                <div class="card">
+                    <div class="card-header">CRI v1alpha2 Implementation</div>
+                    <div class="grid grid-3">
+                        <div>
+                            <h4>Pod Management</h4>
+                            <ul>
+                                <li>Pod sandbox lifecycle</li>
+                                <li>Container creation/deletion</li>
+                                <li>Pod networking setup</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Image Service</h4>
+                            <ul>
+                                <li>Image pulling and removal</li>
+                                <li>Image status queries</li>
+                                <li>Filesystem usage reporting</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Runtime Service</h4>
+                            <ul>
+                                <li>Container execution</li>
+                                <li>Log streaming</li>
+                                <li>Resource monitoring</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>🖥 User Interface Options</h2>
+                <div class="grid grid-3">
+                    <div class="feature-box">
+                        <div class="feature-icon">💻</div>
+                        <h4>Command Line Interface</h4>
+                        <p>Comprehensive CLI with Docker-compatible commands for automation and scripting.</p>
+                        <div class="badge badge-primary">Full featured</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">📱</div>
+                        <h4>Terminal User Interface</h4>
+                        <p>Interactive menu-driven interface for visual container management in the terminal.</p>
+                        <div class="badge badge-primary">Cross-platform</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">🖼️</div>
+                        <h4>Desktop GUI Application</h4>
+                        <p>Professional desktop application built with Fyne framework for visual management.</p>
+                        <div class="badge badge-primary">Native look</div>
+                    </div>
+                </div>
+
+                <h2>📦 Installation & Distribution</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🪟 Windows</div>
+                        <ul>
+                            <li><strong>NSIS Installer</strong> - Professional wizard</li>
+                            <li><strong>Service Integration</strong> - Windows Service</li>
+                            <li><strong>Start Menu</strong> - Shortcuts and uninstaller</li>
+                            <li><strong>Registry Integration</strong> - Add/Remove Programs</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🐧 Linux</div>
+                        <ul>
+                            <li><strong>GUI Installer</strong> - Python/Tkinter wizard</li>
+                            <li><strong>systemd Service</strong> - Background service</li>
+                            <li><strong>Desktop Integration</strong> - Application menus</li>
+                            <li><strong>Cross-distribution</strong> - Ubuntu, CentOS, Debian</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🍎 macOS</div>
+                        <ul>
+                            <li><strong>Native Installer</strong> - Apple HIG compliant</li>
+                            <li><strong>launchd Service</strong> - Background daemon</li>
+                            <li><strong>App Bundle</strong> - Professional .app package</li>
+                            <li><strong>Retina Ready</strong> - High-DPI displays</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Installation Section -->
+            <section id="installation" class="content-section">
+                <h1>🛠 Installation</h1>
+
+                <h2>Quick Installation</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🪟 Windows Installation</div>
+                        <ol>
+                            <li>Download <code>ServinSetup-1.0.0.exe</code></li>
+                            <li>Run as Administrator</li>
+                            <li>Follow installation wizard</li>
+                            <li>Launch from Start Menu</li>
+                        </ol>
+                        <div class="badge badge-success">Wizard installer</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🐧 Linux Installation</div>
+                        <pre><code># Download and run installer
+sudo python3 servin-installer.py</code></pre>
+                        <div class="badge badge-success">GUI installer</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🍎 macOS Installation</div>
+                        <pre><code># Download and run installer
+sudo python3 servin-installer.py</code></pre>
+                        <div class="badge badge-success">Native installer</div>
+                    </div>
+                </div>
+
+                <h2>Building from Source</h2>
+                <div class="card">
+                    <div class="card-header">Prerequisites</div>
+                    <div class="grid grid-2">
+                        <div>
+                            <h4>Required Software</h4>
+                            <ul>
+                                <li><strong>Go 1.24+</strong> - Latest Go version</li>
+                                <li><strong>Git</strong> - Source code management</li>
+                                <li><strong>CGO enabled</strong> - For GUI compilation</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Windows Additional Requirements</h4>
+                            <ul>
+                                <li><strong>MinGW-w64 UCRT64</strong> - GCC toolchain</li>
+                                <li><strong>NSIS</strong> - For installer creation</li>
+                                <li><strong>PATH configuration</strong> - Add mingw64/bin to PATH</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Build Commands</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🔨 Building Applications</div>
+                        <pre><code># Clone repository
+git clone https://github.com/yourusername/servin
+cd servin
+
+# Build all components
+.\build.ps1                    # Windows
+./build.sh                     # Linux/macOS
+
+# Build specific components
+go build -o servin main.go                    # CLI
+go build -o servin-desktop cmd/servin-desktop/ # TUI
+go build -o servin-gui cmd/servin-gui/         # GUI</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📦 Building Installers</div>
+                        <pre><code># Windows NSIS installer
+.\build-installer.ps1
+
+# Creates: dist\ServinSetup-1.0.0.exe
+
+# Cross-platform packages
+.\build.ps1 -Target all        # All platforms
+.\build.ps1 -Target windows    # Windows only
+.\build.ps1 -Target linux      # Linux only
+.\build.ps1 -Target macos      # macOS only</code></pre>
+                    </div>
+                </div>
+
+                <h2>Verification</h2>
+                <div class="card">
+                    <div class="card-header">Testing Installation</div>
+                    <pre><code># Check version
+servin version
+
+# Test CLI
+servin containers ls
+servin images ls
+
+# Test TUI
+servin-desktop
+
+# Test GUI
+servin-gui
+
+# Test CRI (if enabled)
+crictl --runtime-endpoint unix:///var/run/servin.sock version</code></pre>
+                </div>
+            </section>
+
+            <!-- Configuration Section -->
+            <section id="configuration" class="content-section">
+                <h1>⚙️ Configuration</h1>
+
+                <h2>Configuration Overview</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Configuration Files</div>
+                    <p>Servin uses YAML configuration files to manage runtime settings, daemon options, registry configurations, and network settings. Configuration can be specified via files, environment variables, or command-line flags.</p>
+                </div>
+
+                <h2>Configuration File Locations</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🪟 Windows</div>
+                        <ul>
+                            <li><strong>System:</strong> <code>C:\ProgramData\Servin\config.yaml</code></li>
+                            <li><strong>User:</strong> <code>%USERPROFILE%\.servin\config.yaml</code></li>
+                            <li><strong>Working Dir:</strong> <code>.\servin.yaml</code></li>
+                        </ul>
+                        <div class="badge badge-info">Highest to lowest priority</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🐧 Linux</div>
+                        <ul>
+                            <li><strong>System:</strong> <code>/etc/servin/config.yaml</code></li>
+                            <li><strong>User:</strong> <code>~/.config/servin/config.yaml</code></li>
+                            <li><strong>Working Dir:</strong> <code>./servin.yaml</code></li>
+                        </ul>
+                        <div class="badge badge-info">Highest to lowest priority</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🍎 macOS</div>
+                        <ul>
+                            <li><strong>System:</strong> <code>/etc/servin/config.yaml</code></li>
+                            <li><strong>User:</strong> <code>~/Library/Application Support/servin/config.yaml</code></li>
+                            <li><strong>Working Dir:</strong> <code>./servin.yaml</code></li>
+                        </ul>
+                        <div class="badge badge-info">Highest to lowest priority</div>
+                    </div>
+                </div>
+
+                <h2>Main Configuration File</h2>
+                <div class="card">
+                    <div class="card-header">📄 config.yaml</div>
+                    <pre><code># Servin Configuration File
+# /etc/servin/config.yaml
+
+# Daemon settings
+daemon:
+  # Data directory for containers, images, volumes
+  data_root: "/var/lib/servin"
+  
+  # Runtime configuration
+  runtime: "runc"
+  runtime_args: []
+  
+  # Logging configuration
+  log_level: "info"
+  log_file: "/var/log/servin/servin.log"
+  log_format: "text"  # text or json
+  
+  # Process limits
+  max_concurrent_downloads: 6
+  max_concurrent_uploads: 6
+
+# Network configuration
+network:
+  # Default network for containers
+  default_network: "bridge"
+  
+  # Bridge network settings
+  bridge:
+    name: "servin0"
+    subnet: "172.17.0.0/16"
+    gateway: "172.17.0.1"
+    ip_masq: true
+    icc: true
+    mtu: 1500
+
+# Storage configuration
+storage:
+  # Storage driver
+  driver: "overlay2"
+  
+  # Storage options
+  opts:
+    overlay2.override_kernel_check: "true"
+    overlay2.size: "120G"
+  
+  # Image storage settings
+  image_store: "/var/lib/servin/images"
+  
+  # Volume storage settings
+  volume_store: "/var/lib/servin/volumes"
+
+# Registry configuration
+registries:
+  # Default registry
+  default: "docker.io"
+  
+  # Registry mirrors
+  mirrors:
+    "docker.io":
+      - "https://mirror.example.com"
+  
+  # Insecure registries (HTTP)
+  insecure:
+    - "registry.internal:5000"
+  
+  # Registry authentication
+  auths:
+    "registry.example.com":
+      username: "user"
+      password: "pass"
+
+# CRI configuration
+cri:
+  # Enable CRI server
+  enabled: true
+  
+  # CRI socket path
+  socket_path: "/var/run/servin/servin.sock"
+  
+  # CRI server settings
+  server:
+    address: "127.0.0.1"
+    port: 10010
+    
+  # Image service configuration
+  image_service:
+    max_parallel_downloads: 6
+    
+  # Runtime service configuration
+  runtime_service:
+    cgroup_manager: "systemd"
+    default_runtime: "runc"
+
+# API server configuration
+api:
+  # Enable REST API server
+  enabled: true
+  
+  # API server settings
+  server:
+    address: "0.0.0.0"
+    port: 8080
+    
+  # TLS configuration
+  tls:
+    enabled: false
+    cert_file: "/etc/servin/tls/server.crt"
+    key_file: "/etc/servin/tls/server.key"
+    
+  # Authentication
+  auth:
+    method: "none"  # none, basic, token, jwt
+    token_file: "/etc/servin/tokens.json"
+
+# Metrics and monitoring
+metrics:
+  # Enable metrics endpoint
+  enabled: true
+  
+  # Metrics server settings
+  server:
+    address: "127.0.0.1"
+    port: 9090
+    path: "/metrics"</code></pre>
+                </div>
+
+                <h2>Environment Variables</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🌍 Runtime Environment</div>
+                        <pre><code># Data directory
+export SERVIN_DATA_ROOT="/var/lib/servin"
+
+# Log level
+export SERVIN_LOG_LEVEL="debug"
+
+# Log file
+export SERVIN_LOG_FILE="/var/log/servin/servin.log"
+
+# Configuration file
+export SERVIN_CONFIG="/etc/servin/config.yaml"
+
+# Runtime
+export SERVIN_RUNTIME="runc"
+
+# Network settings
+export SERVIN_BRIDGE_NAME="servin0"
+export SERVIN_BRIDGE_SUBNET="172.17.0.0/16"</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔐 Security Environment</div>
+                        <pre><code># API authentication
+export SERVIN_API_TOKEN="your-api-token"
+
+# Registry credentials
+export SERVIN_REGISTRY_USER="username"
+export SERVIN_REGISTRY_PASS="password"
+
+# TLS certificates
+export SERVIN_TLS_CERT="/path/to/cert.pem"
+export SERVIN_TLS_KEY="/path/to/key.pem"
+
+# Container runtime
+export SERVIN_RUNTIME_ROOT="/run/servin"
+export SERVIN_RUNTIME_STATE="/var/run/servin"</code></pre>
+                    </div>
+                </div>
+
+                <h2>Command Line Flags</h2>
+                <div class="card">
+                    <div class="card-header">🚩 Daemon Flags</div>
+                    <pre><code># Start daemon with custom configuration
+servin daemon \
+  --config /etc/servin/config.yaml \
+  --data-root /var/lib/servin \
+  --log-level debug \
+  --log-file /var/log/servin/servin.log \
+  --cri \
+  --cri-port 10010 \
+  --api \
+  --api-port 8080 \
+  --metrics \
+  --metrics-port 9090
+
+# Override specific settings
+servin daemon \
+  --runtime crun \
+  --storage-driver overlay2 \
+  --network-bridge servin0 \
+  --registry-mirror https://mirror.example.com
+
+# Security settings
+servin daemon \
+  --tls \
+  --tls-cert /etc/servin/tls/server.crt \
+  --tls-key /etc/servin/tls/server.key \
+  --auth-method token \
+  --auth-file /etc/servin/tokens.json</code></pre>
+                </div>
+
+                <h2>Registry Configuration</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🏪 Registry Settings</div>
+                        <pre><code># Registry configuration file
+# ~/.config/servin/registries.yaml
+
+registries:
+  # Docker Hub configuration
+  "docker.io":
+    mirrors:
+      - "https://mirror.gcr.io"
+      - "https://mirror.example.com"
+    
+  # Private registry
+  "registry.company.com":
+    tls:
+      insecure: false
+      ca_file: "/etc/ssl/certs/company-ca.crt"
+    auth:
+      username: "user"
+      password: "secret"
+      
+  # Insecure registry
+  "registry.internal:5000":
+    tls:
+      insecure: true</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔑 Authentication</div>
+                        <pre><code># Login to registries
+servin login docker.io
+servin login registry.company.com
+
+# Configure authentication file
+# ~/.config/servin/auth.json
+{
+  "auths": {
+    "docker.io": {
+      "username": "user",
+      "password": "pass",
+      "email": "user@example.com",
+      "auth": "dXNlcjpwYXNz"
+    },
+    "registry.company.com": {
+      "username": "employee",
+      "password": "secret",
+      "auth": "ZW1wbG95ZWU6c2VjcmV0"
+    }
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <h2>Network Configuration</h2>
+                <div class="card">
+                    <div class="card-header">🌐 Network Settings</div>
+                    <div class="grid grid-2">
+                        <div>
+                            <h4>Bridge Network</h4>
+                            <pre><code># Default bridge configuration
+network:
+  bridge:
+    name: "servin0"
+    subnet: "172.17.0.0/16"
+    gateway: "172.17.0.1"
+    ip_masq: true
+    icc: true
+    mtu: 1500
+    
+# Custom bridge
+servin network create \
+  --driver bridge \
+  --subnet 192.168.100.0/24 \
+  --gateway 192.168.100.1 \
+  custom-network</code></pre>
+                        </div>
+                        <div>
+                            <h4>Advanced Network Options</h4>
+                            <pre><code># Network configuration
+network:
+  # Enable IPv6
+  ipv6: true
+  
+  # Fixed CIDR
+  fixed_cidr: "172.17.0.0/16"
+  
+  # Default address pools
+  default_address_pools:
+    - base: "172.80.0.0/16"
+      size: 24
+    - base: "172.90.0.0/16"
+      size: 24
+      
+  # DNS settings
+  dns:
+    - "8.8.8.8"
+    - "8.8.4.4"</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Performance Tuning</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">⚡ Performance Settings</div>
+                        <pre><code># Performance configuration
+daemon:
+  # Concurrent operations
+  max_concurrent_downloads: 10
+  max_concurrent_uploads: 5
+  
+  # Container limits
+  default_ulimits:
+    - name: "nofile"
+      soft: 65536
+      hard: 65536
+      
+  # Runtime performance
+  runtime_args:
+    - "--log-level=warn"
+    - "--systemd-cgroup"
+    
+# Storage performance
+storage:
+  driver: "overlay2"
+  opts:
+    overlay2.size: "120G"
+    overlay2.override_kernel_check: "true"</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">💾 Resource Limits</div>
+                        <pre><code># Default resource limits
+runtime:
+  # Default memory limit (0 = unlimited)
+  default_memory: "1g"
+  
+  # Default CPU limit (0 = unlimited)
+  default_cpus: "1.0"
+  
+  # Default swap limit
+  default_memory_swap: "2g"
+  
+  # OOM score adjustment
+  oom_score_adj: -500
+  
+  # Process limits
+  pids_limit: 4096
+
+# System limits
+system:
+  # File descriptor limits
+  nofile: 65536
+  
+  # Process limits
+  nproc: 32768</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Start Section -->
+            <section id="quick-start" class="content-section">
+                <h1>🚀 Quick Start Guide</h1>
+
+                <h2>Get Up and Running in 5 Minutes</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Prerequisites</div>
+                    <ul>
+                        <li><strong>Windows:</strong> Windows 10+ with Administrator privileges</li>
+                        <li><strong>Linux:</strong> Ubuntu 20.04+, CentOS 8+, or similar with sudo access</li>
+                        <li><strong>macOS:</strong> macOS 10.12+ with admin privileges</li>
+                    </ul>
+                </div>
+
+                <h2>Step 1: Install Servin</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🪟 Windows</div>
+                        <ol>
+                            <li>Download <code>ServinSetup-1.0.0.exe</code></li>
+                            <li>Right-click → "Run as Administrator"</li>
+                            <li>Follow the installation wizard</li>
+                            <li>Click "Finish" to complete</li>
+                        </ol>
+                        <div class="badge badge-success">2 minutes</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🐧 Linux</div>
+                        <pre><code># Download installer
+wget servin-installer.py
+
+# Run with sudo
+sudo python3 servin-installer.py
+
+# Follow GUI wizard</code></pre>
+                        <div class="badge badge-success">3 minutes</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🍎 macOS</div>
+                        <pre><code># Download installer
+curl -O servin-installer.py
+
+# Run with sudo
+sudo python3 servin-installer.py
+
+# Follow native installer</code></pre>
+                        <div class="badge badge-success">3 minutes</div>
+                    </div>
+                </div>
+
+                <h2>Step 2: Verify Installation</h2>
+                <div class="card">
+                    <div class="card-header">🔍 Test Commands</div>
+                    <pre><code># Check version
+servin version
+# Output: Servin Container Runtime v1.0.0
+
+# Check service status
+servin system info
+# Shows: Runtime status, version, and system info
+
+# Test basic functionality
+servin images ls
+# Should show empty image list initially</code></pre>
+                </div>
+
+                <h2>Step 3: Run Your First Container</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🐳 Pull and Run Ubuntu</div>
+                        <pre><code># Pull Ubuntu image
+servin images pull ubuntu:latest
+
+# Run interactive container
+servin run -it ubuntu:latest bash
+
+# Inside container:
+echo "Hello from Servin!"
+exit</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🌐 Run Web Server</div>
+                        <pre><code># Pull and run Nginx
+servin run -d -p 8080:80 --name webserver nginx:latest
+
+# Check if running
+servin containers ls
+
+# Test in browser: http://localhost:8080
+
+# Stop and remove
+servin containers stop webserver
+servin containers rm webserver</code></pre>
+                    </div>
+                </div>
+
+                <h2>Step 4: Explore User Interfaces</h2>
+                <div class="grid grid-3">
+                    <div class="feature-box">
+                        <div class="feature-icon">💻</div>
+                        <h4>Command Line</h4>
+                        <pre><code># Use CLI for automation
+servin containers ls
+servin images pull redis:latest
+servin run -d redis:latest</code></pre>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">📱</div>
+                        <h4>Terminal UI</h4>
+                        <pre><code># Launch interactive TUI
+servin-desktop
+
+# Or alternative command
+servin desktop</code></pre>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">🖼️</div>
+                        <h4>Desktop GUI</h4>
+                        <pre><code># Launch visual GUI
+servin-gui
+
+# Or from Start Menu/Applications</code></pre>
+                    </div>
+                </div>
+
+                <h2>Next Steps</h2>
+                <div class="card">
+                    <div class="card-header">🎓 Learn More</div>
+                    <ul>
+                        <li><strong><a href="#cli">CLI Reference</a></strong> - Complete command line documentation</li>
+                        <li><strong><a href="#gui">Desktop GUI Guide</a></strong> - Visual interface tutorial</li>
+                        <li><strong><a href="#containers">Container Management</a></strong> - Advanced container operations</li>
+                        <li><strong><a href="#cri">Kubernetes Integration</a></strong> - Use with Kubernetes clusters</li>
+                        <li><strong><a href="#development">Development Guide</a></strong> - Build and contribute to Servin</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- TUI Section -->
+            <section id="tui" class="content-section">
+                <h1>📱 Terminal User Interface (TUI)</h1>
+
+                <h2>Interactive Menu-Driven Interface</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Overview</div>
+                    <p>The Terminal User Interface provides an interactive, menu-driven way to manage containers without memorizing command-line syntax. Perfect for visual learners and quick operations.</p>
+                </div>
+
+                <h2>Launching the TUI</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🚀 Start Commands</div>
+                        <pre><code># Primary command
+servin-desktop
+
+# Alternative command
+servin desktop
+
+# With specific options
+servin desktop --theme dark
+servin desktop --refresh 5s</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">⌨️ Navigation Keys</div>
+                        <ul>
+                            <li><strong>↑↓</strong> - Navigate menu items</li>
+                            <li><strong>Enter</strong> - Select option</li>
+                            <li><strong>Esc</strong> - Go back/Exit</li>
+                            <li><strong>Tab</strong> - Switch between panels</li>
+                            <li><strong>Q</strong> - Quick exit</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Main Menu Structure</h2>
+                <div class="architecture-diagram">
+┌─────────────────────────────────────────────────────────────┐
+│              Servin Container Runtime                       │
+│                   Desktop Interface                         │
+├─────────────────────────────────────────────────────────────┤
+│  [1] Container Management                                   │
+│      ├── List Containers                                   │
+│      ├── Start Container                                   │
+│      ├── Stop Container                                    │
+│      ├── View Logs                                         │
+│      └── Remove Container                                  │
+│                                                             │
+│  [2] Image Management                                       │
+│      ├── List Images                                       │
+│      ├── Pull Image                                        │
+│      ├── Remove Image                                      │
+│      └── Build Image                                       │
+│                                                             │
+│  [3] Volume Management                                      │
+│      ├── List Volumes                                      │
+│      ├── Create Volume                                     │
+│      └── Remove Volume                                     │
+│                                                             │
+│  [4] Registry Operations                                    │
+│      ├── Login to Registry                                 │
+│      ├── Push Image                                        │
+│      └── Logout from Registry                              │
+│                                                             │
+│  [5] System Information                                     │
+│  [0] Exit                                                   │
+└─────────────────────────────────────────────────────────────┘
+                </div>
+
+                <h2>Container Management Features</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📋 Container List View</div>
+                        <ul>
+                            <li><strong>Real-time status</strong> - Running, stopped, paused states</li>
+                            <li><strong>Resource usage</strong> - CPU and memory consumption</li>
+                            <li><strong>Port mappings</strong> - Network port information</li>
+                            <li><strong>Quick actions</strong> - Start, stop, remove buttons</li>
+                            <li><strong>Log viewer</strong> - View container logs instantly</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🎮 Interactive Operations</div>
+                        <ul>
+                            <li><strong>Container creation</strong> - Guided container setup</li>
+                            <li><strong>Volume mounting</strong> - Visual volume selection</li>
+                            <li><strong>Environment variables</strong> - Easy env var management</li>
+                            <li><strong>Network configuration</strong> - Port mapping wizard</li>
+                            <li><strong>Resource limits</strong> - CPU/memory limit sliders</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Image Management</h2>
+                <div class="card">
+                    <div class="card-header">🖼️ Visual Image Browser</div>
+                    <ul>
+                        <li><strong>Image catalog</strong> - Browse local images with metadata</li>
+                        <li><strong>Pull wizard</strong> - Search and pull images from registries</li>
+                        <li><strong>Tag management</strong> - View and manage image tags</li>
+                        <li><strong>Size information</strong> - Image size and layer details</li>
+                        <li><strong>Build integration</strong> - Build images from Dockerfiles</li>
+                    </ul>
+                </div>
+
+                <h2>Advanced Features</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">📊 System Monitoring</div>
+                        <ul>
+                            <li>Resource usage graphs</li>
+                            <li>Container statistics</li>
+                            <li>System information display</li>
+                            <li>Service status monitoring</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔧 Configuration</div>
+                        <ul>
+                            <li>Runtime settings</li>
+                            <li>Registry configuration</li>
+                            <li>Network preferences</li>
+                            <li>Storage options</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🎨 Customization</div>
+                        <ul>
+                            <li>Color themes (dark/light)</li>
+                            <li>Refresh intervals</li>
+                            <li>Column visibility</li>
+                            <li>Keyboard shortcuts</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GUI Section -->
+            <section id="gui" class="content-section">
+                <h1>🖼️ Desktop GUI Application</h1>
+
+                <h2>Professional Desktop Interface</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Built with Fyne Framework</div>
+                    <p>The Desktop GUI provides a modern, native desktop application experience built with the Fyne framework. It offers intuitive visual management of containers, images, and volumes with real-time updates and professional styling.</p>
+                </div>
+
+                <h2>Launching the GUI</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🚀 Launch Methods</div>
+                        <pre><code># Command line
+servin-gui
+
+# Alternative command
+servin gui
+
+# From Start Menu (Windows)
+"Servin Container Runtime"
+
+# From Applications (Linux/macOS)
+"Servin GUI"</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">⚙️ Launch Options</div>
+                        <pre><code># With specific theme
+servin-gui --theme dark
+
+# With debug logging
+servin-gui --debug
+
+# Minimized start
+servin-gui --minimized</code></pre>
+                    </div>
+                </div>
+
+                <h2>Main Interface Components</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📋 Container Dashboard</div>
+                        <ul>
+                            <li><strong>Container Grid</strong> - Visual container cards with status</li>
+                            <li><strong>Quick Actions</strong> - Start, stop, restart, remove buttons</li>
+                            <li><strong>Resource Meters</strong> - Real-time CPU and memory usage</li>
+                            <li><strong>Status Indicators</strong> - Color-coded running states</li>
+                            <li><strong>Context Menus</strong> - Right-click for additional options</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🖼️ Image Manager</div>
+                        <ul>
+                            <li><strong>Image Gallery</strong> - Visual image browser with thumbnails</li>
+                            <li><strong>Search & Filter</strong> - Find images quickly</li>
+                            <li><strong>Registry Browser</strong> - Browse remote registries</li>
+                            <li><strong>Tag Editor</strong> - Manage image tags visually</li>
+                            <li><strong>Build Wizard</strong> - Guided image building process</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Advanced GUI Features</h2>
+                <div class="grid grid-3">
+                    <div class="feature-box">
+                        <div class="feature-icon">📊</div>
+                        <h4>Real-time Monitoring</h4>
+                        <ul>
+                            <li>Live container metrics</li>
+                            <li>Resource usage graphs</li>
+                            <li>Network traffic monitoring</li>
+                            <li>Log streaming viewer</li>
+                        </ul>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">🎛️</div>
+                        <h4>Visual Configuration</h4>
+                        <ul>
+                            <li>Drag-and-drop volume mounting</li>
+                            <li>Visual port mapping</li>
+                            <li>Environment variable editor</li>
+                            <li>Network configuration wizard</li>
+                        </ul>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">🎨</div>
+                        <h4>Professional Styling</h4>
+                        <ul>
+                            <li>Native OS look and feel</li>
+                            <li>Dark and light themes</li>
+                            <li>Responsive layout</li>
+                            <li>High-DPI display support</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Container Creation Wizard</h2>
+                <div class="card">
+                    <div class="card-header">🧙‍♂️ Step-by-Step Container Setup</div>
+                    <ol>
+                        <li><strong>Image Selection</strong> - Choose from local images or pull from registry</li>
+                        <li><strong>Basic Configuration</strong> - Container name, command, working directory</li>
+                        <li><strong>Network Settings</strong> - Port mappings, network mode, DNS settings</li>
+                        <li><strong>Volume Configuration</strong> - Mount points, bind mounts, named volumes</li>
+                        <li><strong>Environment & Variables</strong> - Environment variables, labels, metadata</li>
+                        <li><strong>Resource Limits</strong> - CPU, memory, and storage constraints</li>
+                        <li><strong>Review & Create</strong> - Final configuration review before creation</li>
+                    </ol>
+                </div>
+
+                <h2>Log Viewer</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📜 Features</div>
+                        <ul>
+                            <li><strong>Real-time streaming</strong> - Live log updates</li>
+                            <li><strong>Search & Filter</strong> - Find specific log entries</li>
+                            <li><strong>Syntax highlighting</strong> - Colored log levels</li>
+                            <li><strong>Export options</strong> - Save logs to file</li>
+                            <li><strong>Follow mode</strong> - Auto-scroll with new entries</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🎨 Display Options</div>
+                        <ul>
+                            <li><strong>Timestamps</strong> - Show/hide log timestamps</li>
+                            <li><strong>Log levels</strong> - Filter by severity</li>
+                            <li><strong>Word wrap</strong> - Handle long log lines</li>
+                            <li><strong>Font size</strong> - Adjustable text size</li>
+                            <li><strong>Color themes</strong> - Dark/light mode support</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CLI Section -->
+            <section id="cli" class="content-section">
+                <h1>💻 Command Line Interface (CLI)</h1>
+
+                <h2>Basic Usage</h2>
+                <div class="card">
+                    <div class="card-header">Common Commands</div>
+                    <pre><code># Container operations
+servin run ubuntu:latest               # Run container
+servin run -d nginx:latest             # Run detached
+servin containers ls                   # List containers
+servin containers stop &lt;id&gt;            # Stop container
+servin containers rm &lt;id&gt;              # Remove container
+
+# Image operations
+servin images pull ubuntu:latest       # Pull image
+servin images ls                       # List images
+servin images rm ubuntu:latest         # Remove image
+servin images build -t myapp .         # Build image
+
+# Volume operations
+servin volumes create myvolume         # Create volume
+servin volumes ls                      # List volumes
+servin volumes rm myvolume             # Remove volume</code></pre>
+                </div>
+
+                <h2>Advanced Container Management</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">Container Creation</div>
+                        <pre><code># Basic container
+servin run ubuntu:latest
+
+# Interactive container
+servin run -it ubuntu:latest bash
+
+# Detached with name
+servin run -d --name webserver nginx:latest
+
+# With port mapping
+servin run -p 8080:80 nginx:latest
+
+# With volume mount
+servin run -v /host/data:/container/data ubuntu:latest
+
+# With environment variables
+servin run -e NODE_ENV=production node:16</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">Container Operations</div>
+                        <pre><code># Container lifecycle
+servin containers start &lt;id&gt;
+servin containers stop &lt;id&gt;
+servin containers restart &lt;id&gt;
+servin containers pause &lt;id&gt;
+servin containers unpause &lt;id&gt;
+
+# Container inspection
+servin containers inspect &lt;id&gt;
+servin containers logs &lt;id&gt;
+servin containers stats &lt;id&gt;
+
+# Execute commands
+servin containers exec &lt;id&gt; bash
+servin containers exec -it &lt;id&gt; sh</code></pre>
+                    </div>
+                </div>
+
+                <h2>Image Management</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">Image Operations</div>
+                        <pre><code># Pull images
+servin images pull ubuntu:latest
+servin images pull docker.io/library/nginx:1.21
+servin images pull --all-tags ubuntu
+
+# Build images
+servin images build -t myapp:latest .
+servin images build -f Dockerfile.prod -t myapp:prod .
+
+# Tag images
+servin images tag ubuntu:latest myregistry.com/ubuntu:latest
+
+# Push images
+servin images push myregistry.com/myapp:latest</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">Image Inspection</div>
+                        <pre><code># List images
+servin images ls
+servin images ls --filter "dangling=true"
+servin images ls --format "table {{.Repository}}\t{{.Tag}}"
+
+# Inspect images
+servin images inspect ubuntu:latest
+servin images history ubuntu:latest
+
+# Remove images
+servin images rm ubuntu:latest
+servin images prune  # Remove unused images</code></pre>
+                    </div>
+                </div>
+
+                <h2>Resource Management</h2>
+                <div class="card">
+                    <div class="card-header">Resource Limits and Constraints</div>
+                    <pre><code># CPU limits
+servin run --cpu 1.5 ubuntu:latest              # 1.5 CPU cores
+servin run --cpu-shares 512 ubuntu:latest       # Relative CPU weight
+
+# Memory limits
+servin run --memory 512m ubuntu:latest          # 512 MB memory
+servin run --memory 2g ubuntu:latest            # 2 GB memory
+servin run --oom-kill-disable ubuntu:latest     # Disable OOM killer
+
+# Combined resource limits
+servin run \
+  --name myapp \
+  --memory 1g \
+  --cpu 1.0 \
+  --restart unless-stopped \
+  myapp:latest</code></pre>
+                </div>
+            </section>
+
+            <!-- Additional sections would continue here... -->
+            <!-- For brevity, I'll include the key sections and you can expand as needed -->
+
+            <!-- Troubleshooting Section -->
+            <section id="troubleshooting" class="content-section">
+                <h1>🔧 Troubleshooting</h1>
+
+                <h2>Common Issues</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">⚠️ Installation Problems</div>
+                        <h4>NSIS not found</h4>
+                        <pre><code>Error: NSIS not installed!</code></pre>
+                        <p><strong>Solution:</strong></p>
+                        <ol>
+                            <li>Download NSIS from <a href="https://nsis.sourceforge.io/Download">official site</a></li>
+                            <li>Install latest version</li>
+                            <li>Verify: <code>makensis.exe</code> in PATH</li>
+                        </ol>
+
+                        <h4>CGO compilation failed</h4>
+                        <pre><code>cgo: C compiler "gcc" not found</code></pre>
+                        <p><strong>Solution (Windows):</strong></p>
+                        <ol>
+                            <li>Install MinGW-w64 UCRT64 toolchain</li>
+                            <li>Add <code>C:\mingw64\bin</code> to PATH</li>
+                            <li>Verify: <code>gcc --version</code></li>
+                        </ol>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🚫 Runtime Issues</div>
+                        <h4>Permission denied</h4>
+                        <pre><code>Error: permission denied: cannot connect</code></pre>
+                        <p><strong>Solution:</strong></p>
+                        <ul>
+                            <li><strong>Linux/macOS:</strong> Run with <code>sudo</code> or add user to <code>servin</code> group</li>
+                            <li><strong>Windows:</strong> Run as Administrator</li>
+                        </ul>
+
+                        <h4>Port already in use</h4>
+                        <pre><code>Error: bind: address already in use (port 10010)</code></pre>
+                        <p><strong>Solution:</strong></p>
+                        <pre><code># Find process using port
+netstat -tlnp | grep 10010    # Linux
+netstat -ano | findstr 10010  # Windows
+
+# Use different port
+servin daemon --cri-port 10011</code></pre>
+                    </div>
+                </div>
+
+                <h2>Debug Mode</h2>
+                <div class="card">
+                    <div class="card-header">🔍 Enable Debug Logging</div>
+                    <pre><code># Environment variable
+export SERVIN_LOG_LEVEL=debug
+
+# Command line flag
+servin --log-level debug daemon
+
+# Configuration file
+# config.yaml
+logging:
+  level: debug
+
+# Debug information
+servin system info
+servin system df
+servin version</code></pre>
+                </div>
+
+                <h2>Log Analysis</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🐧 Linux Logs</div>
+                        <ul>
+                            <li><code>/var/log/servin/</code></li>
+                            <li><code>journalctl -u servin</code></li>
+                            <li><code>tail -f /var/log/servin/servin.log</code></li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🍎 macOS Logs</div>
+                        <ul>
+                            <li><code>/usr/local/var/log/servin/</code></li>
+                            <li><code>launchctl logs servin</code></li>
+                            <li><code>tail -f /usr/local/var/log/servin/servin.log</code></li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🪟 Windows Logs</div>
+                        <ul>
+                            <li><code>C:\ProgramData\Servin\logs\</code></li>
+                            <li>Event Viewer</li>
+                            <li><code>Get-Content -Wait servin.log</code></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Containers Section -->
+            <section id="containers" class="content-section">
+                <h1>📦 Container Management</h1>
+
+                <h2>Core Container Operations</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Container Lifecycle</div>
+                    <p>Servin provides comprehensive container lifecycle management from creation to removal, with support for all major container operations and advanced features like resource constraints and health monitoring.</p>
+                </div>
+
+                <h2>Creating and Running Containers</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🚀 Basic Run Commands</div>
+                        <pre><code># Run interactive container
+servin run -it ubuntu:latest bash
+
+# Run detached container
+servin run -d --name webserver nginx:latest
+
+# Run with port mapping
+servin run -d -p 8080:80 nginx:latest
+
+# Run with volume mount
+servin run -d -v /host/data:/container/data app:latest</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">⚙️ Advanced Options</div>
+                        <pre><code># Resource limits
+servin run -d --memory 512m --cpus 1.5 app:latest
+
+# Environment variables
+servin run -d -e DB_HOST=localhost -e DB_PORT=5432 app:latest
+
+# Custom network
+servin run -d --network custom_network app:latest
+
+# Working directory
+servin run -it -w /app ubuntu:latest</code></pre>
+                    </div>
+                </div>
+
+                <h2>Container Lifecycle Management</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">▶️ Starting & Stopping</div>
+                        <pre><code># Start container
+servin containers start myapp
+
+# Stop container gracefully
+servin containers stop myapp
+
+# Force stop container
+servin containers stop -f myapp
+
+# Restart container
+servin containers restart myapp
+
+# Pause/unpause
+servin containers pause myapp
+servin containers unpause myapp</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📋 Listing & Inspection</div>
+                        <pre><code># List running containers
+servin containers ls
+
+# List all containers
+servin containers ls -a
+
+# Container details
+servin containers inspect myapp
+
+# Container statistics
+servin containers stats myapp
+
+# Container processes
+servin containers top myapp</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🗑️ Cleanup Operations</div>
+                        <pre><code># Remove stopped container
+servin containers rm myapp
+
+# Force remove running container
+servin containers rm -f myapp
+
+# Remove multiple containers
+servin containers rm app1 app2 app3
+
+# Prune stopped containers
+servin containers prune
+
+# Remove all containers
+servin containers rm -f $(servin containers ls -aq)</code></pre>
+                    </div>
+                </div>
+
+                <h2>Container Interaction</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">💬 Exec and Attach</div>
+                        <pre><code># Execute command in running container
+servin exec -it myapp bash
+
+# Execute as specific user
+servin exec -it -u root myapp sh
+
+# Execute with environment variables
+servin exec -it -e VAR=value myapp env
+
+# Attach to running container
+servin attach myapp
+
+# Copy files to/from container
+servin cp file.txt myapp:/path/
+servin cp myapp:/path/file.txt ./</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📝 Logs and Monitoring</div>
+                        <pre><code># View container logs
+servin logs myapp
+
+# Follow log output
+servin logs -f myapp
+
+# Show timestamps
+servin logs -t myapp
+
+# Tail last N lines
+servin logs --tail 50 myapp
+
+# Show logs since timestamp
+servin logs --since 2024-01-01T10:00:00 myapp</code></pre>
+                    </div>
+                </div>
+
+                <h2>Resource Management</h2>
+                <div class="card">
+                    <div class="card-header">📊 Resource Constraints and Monitoring</div>
+                    <div class="grid grid-2">
+                        <div>
+                            <h4>Memory Limits</h4>
+                            <pre><code># Set memory limit
+servin run -d --memory 1g myapp
+
+# Memory with swap limit
+servin run -d --memory 1g --memory-swap 2g myapp
+
+# Update memory limit
+servin update --memory 2g myapp</code></pre>
+                        </div>
+                        <div>
+                            <h4>CPU Limits</h4>
+                            <pre><code># CPU shares (relative weight)
+servin run -d --cpu-shares 512 myapp
+
+# CPU cores limit
+servin run -d --cpus 1.5 myapp
+
+# CPU set (specific cores)
+servin run -d --cpuset-cpus 0,1 myapp</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Health Monitoring</h2>
+                <div class="card">
+                    <div class="card-header">❤️ Health Checks</div>
+                    <pre><code># Run with health check
+servin run -d \
+  --health-cmd "curl -f http://localhost:8080/health" \
+  --health-interval 30s \
+  --health-retries 3 \
+  --health-timeout 10s \
+  myapp
+
+# Check health status
+servin containers inspect myapp | grep -i health
+
+# View health check logs
+servin logs myapp | grep health</code></pre>
+                </div>
+            </section>
+
+            <!-- Images Section -->
+            <section id="images" class="content-section">
+                <h1>🖼️ Image Management</h1>
+
+                <h2>Container Image Operations</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Image Lifecycle</div>
+                    <p>Servin provides complete image management capabilities including pulling from registries, building from Dockerfiles, tagging, and efficient storage management with layer deduplication.</p>
+                </div>
+
+                <h2>Pulling and Managing Images</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">⬇️ Pulling Images</div>
+                        <pre><code># Pull latest version
+servin images pull ubuntu:latest
+
+# Pull specific tag
+servin images pull nginx:1.21-alpine
+
+# Pull from specific registry
+servin images pull registry.example.com/myapp:v1.0
+
+# Pull all tags
+servin images pull -a ubuntu
+
+# Pull with authentication
+servin images pull --username user --password pass private/image</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📋 Listing and Inspection</div>
+                        <pre><code># List all images
+servin images ls
+
+# List with full digests
+servin images ls --digests
+
+# List by repository
+servin images ls ubuntu
+
+# Image details
+servin images inspect ubuntu:latest
+
+# Image history
+servin images history ubuntu:latest</code></pre>
+                    </div>
+                </div>
+
+                <h2>Building Images</h2>
+                <div class="card">
+                    <div class="card-header">🏗️ Build from Dockerfile</div>
+                    <pre><code># Basic build
+servin images build -t myapp:latest .
+
+# Build with custom Dockerfile
+servin images build -f Dockerfile.prod -t myapp:prod .
+
+# Build with build arguments
+servin images build --build-arg VERSION=1.0 -t myapp:1.0 .
+
+# Build without cache
+servin images build --no-cache -t myapp:latest .
+
+# Multi-stage build target
+servin images build --target production -t myapp:prod .</code></pre>
+                </div>
+
+                <h2>Tagging and Registry Operations</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🏷️ Tagging Images</div>
+                        <pre><code># Tag existing image
+servin images tag ubuntu:latest myrepo/ubuntu:v1
+
+# Tag with multiple tags
+servin images tag myapp:latest myapp:stable
+servin images tag myapp:latest registry.io/myapp:v1.0
+
+# Retag image
+servin images tag myapp:old myapp:new
+servin images rm myapp:old</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">⬆️ Pushing to Registry</div>
+                        <pre><code># Push to registry
+servin images push myrepo/myapp:latest
+
+# Push all tags
+servin images push -a myrepo/myapp
+
+# Push with authentication
+servin login registry.example.com
+servin images push registry.example.com/myapp:v1.0
+servin logout registry.example.com</code></pre>
+                    </div>
+                </div>
+
+                <h2>Image Cleanup and Optimization</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🗑️ Removing Images</div>
+                        <pre><code># Remove image
+servin images rm ubuntu:old
+
+# Force remove image
+servin images rm -f myapp:latest
+
+# Remove unused images
+servin images prune
+
+# Remove all unused images
+servin images prune -a
+
+# Remove by filter
+servin images prune --filter "until=24h"</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📊 Storage Management</div>
+                        <pre><code># Check disk usage
+servin system df
+
+# Detailed usage
+servin system df -v
+
+# Clean up all unused data
+servin system prune
+
+# Aggressive cleanup
+servin system prune -a --volumes
+
+# Clean with confirmation
+servin system prune -f</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔍 Analysis Tools</div>
+                        <pre><code># Image layers
+servin images inspect ubuntu:latest | grep Layers
+
+# Image size breakdown
+servin images ls --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}"
+
+# Find large images
+servin images ls --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}" | sort -h -k2
+
+# Dangling images
+servin images ls -f dangling=true</code></pre>
+                    </div>
+                </div>
+
+                <h2>Advanced Image Operations</h2>
+                <div class="card">
+                    <div class="card-header">⚡ Advanced Features</div>
+                    <div class="grid grid-2">
+                        <div>
+                            <h4>Image Export/Import</h4>
+                            <pre><code># Save image to tar
+servin images save -o myapp.tar myapp:latest
+
+# Load image from tar
+servin images load -i myapp.tar
+
+# Export container as image
+servin export mycontainer > container.tar
+servin import container.tar mynewimage:latest</code></pre>
+                        </div>
+                        <div>
+                            <h4>Multi-architecture Support</h4>
+                            <pre><code># Pull for specific platform
+servin images pull --platform linux/arm64 nginx:latest
+
+# Build for multiple platforms
+servin buildx build --platform linux/amd64,linux/arm64 -t myapp:latest .
+
+# Inspect image platforms
+servin images inspect --format '{{.Architecture}}' nginx:latest</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Volumes Section -->
+            <section id="volumes" class="content-section">
+                <h1>💾 Volume Management</h1>
+
+                <h2>Persistent Data Storage</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Volume Types</div>
+                    <p>Servin supports multiple storage options for persistent data: named volumes for database storage, bind mounts for development, and tmpfs mounts for temporary data with automatic cleanup and backup capabilities.</p>
+                </div>
+
+                <h2>Volume Types and Usage</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">📦 Named Volumes</div>
+                        <pre><code># Create named volume
+servin volumes create mydata
+
+# Create with driver options
+servin volumes create \
+  --driver local \
+  --opt type=nfs \
+  --opt o=addr=192.168.1.1 \
+  myshare
+
+# Use in container
+servin run -d -v mydata:/data postgres:latest</code></pre>
+                        <div class="badge badge-success">Recommended for databases</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔗 Bind Mounts</div>
+                        <pre><code># Mount host directory
+servin run -d -v /host/code:/app/code nodejs:latest
+
+# Read-only bind mount
+servin run -d -v /host/config:/app/config:ro app:latest
+
+# Windows bind mount
+servin run -d -v C:\data:/data:rw app:latest</code></pre>
+                        <div class="badge badge-info">Perfect for development</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">⚡ Tmpfs Mounts</div>
+                        <pre><code># Temporary filesystem
+servin run -d --tmpfs /tmp:rw,noexec,nosuid,size=100m app:latest
+
+# Memory-backed storage
+servin run -d --tmpfs /cache:size=1g app:latest</code></pre>
+                        <div class="badge badge-warning">In-memory only</div>
+                    </div>
+                </div>
+
+                <h2>Volume Lifecycle Management</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📋 Listing and Inspection</div>
+                        <pre><code># List all volumes
+servin volumes ls
+
+# List with filters
+servin volumes ls --filter "dangling=true"
+
+# Volume details
+servin volumes inspect mydata
+
+# Volume usage information
+servin system df -v</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🗑️ Cleanup and Removal</div>
+                        <pre><code># Remove unused volumes
+servin volumes prune
+
+# Remove specific volume
+servin volumes rm mydata
+
+# Force remove volume
+servin volumes rm -f mydata
+
+# Remove multiple volumes
+servin volumes rm vol1 vol2 vol3</code></pre>
+                    </div>
+                </div>
+
+                <h2>Advanced Volume Operations</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🔄 Backup and Restore</div>
+                        <pre><code># Backup volume data
+servin run --rm -v mydata:/source -v $(pwd):/backup ubuntu \
+  tar czf /backup/backup.tar.gz -C /source .
+
+# Restore volume data
+servin run --rm -v mydata:/target -v $(pwd):/backup ubuntu \
+  tar xzf /backup/backup.tar.gz -C /target
+
+# Copy between volumes
+servin run --rm -v source_vol:/src -v dest_vol:/dest ubuntu \
+  cp -r /src/. /dest/</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📊 Monitoring and Analysis</div>
+                        <pre><code># Check volume usage
+servin system df
+
+# Find volume mountpoints
+servin containers inspect myapp | grep Mounts -A 10
+
+# Volume driver information
+servin volumes inspect myvolume --format '{{.Driver}}'
+
+# List containers using volume
+servin containers ls --filter volume=mydata</code></pre>
+                    </div>
+                </div>
+
+                <h2>Volume Drivers and Plugins</h2>
+                <div class="card">
+                    <div class="card-header">🔌 Storage Drivers</div>
+                    <div class="grid grid-2">
+                        <div>
+                            <h4>Built-in Drivers</h4>
+                            <ul>
+                                <li><strong>local</strong> - Default filesystem storage</li>
+                                <li><strong>tmpfs</strong> - Memory-based temporary storage</li>
+                                <li><strong>nfs</strong> - Network File System mounts</li>
+                                <li><strong>cifs</strong> - Windows network shares</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Configuration Examples</h4>
+                            <pre><code># NFS volume
+servin volumes create \
+  --driver local \
+  --opt type=nfs \
+  --opt o=addr=nfs.example.com,rw \
+  --opt device=:/path/to/share \
+  nfs_volume
+
+# CIFS/SMB volume
+servin volumes create \
+  --driver local \
+  --opt type=cifs \
+  --opt o=username=user,password=pass \
+  --opt device=//server/share \
+  smb_volume</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Registry Section -->
+            <section id="registry" class="content-section">
+                <h1>🏪 Registry Management</h1>
+
+                <h2>Container Registry Operations</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Registry Integration</div>
+                    <p>Servin supports multiple container registries including Docker Hub, private registries, and cloud provider registries. Manage authentication, push/pull operations, and registry mirroring for efficient image distribution.</p>
+                </div>
+
+                <h2>Registry Authentication</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🔐 Login and Authentication</div>
+                        <pre><code># Login to Docker Hub
+servin login
+
+# Login to private registry
+servin login registry.example.com
+
+# Login with credentials
+servin login -u username -p password registry.example.com
+
+# Login using token
+servin login --password-stdin registry.example.com < token.txt
+
+# Non-interactive login
+echo "token" | servin login --username oauth2accesstoken --password-stdin gcr.io</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🚪 Logout and Cleanup</div>
+                        <pre><code># Logout from registry
+servin logout registry.example.com
+
+# Logout from all registries
+servin logout
+
+# View stored credentials
+servin config auth
+
+# Remove specific credentials
+servin config auth --remove registry.example.com</code></pre>
+                    </div>
+                </div>
+
+                <h2>Supported Registry Types</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🐳 Docker Hub</div>
+                        <pre><code># Official images
+servin images pull ubuntu:latest
+servin images pull nginx:alpine
+
+# User repositories
+servin images pull username/myapp:latest
+
+# Organizations
+servin images pull myorg/private-app:v1.0</code></pre>
+                        <div class="badge badge-success">Default registry</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🏢 Private Registries</div>
+                        <pre><code># Harbor registry
+servin images pull harbor.company.com/project/app:latest
+
+# Nexus registry
+servin images pull nexus.company.com:5000/app:latest
+
+# Self-hosted registry
+servin images pull registry.internal:5000/myapp:latest</code></pre>
+                        <div class="badge badge-info">Enterprise solution</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">☁️ Cloud Registries</div>
+                        <pre><code># AWS ECR
+servin images pull 123456789012.dkr.ecr.us-west-2.amazonaws.com/myapp:latest
+
+# Google GCR
+servin images pull gcr.io/project-id/myapp:latest
+
+# Azure ACR
+servin images pull myregistry.azurecr.io/myapp:latest</code></pre>
+                        <div class="badge badge-warning">Cloud native</div>
+                    </div>
+                </div>
+
+                <h2>Image Distribution</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📤 Pushing Images</div>
+                        <pre><code># Tag for registry
+servin images tag myapp:latest registry.example.com/myapp:v1.0
+
+# Push to registry
+servin images push registry.example.com/myapp:v1.0
+
+# Push all tags
+servin images push -a registry.example.com/myapp
+
+# Push with retry on failure
+servin images push --retry 3 registry.example.com/myapp:latest</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📥 Pulling Images</div>
+                        <pre><code># Pull from specific registry
+servin images pull registry.example.com/myapp:latest
+
+# Pull with specific platform
+servin images pull --platform linux/arm64 registry.example.com/myapp:latest
+
+# Pull all tags for repository
+servin images pull -a registry.example.com/myapp
+
+# Pull with authentication
+servin images pull --username user --password pass registry.example.com/private:latest</code></pre>
+                    </div>
+                </div>
+
+                <h2>Registry Configuration</h2>
+                <div class="card">
+                    <div class="card-header">⚙️ Advanced Registry Settings</div>
+                    <div class="grid grid-2">
+                        <div>
+                            <h4>Mirror Configuration</h4>
+                            <pre><code># Configure registry mirror
+servin config registry-mirrors add https://mirror.example.com
+
+# List mirrors
+servin config registry-mirrors ls
+
+# Remove mirror
+servin config registry-mirrors rm https://mirror.example.com
+
+# Test mirror connectivity
+servin config registry-mirrors test</code></pre>
+                        </div>
+                        <div>
+                            <h4>Insecure Registries</h4>
+                            <pre><code># Add insecure registry
+servin config insecure-registries add registry.internal:5000
+
+# List insecure registries
+servin config insecure-registries ls
+
+# Remove insecure registry
+servin config insecure-registries rm registry.internal:5000</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Registry Troubleshooting</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🔍 Diagnostics</div>
+                        <pre><code># Test registry connectivity
+servin registry ping registry.example.com
+
+# Check registry catalog
+servin registry catalog registry.example.com
+
+# List repository tags
+servin registry tags registry.example.com/myapp
+
+# Check image manifest
+servin registry manifest registry.example.com/myapp:latest</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔧 Common Issues</div>
+                        <ul>
+                            <li><strong>Authentication failures</strong> - Check credentials and token expiry</li>
+                            <li><strong>Network timeouts</strong> - Verify network connectivity and proxy settings</li>
+                            <li><strong>TLS errors</strong> - Add to insecure registries or fix certificates</li>
+                            <li><strong>Rate limiting</strong> - Use authentication or registry mirrors</li>
+                            <li><strong>Storage quota</strong> - Clean up old images or increase limits</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CRI Section -->
+            <section id="cri" class="content-section">
+                <h1>🔌 Container Runtime Interface (CRI)</h1>
+
+                <h2>Kubernetes Integration</h2>
+                <div class="card">
+                    <div class="card-header">🎯 CRI Compatibility</div>
+                    <p>Servin implements the Kubernetes Container Runtime Interface (CRI) v1alpha2, enabling seamless integration with Kubernetes clusters. Use Servin as a drop-in replacement for containerd or CRI-O for enhanced container management.</p>
+                </div>
+
+                <h2>CRI Server Configuration</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🚀 Starting CRI Server</div>
+                        <pre><code># Start CRI server with default settings
+servin daemon --cri
+
+# Custom CRI endpoint
+servin daemon --cri --cri-endpoint unix:///var/run/servin/servin.sock
+
+# Custom port for HTTP CRI
+servin daemon --cri --cri-port 10010
+
+# CRI with additional logging
+servin daemon --cri --log-level debug
+
+# Start as system service
+sudo systemctl start servin-cri</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">⚙️ Configuration Options</div>
+                        <pre><code># Configuration file: /etc/servin/config.yaml
+cri:
+  enabled: true
+  endpoint: "unix:///var/run/servin/servin.sock"
+  port: 10010
+  image_service:
+    registry_config_path: "/etc/containers/registries.conf"
+  runtime_service:
+    default_runtime: "runc"
+    runtimes:
+      runc:
+        path: "/usr/bin/runc"</code></pre>
+                    </div>
+                </div>
+
+                <h2>Kubernetes Integration</h2>
+                <div class="card">
+                    <div class="card-header">☸️ Kubelet Configuration</div>
+                    <pre><code># Configure kubelet to use Servin CRI
+# /etc/kubernetes/kubelet/kubelet-config.yaml
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+containerRuntimeEndpoint: unix:///var/run/servin/servin.sock
+imageServiceEndpoint: unix:///var/run/servin/servin.sock
+runtimeRequestTimeout: "15m"
+imageGCHighThreshold: 90
+imageGCLowThreshold: 80
+
+# Restart kubelet
+sudo systemctl restart kubelet</code></pre>
+                </div>
+
+                <h2>CRI Operations</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">📦 Pod Management</div>
+                        <pre><code># Create pod sandbox
+crictl runp pod-config.yaml
+
+# List pods
+crictl pods
+
+# Stop pod
+crictl stopp pod_id
+
+# Remove pod
+crictl rmp pod_id
+
+# Pod logs
+crictl logs pod_id</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🏃 Container Operations</div>
+                        <pre><code># Create container
+crictl create pod_id container-config.yaml pod-config.yaml
+
+# Start container
+crictl start container_id
+
+# List containers
+crictl ps
+
+# Execute in container
+crictl exec -it container_id sh
+
+# Container stats
+crictl stats container_id</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🖼️ Image Management</div>
+                        <pre><code># Pull image
+crictl pull ubuntu:latest
+
+# List images
+crictl images
+
+# Remove image
+crictl rmi image_id
+
+# Image information
+crictl inspecti image_id</code></pre>
+                    </div>
+                </div>
+
+                <h2>CRI Troubleshooting</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🔍 Diagnostics</div>
+                        <pre><code># Check CRI server status
+servin system info --cri
+
+# Test CRI connectivity
+crictl version
+
+# CRI server logs
+journalctl -u servin-cri -f
+
+# Kubelet logs
+journalctl -u kubelet -f
+
+# Check socket permissions
+ls -la /var/run/servin/servin.sock</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔧 Common Issues</div>
+                        <ul>
+                            <li><strong>Socket permission denied</strong> - Check socket ownership and permissions</li>
+                            <li><strong>Kubelet connection timeout</strong> - Verify CRI endpoint configuration</li>
+                            <li><strong>Image pull failures</strong> - Check registry configuration and credentials</li>
+                            <li><strong>Runtime not found</strong> - Verify runc or alternative runtime installation</li>
+                            <li><strong>Pod creation errors</strong> - Check SELinux/AppArmor policies</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API Section -->
+            <section id="api" class="content-section">
+                <h1>🌐 REST API Reference</h1>
+
+                <h2>API Overview</h2>
+                <div class="card">
+                    <div class="card-header">🎯 RESTful Interface</div>
+                    <p>Servin provides a comprehensive REST API for programmatic access to all container operations. The API follows OpenAPI 3.0 specification and supports JSON for request/response payloads with authentication and rate limiting.</p>
+                </div>
+
+                <h2>API Server Configuration</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🚀 Starting API Server</div>
+                        <pre><code># Start API server
+servin daemon --api
+
+# Custom API port
+servin daemon --api --api-port 8080
+
+# Enable TLS
+servin daemon --api --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+
+# API with authentication
+servin daemon --api --auth-method token --auth-file /etc/servin/tokens.json</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔐 Authentication</div>
+                        <pre><code># API Key authentication
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     http://localhost:8080/v1/containers
+
+# Basic authentication
+curl -u username:password \
+     http://localhost:8080/v1/containers
+
+# JWT token
+curl -H "Authorization: Bearer JWT_TOKEN" \
+     http://localhost:8080/v1/containers</code></pre>
+                    </div>
+                </div>
+
+                <h2>Container API Endpoints</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📦 Container Operations</div>
+                        <pre><code># List containers
+GET /v1/containers
+curl http://localhost:8080/v1/containers
+
+# Get container details
+GET /v1/containers/{id}
+curl http://localhost:8080/v1/containers/myapp
+
+# Create container
+POST /v1/containers/create
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"image": "nginx:latest", "name": "webserver"}' \
+  http://localhost:8080/v1/containers/create
+
+# Start container
+POST /v1/containers/{id}/start
+curl -X POST http://localhost:8080/v1/containers/myapp/start
+
+# Stop container
+POST /v1/containers/{id}/stop
+curl -X POST http://localhost:8080/v1/containers/myapp/stop</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📊 Monitoring Endpoints</div>
+                        <pre><code># Container stats
+GET /v1/containers/{id}/stats
+curl http://localhost:8080/v1/containers/myapp/stats
+
+# Container logs
+GET /v1/containers/{id}/logs
+curl http://localhost:8080/v1/containers/myapp/logs?follow=true
+
+# System information
+GET /v1/system/info
+curl http://localhost:8080/v1/system/info
+
+# Health check
+GET /v1/health
+curl http://localhost:8080/v1/health</code></pre>
+                    </div>
+                </div>
+
+                <h2>Image API Endpoints</h2>
+                <div class="card">
+                    <div class="card-header">🖼️ Image Management API</div>
+                    <pre><code># List images
+GET /v1/images
+curl http://localhost:8080/v1/images
+
+# Pull image
+POST /v1/images/pull
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"image": "ubuntu:latest"}' \
+  http://localhost:8080/v1/images/pull
+
+# Remove image
+DELETE /v1/images/{id}
+curl -X DELETE http://localhost:8080/v1/images/ubuntu:latest
+
+# Build image
+POST /v1/images/build
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"dockerfile": "FROM ubuntu\nRUN apt-get update", "tag": "myapp:latest"}' \
+  http://localhost:8080/v1/images/build</code></pre>
+                </div>
+
+                <h2>Volume API Endpoints</h2>
+                <div class="card">
+                    <div class="card-header">💾 Volume Management API</div>
+                    <pre><code># List volumes
+GET /v1/volumes
+curl http://localhost:8080/v1/volumes
+
+# Create volume
+POST /v1/volumes/create
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"name": "mydata", "driver": "local"}' \
+  http://localhost:8080/v1/volumes/create
+
+# Remove volume
+DELETE /v1/volumes/{name}
+curl -X DELETE http://localhost:8080/v1/volumes/mydata
+
+# Volume details
+GET /v1/volumes/{name}
+curl http://localhost:8080/v1/volumes/mydata</code></pre>
+                </div>
+
+                <h2>WebSocket API</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">⚡ Real-time Events</div>
+                        <pre><code># Container events WebSocket
+ws://localhost:8080/v1/events
+
+# JavaScript example
+const ws = new WebSocket('ws://localhost:8080/v1/events');
+ws.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  console.log('Container event:', data);
+};
+
+# Container logs streaming
+ws://localhost:8080/v1/containers/{id}/logs/stream</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📊 Live Statistics</div>
+                        <pre><code># Real-time stats WebSocket
+ws://localhost:8080/v1/containers/{id}/stats/stream
+
+# System stats streaming
+ws://localhost:8080/v1/system/stats/stream
+
+# Multiple container stats
+ws://localhost:8080/v1/stats/stream?containers=app1,app2,app3</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Monitoring Section -->
+            <section id="monitoring" class="content-section">
+                <h1>📊 Monitoring and Observability</h1>
+
+                <h2>System Monitoring</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Comprehensive Observability</div>
+                    <p>Servin provides built-in monitoring capabilities with metrics export, health checks, and integration with popular monitoring systems like Prometheus, Grafana, and log aggregation platforms.</p>
+                </div>
+
+                <h2>Metrics and Telemetry</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📈 Prometheus Integration</div>
+                        <pre><code># Enable metrics endpoint
+servin daemon --metrics --metrics-port 9090
+
+# Prometheus configuration
+# prometheus.yml
+scrape_configs:
+  - job_name: 'servin'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+
+# Available metrics
+curl http://localhost:9090/metrics</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔍 Health Checks</div>
+                        <pre><code># System health endpoint
+curl http://localhost:8080/v1/health
+
+# Component health checks
+curl http://localhost:8080/v1/health/detailed
+
+# Custom health check script
+#!/bin/bash
+servin system info > /dev/null
+if [ $? -eq 0 ]; then
+  echo "Servin: OK"
+else
+  echo "Servin: FAIL"
+  exit 1
+fi</code></pre>
+                    </div>
+                </div>
+
+                <h2>Container Monitoring</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">📊 Resource Usage</div>
+                        <pre><code># Real-time container stats
+servin containers stats
+
+# Specific container stats
+servin containers stats myapp
+
+# Export stats to file
+servin containers stats --format json > stats.json
+
+# Continuous monitoring
+watch -n 5 'servin containers stats --no-stream'</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔄 Process Monitoring</div>
+                        <pre><code># Container processes
+servin containers top myapp
+
+# Process tree
+servin containers top myapp -eo pid,ppid,cmd
+
+# Container events
+servin events
+
+# Follow events
+servin events --follow</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📝 Log Management</div>
+                        <pre><code># Container logs
+servin logs myapp
+
+# Follow logs
+servin logs -f myapp
+
+# Log rotation check
+servin logs --details myapp
+
+# Export logs
+servin logs --since 24h myapp > app.log</code></pre>
+                    </div>
+                </div>
+
+                <h2>Alerting and Notifications</h2>
+                <div class="card">
+                    <div class="card-header">🚨 Alert Configuration</div>
+                    <pre><code># Prometheus alerting rules
+# servin-alerts.yml
+groups:
+  - name: servin.rules
+    rules:
+      - alert: ContainerHighMemory
+        expr: servin_container_memory_usage_bytes / servin_container_memory_limit_bytes > 0.9
+        for: 5m
+        annotations:
+          summary: "Container {{ $labels.name }} high memory usage"
+
+      - alert: ContainerDown
+        expr: servin_container_running == 0
+        for: 1m
+        annotations:
+          summary: "Container {{ $labels.name }} is down"
+
+      - alert: ImagePullError
+        expr: increase(servin_image_pull_errors_total[5m]) > 0
+        annotations:
+          summary: "Image pull failures detected"</code></pre>
+                </div>
+
+                <h2>Log Aggregation</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📊 Structured Logging</div>
+                        <pre><code># JSON log format
+servin daemon --log-format json
+
+# Log to file
+servin daemon --log-file /var/log/servin/servin.log
+
+# Syslog integration
+servin daemon --log-driver syslog --log-opt syslog-address=udp://logserver:514
+
+# Example JSON log
+{
+  "level": "info",
+  "time": "2024-01-15T10:30:00Z",
+  "component": "runtime",
+  "container_id": "abc123",
+  "action": "start",
+  "message": "Container started successfully"
+}</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔄 Log Forwarding</div>
+                        <pre><code># Fluentd configuration
+# fluent.conf
+<source>
+  @type tail
+  path /var/log/servin/*.log
+  pos_file /var/log/td-agent/servin.log.pos
+  tag servin
+  format json
+</source>
+
+<match servin>
+  @type elasticsearch
+  host elasticsearch.example.com
+  port 9200
+  index_name servin
+</match>
+
+# Logstash configuration
+# logstash.conf
+input {
+  file {
+    path => "/var/log/servin/*.log"
+    codec => json
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["elasticsearch:9200"]
+    index => "servin-%{+YYYY.MM.dd}"
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <h2>Performance Monitoring</h2>
+                <div class="card">
+                    <div class="card-header">⚡ Performance Metrics</div>
+                    <div class="grid grid-2">
+                        <div>
+                            <h4>Key Performance Indicators</h4>
+                            <ul>
+                                <li><strong>Container startup time</strong> - Time from create to running</li>
+                                <li><strong>Image pull duration</strong> - Network and storage performance</li>
+                                <li><strong>API response time</strong> - REST API latency metrics</li>
+                                <li><strong>Memory usage</strong> - Runtime and container memory consumption</li>
+                                <li><strong>CPU utilization</strong> - System and container CPU usage</li>
+                                <li><strong>Storage I/O</strong> - Disk read/write operations</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Monitoring Commands</h4>
+                            <pre><code># System resource usage
+servin system df
+
+# Runtime performance
+servin system info
+
+# Container performance
+servin containers stats --no-stream
+
+# Image cache performance
+servin images ls --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedSince}}"
+
+# Network performance
+servin network ls
+servin network inspect bridge</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Building Section -->
+            <section id="building" class="content-section">
+                <h1>🏗️ Building and Development</h1>
+
+                <h2>Development Environment</h2>
+                <div class="card">
+                    <div class="card-header">🎯 Development Setup</div>
+                    <p>Set up a complete development environment for building, testing, and contributing to Servin. Includes Go toolchain setup, dependency management, and build automation with comprehensive testing and debugging capabilities.</p>
+                </div>
+
+                <h2>Prerequisites and Setup</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🛠️ Required Tools</div>
+                        <pre><code># Go 1.24+ (required)
+go version
+# go version go1.24.0 linux/amd64
+
+# Git for version control
+git --version
+
+# Make for build automation
+make --version
+
+# Docker for testing (optional)
+docker --version
+
+# Platform-specific tools
+# Windows: MinGW-w64 UCRT64 for CGO
+# Linux: build-essential
+# macOS: Xcode Command Line Tools</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📁 Clone and Setup</div>
+                        <pre><code># Clone repository
+git clone https://github.com/servin/servin.git
+cd servin
+
+# Install dependencies
+go mod download
+
+# Verify setup
+go mod verify
+
+# Run tests
+make test
+
+# Build binaries
+make build</code></pre>
+                    </div>
+                </div>
+
+                <h2>Build System</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🔨 Makefile Targets</div>
+                        <pre><code># Build all binaries
+make build
+
+# Build specific component
+make build-daemon
+make build-cli
+make build-gui
+
+# Cross-platform builds
+make build-linux
+make build-windows
+make build-darwin
+
+# Clean build artifacts
+make clean
+
+# Install locally
+make install</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🧪 Testing</div>
+                        <pre><code># Run all tests
+make test
+
+# Unit tests only
+make test-unit
+
+# Integration tests
+make test-integration
+
+# End-to-end tests
+make test-e2e
+
+# Test coverage
+make test-coverage
+
+# Benchmark tests
+make test-bench</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📦 Packaging</div>
+                        <pre><code># Create packages
+make package
+
+# Build containers
+make container
+
+# Create installers
+make installer
+
+# Release artifacts
+make release
+
+# Sign binaries
+make sign</code></pre>
+                    </div>
+                </div>
+
+                <h2>Development Workflow</h2>
+                <div class="card">
+                    <div class="card-header">🔄 Development Cycle</div>
+                    <pre><code># 1. Create feature branch
+git checkout -b feature/new-feature
+
+# 2. Make changes and test
+go mod tidy
+make test
+make build
+
+# 3. Run integration tests
+make test-integration
+
+# 4. Format and lint
+make fmt
+make lint
+
+# 5. Commit changes
+git add .
+git commit -m "feat: add new feature"
+
+# 6. Push and create PR
+git push origin feature/new-feature</code></pre>
+                </div>
+
+                <h2>Code Quality and Standards</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">✨ Code Formatting</div>
+                        <pre><code># Format Go code
+make fmt
+gofmt -s -w .
+
+# Import organization
+goimports -w .
+
+# Code generation
+make generate
+
+# Update dependencies
+go mod tidy
+go mod download</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔍 Linting and Validation</div>
+                        <pre><code># Run linters
+make lint
+golangci-lint run
+
+# Security scanning
+make security
+gosec ./...
+
+# Vulnerability check
+govulncheck ./...
+
+# License compliance
+make license-check</code></pre>
+                    </div>
+                </div>
+
+                <h2>Debugging and Profiling</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🐛 Debugging</div>
+                        <pre><code># Build with debug symbols
+make build-debug
+
+# Run with debug logging
+SERVIN_LOG_LEVEL=debug ./servin daemon
+
+# Attach debugger (Delve)
+dlv exec ./servin -- daemon
+
+# Debug tests
+go test -v -run TestSpecific
+
+# Race condition detection
+go test -race ./...</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📊 Profiling</div>
+                        <pre><code># CPU profiling
+go test -cpuprofile cpu.prof -bench .
+
+# Memory profiling
+go test -memprofile mem.prof -bench .
+
+# HTTP profiling endpoint
+import _ "net/http/pprof"
+
+# Profile running service
+go tool pprof http://localhost:6060/debug/pprof/profile
+
+# Trace analysis
+go test -trace trace.out</code></pre>
+                    </div>
+                </div>
+
+                <h2>Custom Builds</h2>
+                <div class="card">
+                    <div class="card-header">⚙️ Build Configuration</div>
+                    <pre><code># Custom build flags
+go build -ldflags="-X main.version=v1.0.0 -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -o servin ./cmd/servin
+
+# Static binary (no CGO)
+CGO_ENABLED=0 go build -a -installsuffix cgo -o servin-static ./cmd/servin
+
+# Minimal binary
+go build -ldflags="-s -w" -o servin-minimal ./cmd/servin
+
+# Cross-compilation
+GOOS=linux GOARCH=amd64 go build -o servin-linux-amd64 ./cmd/servin
+GOOS=windows GOARCH=amd64 go build -o servin-windows-amd64.exe ./cmd/servin
+GOOS=darwin GOARCH=amd64 go build -o servin-darwin-amd64 ./cmd/servin</code></pre>
+                </div>
+            </section>
+
+            <!-- Development Section -->
+            <section id="development" class="content-section">
+                <h1>⚡ Advanced Development</h1>
+
+                <h2>Architecture Overview</h2>
+                <div class="card">
+                    <div class="card-header">🏗️ System Architecture</div>
+                    <div class="architecture-diagram">
+┌─────────────────────────────────────────────────────────────┐
+│                    Servin Architecture                      │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │    CLI      │  │    TUI      │  │    GUI      │         │
+│  │  Command    │  │  Terminal   │  │  Desktop    │         │
+│  │  Interface  │  │ Interface   │  │ Interface   │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+│         │                 │                 │              │
+│         └─────────────────┼─────────────────┘              │
+│                           │                                │
+│  ┌─────────────────────────┼─────────────────────────────┐  │
+│  │              REST API Server                        │  │
+│  │          ┌─────────────┴─────────────┐               │  │
+│  │          │     HTTP/WebSocket        │               │  │
+│  │          │      JSON/Protocol        │               │  │
+│  │          │        Buffers            │               │  │
+│  │          └───────────────────────────┘               │  │
+│  └─────────────────────────────────────────────────────────┘  │
+│                           │                                │
+│  ┌─────────────────────────┼─────────────────────────────┐  │
+│  │            Core Runtime Engine                      │  │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │  │
+│  │  │ Container   │ │   Image     │ │   Volume    │   │  │
+│  │  │  Manager    │ │  Manager    │ │  Manager    │   │  │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘   │  │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │  │
+│  │  │  Network    │ │ Registry    │ │   Event     │   │  │
+│  │  │  Manager    │ │  Manager    │ │  Manager    │   │  │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘   │  │
+│  └─────────────────────────────────────────────────────────┘  │
+│                           │                                │
+│  ┌─────────────────────────┼─────────────────────────────┐  │
+│  │              CRI Implementation                     │  │
+│  │          ┌─────────────┴─────────────┐               │  │
+│  │          │   Runtime Service         │               │  │
+│  │          │   Image Service           │               │  │
+│  │          │   gRPC Server             │               │  │
+│  │          └───────────────────────────┘               │  │
+│  └─────────────────────────────────────────────────────────┘  │
+│                           │                                │
+│  ┌─────────────────────────┼─────────────────────────────┐  │
+│  │            Storage and Runtime Layer                │  │
+│  │          ┌─────────────┴─────────────┐               │  │
+│  │          │     Container Runtime     │               │  │
+│  │          │     (runc, crun, etc.)    │               │  │
+│  │          │                           │               │  │
+│  │          │    Filesystem Storage     │               │  │
+│  │          │    Registry Integration   │               │  │
+│  │          └───────────────────────────┘               │  │
+│  └─────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                    </div>
+                </div>
+
+                <h2>Core Components</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🏗️ Runtime Engine</div>
+                        <ul>
+                            <li><strong>Container Manager</strong> - Lifecycle management</li>
+                            <li><strong>Image Manager</strong> - Image operations and storage</li>
+                            <li><strong>Volume Manager</strong> - Persistent storage</li>
+                            <li><strong>Network Manager</strong> - Network configuration</li>
+                            <li><strong>Registry Manager</strong> - Registry operations</li>
+                            <li><strong>Event Manager</strong> - Event publishing and subscription</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔌 API Layer</div>
+                        <ul>
+                            <li><strong>REST API</strong> - HTTP/JSON interface</li>
+                            <li><strong>WebSocket API</strong> - Real-time events</li>
+                            <li><strong>CRI gRPC</strong> - Kubernetes integration</li>
+                            <li><strong>Authentication</strong> - Token-based auth</li>
+                            <li><strong>Rate Limiting</strong> - Request throttling</li>
+                            <li><strong>Middleware</strong> - Request processing chain</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🖥️ User Interfaces</div>
+                        <ul>
+                            <li><strong>CLI</strong> - Command-line interface</li>
+                            <li><strong>TUI</strong> - Terminal user interface</li>
+                            <li><strong>GUI</strong> - Desktop application (Fyne)</li>
+                            <li><strong>Web UI</strong> - Browser-based interface</li>
+                            <li><strong>API Clients</strong> - SDK and libraries</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Plugin Development</h2>
+                <div class="card">
+                    <div class="card-header">🔌 Creating Custom Plugins</div>
+                    <pre><code>// Example volume driver plugin
+package main
+
+import (
+    "context"
+    "github.com/servin/servin/pkg/plugin"
+    "github.com/servin/servin/pkg/volume"
+)
+
+type MyVolumeDriver struct {
+    name string
+}
+
+func (d *MyVolumeDriver) Name() string {
+    return d.name
+}
+
+func (d *MyVolumeDriver) Create(ctx context.Context, req *volume.CreateRequest) error {
+    // Implement volume creation logic
+    return nil
+}
+
+func (d *MyVolumeDriver) Remove(ctx context.Context, req *volume.RemoveRequest) error {
+    // Implement volume removal logic
+    return nil
+}
+
+func (d *MyVolumeDriver) Mount(ctx context.Context, req *volume.MountRequest) (*volume.MountResponse, error) {
+    // Implement volume mounting logic
+    return &volume.MountResponse{
+        Mountpoint: "/path/to/mount",
+    }, nil
+}
+
+func main() {
+    driver := &MyVolumeDriver{name: "myvolume"}
+    plugin.RegisterVolumeDriver(driver)
+    plugin.Serve()
+}</code></pre>
+                </div>
+
+                <h2>Testing Framework</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🧪 Unit Testing</div>
+                        <pre><code>// Example unit test
+package container
+
+import (
+    "context"
+    "testing"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/mock"
+)
+
+func TestContainerManager_Create(t *testing.T) {
+    // Setup
+    mockRuntime := new(MockRuntime)
+    manager := NewContainerManager(mockRuntime)
+    
+    // Configure mock
+    mockRuntime.On("Create", mock.Anything, mock.Anything).Return(nil)
+    
+    // Execute
+    req := &CreateRequest{
+        Image: "nginx:latest",
+        Name:  "test-container",
+    }
+    
+    container, err := manager.Create(context.Background(), req)
+    
+    // Assert
+    assert.NoError(t, err)
+    assert.NotNil(t, container)
+    assert.Equal(t, "test-container", container.Name)
+    mockRuntime.AssertExpectations(t)
+}</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔄 Integration Testing</div>
+                        <pre><code>// Example integration test
+func TestContainerLifecycle(t *testing.T) {
+    // Setup test environment
+    testEnv := NewTestEnvironment(t)
+    defer testEnv.Cleanup()
+    
+    client := testEnv.Client()
+    
+    // Test container creation
+    container, err := client.ContainerCreate(context.Background(), &ContainerConfig{
+        Image: "alpine:latest",
+        Cmd:   []string{"echo", "hello"},
+    })
+    require.NoError(t, err)
+    
+    // Test container start
+    err = client.ContainerStart(context.Background(), container.ID)
+    require.NoError(t, err)
+    
+    // Wait for completion
+    statusCh, errCh := client.ContainerWait(context.Background(), container.ID)
+    select {
+    case status := <-statusCh:
+        assert.Equal(t, int64(0), status.StatusCode)
+    case err := <-errCh:
+        t.Fatalf("Container wait failed: %v", err)
+    }
+    
+    // Cleanup
+    err = client.ContainerRemove(context.Background(), container.ID)
+    require.NoError(t, err)
+}</code></pre>
+                    </div>
+                </div>
+
+                <h2>Performance Optimization</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">⚡ Optimization Strategies</div>
+                        <ul>
+                            <li><strong>Connection pooling</strong> - Reuse HTTP connections</li>
+                            <li><strong>Caching layers</strong> - Image and metadata caching</li>
+                            <li><strong>Concurrent operations</strong> - Parallel image pulls</li>
+                            <li><strong>Memory management</strong> - Efficient garbage collection</li>
+                            <li><strong>I/O optimization</strong> - Async file operations</li>
+                            <li><strong>Container sharing</strong> - Layer deduplication</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔍 Profiling and Benchmarks</div>
+                        <pre><code>// Benchmark example
+func BenchmarkContainerCreate(b *testing.B) {
+    manager := setupBenchmarkManager()
+    
+    b.ResetTimer()
+    for i := 0; i < b.N; i++ {
+        req := &CreateRequest{
+            Image: "alpine:latest",
+            Name:  fmt.Sprintf("bench-container-%d", i),
+        }
+        
+        container, err := manager.Create(context.Background(), req)
+        if err != nil {
+            b.Fatal(err)
+        }
+        
+        // Cleanup
+        manager.Remove(context.Background(), container.ID)
+    }
+}
+
+// Memory usage tracking
+func trackMemoryUsage() {
+    var m runtime.MemStats
+    runtime.ReadMemStats(&m)
+    log.Printf("Alloc = %d KB", bToKb(m.Alloc))
+    log.Printf("Sys = %d KB", bToKb(m.Sys))
+    log.Printf("NumGC = %d", m.NumGC)
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contributing Section -->
+            <section id="contributing" class="content-section">
+                <h1>🤝 Contributing to Servin</h1>
+
+                <h2>Welcome Contributors!</h2>
+                <div class="card">
+                    <div class="card-header">🎯 How to Contribute</div>
+                    <p>We welcome contributions from developers of all skill levels! Whether you're fixing bugs, adding features, improving documentation, or helping with testing, your contributions make Servin better for everyone.</p>
+                </div>
+
+                <h2>Getting Started</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">🚀 First Steps</div>
+                        <ol>
+                            <li><strong>Fork the repository</strong> on GitHub</li>
+                            <li><strong>Clone your fork</strong> locally</li>
+                            <li><strong>Set up development environment</strong> (see Building section)</li>
+                            <li><strong>Choose an issue</strong> from our issue tracker</li>
+                            <li><strong>Create a feature branch</strong></li>
+                            <li><strong>Make your changes</strong></li>
+                            <li><strong>Submit a pull request</strong></li>
+                        </ol>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">💡 Good First Issues</div>
+                        <ul>
+                            <li><strong>Documentation improvements</strong> - Fix typos, add examples</li>
+                            <li><strong>Unit test coverage</strong> - Add missing test cases</li>
+                            <li><strong>CLI help text</strong> - Improve command descriptions</li>
+                            <li><strong>Error messages</strong> - Make errors more user-friendly</li>
+                            <li><strong>Code cleanup</strong> - Remove unused code, improve naming</li>
+                            <li><strong>Example applications</strong> - Create demo projects</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Development Workflow</h2>
+                <div class="card">
+                    <div class="card-header">🔄 Contribution Process</div>
+                    <pre><code># 1. Fork and clone
+git clone https://github.com/YOUR_USERNAME/servin.git
+cd servin
+
+# 2. Add upstream remote
+git remote add upstream https://github.com/servin/servin.git
+
+# 3. Create feature branch
+git checkout -b feature/amazing-feature
+
+# 4. Make changes and commit
+git add .
+git commit -m "feat: add amazing feature"
+
+# 5. Keep your branch updated
+git fetch upstream
+git rebase upstream/main
+
+# 6. Push and create PR
+git push origin feature/amazing-feature
+
+# 7. Create Pull Request on GitHub</code></pre>
+                </div>
+
+                <h2>Code Standards</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">✨ Go Style Guide</div>
+                        <ul>
+                            <li><strong>gofmt</strong> - Standard formatting</li>
+                            <li><strong>golint</strong> - Follow lint suggestions</li>
+                            <li><strong>go vet</strong> - Pass static analysis</li>
+                            <li><strong>Variable naming</strong> - Use camelCase</li>
+                            <li><strong>Package naming</strong> - Short, lowercase</li>
+                            <li><strong>Comments</strong> - Document public APIs</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🧪 Testing Requirements</div>
+                        <ul>
+                            <li><strong>Unit tests</strong> - Test all new functions</li>
+                            <li><strong>Integration tests</strong> - End-to-end scenarios</li>
+                            <li><strong>Table-driven tests</strong> - Multiple test cases</li>
+                            <li><strong>Mock dependencies</strong> - Isolate components</li>
+                            <li><strong>Test coverage</strong> - Maintain >80% coverage</li>
+                            <li><strong>Benchmark tests</strong> - Performance critical code</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">📝 Commit Messages</div>
+                        <pre><code># Format: type(scope): description
+
+feat(api): add container pause endpoint
+fix(cli): resolve volume mount parsing
+docs(readme): update installation guide
+test(runtime): add container lifecycle tests
+refactor(image): improve layer caching
+perf(network): optimize bridge creation
+
+# Types: feat, fix, docs, style, refactor, 
+#        test, chore, perf, ci, build</code></pre>
+                    </div>
+                </div>
+
+                <h2>Pull Request Guidelines</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📋 PR Checklist</div>
+                        <ul>
+                            <li>✅ <strong>Tests pass</strong> - All CI checks green</li>
+                            <li>✅ <strong>Code formatted</strong> - Run <code>make fmt</code></li>
+                            <li>✅ <strong>Linting clean</strong> - Run <code>make lint</code></li>
+                            <li>✅ <strong>Documentation updated</strong> - Update relevant docs</li>
+                            <li>✅ <strong>Changelog entry</strong> - Add to CHANGELOG.md</li>
+                            <li>✅ <strong>Breaking changes noted</strong> - Mark API changes</li>
+                            <li>✅ <strong>Issue linked</strong> - Reference issue number</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔍 Review Process</div>
+                        <ol>
+                            <li><strong>Automated checks</strong> - CI/CD pipeline runs</li>
+                            <li><strong>Code review</strong> - Maintainer reviews code</li>
+                            <li><strong>Feedback addressed</strong> - Make requested changes</li>
+                            <li><strong>Final approval</strong> - Maintainer approves PR</li>
+                            <li><strong>Merge</strong> - PR merged to main branch</li>
+                            <li><strong>Release</strong> - Changes included in next release</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h2>Community Guidelines</h2>
+                <div class="card">
+                    <div class="card-header">🌟 Code of Conduct</div>
+                    <div class="grid grid-2">
+                        <div>
+                            <h4>Our Values</h4>
+                            <ul>
+                                <li><strong>Respect</strong> - Treat everyone with dignity</li>
+                                <li><strong>Inclusivity</strong> - Welcome all backgrounds</li>
+                                <li><strong>Collaboration</strong> - Work together constructively</li>
+                                <li><strong>Learning</strong> - Help others grow and learn</li>
+                                <li><strong>Quality</strong> - Strive for excellence</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Communication Channels</h4>
+                            <ul>
+                                <li><strong>GitHub Issues</strong> - Bug reports and feature requests</li>
+                                <li><strong>GitHub Discussions</strong> - General questions and ideas</li>
+                                <li><strong>Discord Server</strong> - Real-time chat and support</li>
+                                <li><strong>Mailing List</strong> - Development announcements</li>
+                                <li><strong>Stack Overflow</strong> - Tag questions with "servin"</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Recognition</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🏆 Contributors</div>
+                        <p>All contributors are recognized in:</p>
+                        <ul>
+                            <li>CONTRIBUTORS.md file</li>
+                            <li>Release notes</li>
+                            <li>Annual contributor report</li>
+                            <li>Social media shoutouts</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🎖️ Maintainer Path</div>
+                        <p>Active contributors can become maintainers:</p>
+                        <ul>
+                            <li>Consistent quality contributions</li>
+                            <li>Help with issue triage</li>
+                            <li>Code review participation</li>
+                            <li>Community engagement</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🎁 Swag and Rewards</div>
+                        <p>Regular contributors receive:</p>
+                        <ul>
+                            <li>Servin stickers and t-shirts</li>
+                            <li>Conference speaker opportunities</li>
+                            <li>Access to maintainer channels</li>
+                            <li>Special contributor badges</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FAQ Section -->
+            <section id="faq" class="content-section">
+                <h1>❓ Frequently Asked Questions</h1>
+
+                <div class="card">
+                    <h3>Q: Is Servin compatible with Docker?</h3>
+                    <p>Yes! Servin provides Docker-compatible APIs and command-line interface. You can use most Docker commands directly with Servin, making migration seamless.</p>
+                </div>
+
+                <div class="card">
+                    <h3>Q: Can I use Servin with Kubernetes?</h3>
+                    <p>Absolutely! Servin implements the Container Runtime Interface (CRI) v1alpha2, making it fully compatible with Kubernetes clusters as a container runtime.</p>
+                </div>
+
+                <div class="card">
+                    <h3>Q: What platforms does Servin support?</h3>
+                    <p>Servin supports Windows 10+, Linux (Ubuntu, CentOS, Debian, Fedora, Arch), and macOS 10.12+. We provide native installers for all platforms.</p>
+                </div>
+
+                <div class="card">
+                    <h3>Q: How do I migrate from Docker to Servin?</h3>
+                    <p>Migration is straightforward:</p>
+                    <ol>
+                        <li>Install Servin using the installer wizard</li>
+                        <li>Export your Docker images: <code>docker save</code></li>
+                        <li>Import to Servin: <code>servin images load</code></li>
+                        <li>Update your scripts to use <code>servin</code> instead of <code>docker</code></li>
+                    </ol>
+                </div>
+
+                <div class="card">
+                    <h3>Q: Does Servin support Docker Compose?</h3>
+                    <p>Docker Compose support is planned for a future release. Currently, you can use Servin with individual container commands or Kubernetes manifests.</p>
+                </div>
+
+                <div class="card">
+                    <h3>Q: How do I backup my containers and images?</h3>
+                    <p>Use these commands:</p>
+                    <pre><code># Backup images
+servin images save -o backup.tar image1:tag image2:tag
+
+# Export container
+servin containers export container_id > container_backup.tar
+
+# Save volumes (copy data directories)
+cp -r /var/lib/servin/volumes/myvolume/_data /backup/</code></pre>
+                </div>
+            </section>
+
+            <!-- Resources Section -->
+            <section id="resources" class="content-section">
+                <h1>📚 Resources</h1>
+
+                <h2>Documentation</h2>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">📖 User Guides</div>
+                        <ul>
+                            <li><a href="#installation">Installation Guide</a></li>
+                            <li><a href="#quick-start">Quick Start Tutorial</a></li>
+                            <li><a href="#cli">CLI Reference</a></li>
+                            <li><a href="#gui">Desktop GUI Guide</a></li>
+                            <li><a href="#configuration">Configuration Reference</a></li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🔧 Technical Docs</div>
+                        <ul>
+                            <li><a href="#api">API Reference</a></li>
+                            <li><a href="#cri">CRI Implementation</a></li>
+                            <li><a href="#architecture">Architecture Guide</a></li>
+                            <li><a href="#development">Development Guide</a></li>
+                            <li><a href="#contributing">Contributing Guide</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Community & Support</h2>
+                <div class="grid grid-4">
+                    <div class="feature-box">
+                        <div class="feature-icon">🐙</div>
+                        <h4>GitHub</h4>
+                        <p>Source code, issues, and discussions</p>
+                        <a href="https://github.com/yourusername/servin">Repository</a>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">💬</div>
+                        <h4>Discord</h4>
+                        <p>Real-time community chat</p>
+                        <a href="#">Join Server</a>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">📚</div>
+                        <h4>Stack Overflow</h4>
+                        <p>Technical Q&A</p>
+                        <a href="#">Tag: servin-runtime</a>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">📧</div>
+                        <h4>Mailing List</h4>
+                        <p>Announcements and updates</p>
+                        <a href="#">Subscribe</a>
+                    </div>
+                </div>
+
+                <h2>Tools & Integrations</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">🔧 Development Tools</div>
+                        <ul>
+                            <li><strong>crictl</strong> - CRI debugging tool</li>
+                            <li><strong>kubectl</strong> - Kubernetes command line</li>
+                            <li><strong>Go toolchain</strong> - For building from source</li>
+                            <li><strong>NSIS</strong> - Windows installer creation</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">☸️ Kubernetes Integration</div>
+                        <ul>
+                            <li><strong>kubelet</strong> - Node agent integration</li>
+                            <li><strong>CNI plugins</strong> - Network integration</li>
+                            <li><strong>CSI drivers</strong> - Storage integration</li>
+                            <li><strong>kubeadm</strong> - Cluster bootstrapping</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">🎯 Future Integrations</div>
+                        <ul>
+                            <li><strong>Docker Compose</strong> - Multi-container apps</li>
+                            <li><strong>Portainer</strong> - Web-based management</li>
+                            <li><strong>Prometheus</strong> - Metrics collection</li>
+                            <li><strong>Grafana</strong> - Monitoring dashboards</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>License & Legal</h2>
+                <div class="card">
+                    <div class="card-header">📄 Apache License 2.0</div>
+                    <p>Servin Container Runtime is licensed under the Apache License 2.0. This allows you to:</p>
+                    <ul>
+                        <li>✅ Use commercially</li>
+                        <li>✅ Modify and distribute</li>
+                        <li>✅ Use in private projects</li>
+                        <li>✅ Use patent grants</li>
+                    </ul>
+                    <p>See the <a href="LICENSE">LICENSE</a> file for complete terms.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scroll to top button -->
+    <button class="scroll-top" id="scrollTop">↑</button>
+
+    <script>
+        // Navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            const sections = document.querySelectorAll('.content-section');
+            const searchInput = document.getElementById('searchInput');
+            const scrollTopBtn = document.getElementById('scrollTop');
+
+            // Navigation click handler
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all nav items and sections
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    sections.forEach(section => section.classList.remove('active'));
+                    
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Show corresponding section
+                    const sectionId = this.getAttribute('data-section');
+                    const targetSection = document.getElementById(sectionId);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                    }
+                    
+                    // Scroll to top of content
+                    document.querySelector('.main-content').scrollTop = 0;
+                });
+            });
+
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                navItems.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+
+            // Scroll to top functionality
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    scrollTopBtn.classList.add('visible');
+                } else {
+                    scrollTopBtn.classList.remove('visible');
+                }
+            });
+
+            scrollTopBtn.addEventListener('click', function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+
+            // Add copy buttons to code blocks
+            document.querySelectorAll('pre').forEach(pre => {
+                const button = document.createElement('button');
+                button.innerText = 'Copy';
+                button.style.cssText = `
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    background: var(--primary-color);
+                    color: white;
+                    border: none;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 0.75rem;
+                    cursor: pointer;
+                    opacity: 0;
+                    transition: opacity 0.2s ease;
+                `;
+                
+                pre.style.position = 'relative';
+                pre.appendChild(button);
+                
+                pre.addEventListener('mouseenter', () => button.style.opacity = '1');
+                pre.addEventListener('mouseleave', () => button.style.opacity = '0');
+                
+                button.addEventListener('click', () => {
+                    const code = pre.querySelector('code');
+                    navigator.clipboard.writeText(code.textContent).then(() => {
+                        button.innerText = 'Copied!';
+                        setTimeout(() => button.innerText = 'Copy', 2000);
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

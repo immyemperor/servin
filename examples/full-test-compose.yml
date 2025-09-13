@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  test-app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DEBUG=true
+    labels:
+      - "app.type=web"
+      - "app.version=1.0"
+    volumes:
+      - ./app:/app
+    networks:
+      - app-network
+
+volumes:
+  app-data:
+    driver: local
+    labels:
+      - "volume.type=data"
+
+networks:
+  app-network:
+    driver: bridge
+    labels:
+      - "network.type=internal"
