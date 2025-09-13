@@ -29,11 +29,26 @@ class ServinMacInstaller:
         except:
             pass
         
+        # Platform detection and build directory setup
+        self.script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.project_root = os.path.dirname(os.path.dirname(self.script_dir))
+        
+        # Detect platform (Apple Silicon vs Intel)
+        import platform
+        machine = platform.machine()
+        if machine == "arm64":
+            self.platform = "darwin-arm64"
+        else:
+            self.platform = "darwin-amd64"
+        
+        self.build_dir = os.path.join(self.project_root, "build", self.platform)
+        
         # Installation variables
         self.install_dir = tk.StringVar(value="/usr/local/bin")
         self.data_dir = tk.StringVar(value="/usr/local/var/lib/servin")
         self.config_dir = tk.StringVar(value="/usr/local/etc/servin")
         self.install_gui = tk.BooleanVar(value=True)
+        self.install_tui = tk.BooleanVar(value=True)
         self.install_service = tk.BooleanVar(value=True)
         self.create_app_bundle = tk.BooleanVar(value=True)
         
@@ -287,14 +302,17 @@ merchantability, fitness for a particular purpose and noninfringement."""
         ttk.Checkbutton(standard_frame, text="Core Runtime (required)", 
                        state=tk.DISABLED, variable=tk.BooleanVar(value=True)).grid(row=0, column=0, sticky=tk.W, pady=3)
         
+        ttk.Checkbutton(standard_frame, text="Terminal UI Application (TUI)", 
+                       variable=self.install_tui).grid(row=1, column=0, sticky=tk.W, pady=3)
+        
         ttk.Checkbutton(standard_frame, text="Desktop GUI Application", 
-                       variable=self.install_gui).grid(row=1, column=0, sticky=tk.W, pady=3)
+                       variable=self.install_gui).grid(row=2, column=0, sticky=tk.W, pady=3)
         
         ttk.Checkbutton(standard_frame, text="Background Service (launchd)", 
-                       variable=self.install_service).grid(row=2, column=0, sticky=tk.W, pady=3)
+                       variable=self.install_service).grid(row=3, column=0, sticky=tk.W, pady=3)
         
         ttk.Checkbutton(standard_frame, text="Create Application Bundle", 
-                       variable=self.create_app_bundle).grid(row=3, column=0, sticky=tk.W, pady=3)
+                       variable=self.create_app_bundle).grid(row=4, column=0, sticky=tk.W, pady=3)
         
         # Advanced options
         advanced_frame = ttk.LabelFrame(page, text="Advanced Options", padding="15")
@@ -452,14 +470,23 @@ merchantability, fitness for a particular purpose and noninfringement."""
     
     def update_summary(self):
         components = []
+        if self.install_tui.get():
+            components.append("Terminal UI Application (servin-desktop)")
         if self.install_gui.get():
-            components.append("Desktop GUI Application")
+            components.append("Desktop GUI Application (servin-gui)")
         if self.install_service.get():
             components.append("Background Service (launchd)")
         if self.create_app_bundle.get():
             components.append("Application Bundle")
         
+        # Check if build directory exists
+        build_status = "✓ Available" if os.path.exists(self.build_dir) else "✗ Not Found"
+        
         summary = f"""Installation Configuration:
+
+Platform: {self.platform}
+Build Directory: {self.build_dir}
+Build Status: {build_status}
 
 Installation Directory: {self.install_dir.get()}
 Data Directory: {self.data_dir.get()}
@@ -474,10 +501,13 @@ Components to Install:
         
         if self.create_user.get():
             summary += "\nAdvanced Options:\n• Create system user '_servin'\n"
-        if self.add_to_path.get():
+        if hasattr(self, 'add_to_path') and self.add_to_path.get():
             summary += "• Add to PATH environment\n"
-        if self.install_cli_tools.get():
+        if hasattr(self, 'install_cli_tools') and self.install_cli_tools.get():
             summary += "• Install command-line tools\n"
+        
+        if not os.path.exists(self.build_dir):
+            summary += "\n⚠️  WARNING: Build directory not found!\nPlease run './build-local.sh' from the project root first.\n"
         
         summary += "\nClick 'Install' to begin the installation process."
         
@@ -543,21 +573,45 @@ Components to Install:
             
             # Install binaries
             self.status_label.configure(text="Installing binaries...")
-            script_dir = os.path.dirname(os.path.abspath(__file__))
             
-            binaries = ["servin"]
-            if self.install_gui.get():
-                binaries.append("servin-gui")
+            # Check if build directory exists
+            if not os.path.exists(self.build_dir):
+                raise Exception(f"Build directory not found: {self.build_dir}\nPlease run './build-local.sh' from the project root first.")
             
-            for binary in binaries:
-                src = os.path.join(script_dir, binary)
-                dst = os.path.join(self.install_dir.get(), binary)
-                if os.path.exists(src):
-                    shutil.copy2(src, dst)
-                    os.chmod(dst, 0o755)
-                    self.log_message(f"📦 Installed: {binary}")
+            self.log_message(f"🔍 Using build directory: {self.build_dir}")
+            self.log_message(f"📱 Detected platform: {self.platform}")
+            
+            # Install main runtime binary
+            servin_src = os.path.join(self.build_dir, "servin")
+            if os.path.exists(servin_src):
+                servin_dst = os.path.join(self.install_dir.get(), "servin")
+                shutil.copy2(servin_src, servin_dst)
+                os.chmod(servin_dst, 0o755)
+                self.log_message(f"📦 Installed: servin (CLI runtime)")
+            else:
+                raise Exception(f"Main servin binary not found: {servin_src}")
+            
+            # Install TUI binary if available
+            if self.install_tui.get():
+                tui_src = os.path.join(self.build_dir, "servin-desktop")
+                if os.path.exists(tui_src):
+                    tui_dst = os.path.join(self.install_dir.get(), "servin-desktop")
+                    shutil.copy2(tui_src, tui_dst)
+                    os.chmod(tui_dst, 0o755)
+                    self.log_message(f"📦 Installed: servin-desktop (Terminal UI)")
                 else:
-                    self.log_message(f"⚠️  Warning: {binary} not found in installer package")
+                    self.log_message(f"⚠️  Warning: servin-desktop not found, skipping TUI installation")
+            
+            # Install GUI binary if requested
+            if self.install_gui.get():
+                gui_src = os.path.join(self.build_dir, "servin-gui")
+                if os.path.exists(gui_src):
+                    gui_dst = os.path.join(self.install_dir.get(), "servin-gui")
+                    shutil.copy2(gui_src, gui_dst)
+                    os.chmod(gui_dst, 0o755)
+                    self.log_message(f"📦 Installed: servin-gui (Graphical UI)")
+                else:
+                    self.log_message(f"⚠️  Warning: servin-gui not found, skipping GUI installation")
             
             # Create configuration
             self.status_label.configure(text="Creating configuration...")
@@ -710,6 +764,8 @@ enable_notifications=true"""
     def update_success_page(self):
         components = ["Core Runtime (servin)"]
         
+        if self.install_tui.get():
+            components.append("Terminal User Interface (TUI)")
         if self.install_gui.get():
             components.append("Desktop GUI Application")
         if self.install_service.get():

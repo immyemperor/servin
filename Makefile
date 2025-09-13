@@ -19,7 +19,7 @@ else
     GUI_BINARY_EXT=
 endif
 
-.PHONY: build build-tui build-gui build-all clean test help install run-tui
+.PHONY: build build-tui build-gui build-all build-local build-cross clean test help install run-tui
 
 # Default target
 all: build build-tui
@@ -40,6 +40,16 @@ build-gui:
 	go get fyne.io/fyne/v2/app
 	go get fyne.io/fyne/v2/widget
 	go build $(LDFLAGS) -o $(GUI_BINARY)$(GUI_BINARY_EXT) ./cmd/servin-gui
+
+# Build all components to build/ directory
+build-local:
+	@echo "Building all components to build/ directory..."
+	./build-local.sh
+
+# Cross-platform build
+build-cross:
+	@echo "Building for all supported platforms..."
+	./build-cross.sh --all
 
 # Build all components
 build-all: build build-tui build-gui
