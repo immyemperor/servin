@@ -1,6 +1,5 @@
 #!/bin/bash
 # Servin Container Runtime - macOS Installer Script
-# Updated for platform-organized build system
 
 set -e
 
@@ -12,19 +11,6 @@ LOG_DIR="/usr/local/var/log/servin"
 LAUNCHD_DIR="/Library/LaunchDaemons"
 SERVICE_NAME="com.servin.runtime"
 USER="_servin"
-
-# Build system configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-PLATFORM="darwin-$(uname -m)"
-BUILD_DIR="$PROJECT_ROOT/build/$PLATFORM"
-
-# Check for Apple Silicon vs Intel
-if [[ "$(uname -m)" == "arm64" ]]; then
-    PLATFORM="darwin-arm64"
-else
-    PLATFORM="darwin-amd64"
-fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -121,106 +107,24 @@ create_directories() {
 }
 
 install_binaries() {
-    print_info "Installing binaries from platform build directory..."
+    print_info "Installing binaries..."
     
-    # Check if platform build directory exists
-    if [[ ! -d "$BUILD_DIR" ]]; then
-        print_error "Platform build directory not found: $BUILD_DIR"
-        print_info "Please run './build-local.sh' from the project root first"
+    # Check if binaries exist in current directory
+    if [[ ! -f "servin" ]]; then
+        print_error "servin binary not found in current directory"
         exit 1
     fi
     
-    # Check for required binaries
-    if [[ ! -f "$BUILD_DIR/servin" ]]; then
-        print_error "servin binary not found in $BUILD_DIR"
-        print_info "Please run './build-local.sh' from the project root first"
-        exit 1
-    fi
-    
-    print_info "Installing from: $BUILD_DIR"
-    
-    # Install main runtime binary
-    cp "$BUILD_DIR/servin" "$INSTALL_DIR/"
+    # Copy binaries
+    cp servin "$INSTALL_DIR/"
     chmod 755 "$INSTALL_DIR/servin"
     print_success "  Installed: $INSTALL_DIR/servin"
     
-    # Install TUI binary if available
-    if [[ -f "$BUILD_DIR/servin-desktop" ]]; then
-        cp "$BUILD_DIR/servin-desktop" "$INSTALL_DIR/"
-        chmod 755 "$INSTALL_DIR/servin-desktop"
-        print_success "  Installed: $INSTALL_DIR/servin-desktop"
-    fi
-    
-    # Install GUI binary if available
-    if [[ -f "$BUILD_DIR/servin-gui" ]]; then
-        cp "$BUILD_DIR/servin-gui" "$INSTALL_DIR/"
+    if [[ -f "servin-gui" ]]; then
+        cp servin-gui "$INSTALL_DIR/"
         chmod 755 "$INSTALL_DIR/servin-gui"
         print_success "  Installed: $INSTALL_DIR/servin-gui"
-        
-        # Create macOS App Bundle for GUI
-        create_app_bundle
     fi
-}
-
-create_app_bundle() {
-    print_info "Creating macOS App Bundle for Servin GUI..."
-    
-    local app_name="Servin Container Runtime"
-    local app_dir="/Applications/${app_name}.app"
-    local contents_dir="$app_dir/Contents"
-    local macos_dir="$contents_dir/MacOS"
-    local resources_dir="$contents_dir/Resources"
-    
-    # Create app bundle structure
-    mkdir -p "$macos_dir"
-    mkdir -p "$resources_dir"
-    
-    # Copy GUI binary to app bundle
-    cp "$BUILD_DIR/servin-gui" "$macos_dir/ServinGUI"
-    chmod 755 "$macos_dir/ServinGUI"
-    
-    # Create Info.plist
-    cat > "$contents_dir/Info.plist" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>ServinGUI</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.servin.gui</string>
-    <key>CFBundleName</key>
-    <string>${app_name}</string>
-    <key>CFBundleDisplayName</key>
-    <string>${app_name}</string>
-    <key>CFBundleVersion</key>
-    <string>1.0.0</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleSignature</key>
-    <string>SRVN</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>10.12</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>NSRequiresAquaSystemAppearance</key>
-    <false/>
-</dict>
-</plist>
-EOF
-    
-    # Create app icon if available
-    if [[ -f "$PROJECT_ROOT/icons/tool_icon.png" ]]; then
-        cp "$PROJECT_ROOT/icons/tool_icon.png" "$resources_dir/AppIcon.png"
-    fi
-    
-    # Set permissions
-    chown -R root:wheel "$app_dir"
-    chmod -R 755 "$app_dir"
-    
-    print_success "  Created: $app_dir"
 }
 
 create_config() {
@@ -314,7 +218,63 @@ EOF
     print_success "  Created and loaded launchd service"
 }
 
-# App bundle creation is handled in install_binaries function above
+create_app_bundle() {
+    print_info "Creating application bundle..."
+    
+    if [[ ! -f "$INSTALL_DIR/servin-gui" ]]; then
+        print_warning "  servin-gui not found, skipping app bundle creation"
+        return
+    fi
+    
+    local app_dir="/Applications/Servin GUI.app"
+    local contents_dir="$app_dir/Contents"
+    local macos_dir="$contents_dir/MacOS"
+    local resources_dir="$contents_dir/Resources"
+    
+    # Create directory structure
+    mkdir -p "$macos_dir" "$resources_dir"
+    
+    # Copy executable
+    cp "$INSTALL_DIR/servin-gui" "$macos_dir/Servin GUI"
+    chmod +x "$macos_dir/Servin GUI"
+    
+    # Create Info.plist
+    cat > "$contents_dir/Info.plist" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>Servin GUI</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.servin.gui</string>
+    <key>CFBundleName</key>
+    <string>Servin GUI</string>
+    <key>CFBundleDisplayName</key>
+    <string>Servin GUI</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleSignature</key>
+    <string>SERV</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.12</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.developer-tools</string>
+</dict>
+</plist>
+EOF
+    
+    # Create a simple icon (ASCII art in icns format would be complex, so we'll skip for now)
+    # In production, you'd want to include a proper .icns file
+    
+    print_success "  Created application bundle: $app_dir"
+}
 
 create_uninstaller() {
     print_info "Creating uninstaller..."
@@ -351,9 +311,6 @@ EOF
 main() {
     print_header
     
-    print_info "Detected platform: $PLATFORM"
-    print_info "Build directory: $BUILD_DIR"
-    
     check_root
     check_macos
     
@@ -362,6 +319,7 @@ main() {
     install_binaries
     create_config
     create_launchd_service
+    create_app_bundle
     create_uninstaller
     
     echo ""
@@ -377,25 +335,9 @@ main() {
     echo "1. Service is already running (started automatically)"
     echo "2. Check status: sudo launchctl list | grep servin"
     echo "3. View logs: tail -f $LOG_DIR/servin.log"
-    echo "4. Use CLI: servin --help"
-    
-    if [[ -f "$INSTALL_DIR/servin-desktop" ]]; then
-        echo "5. Use TUI: servin-desktop"
-    fi
-    
     if [[ -f "$INSTALL_DIR/servin-gui" ]]; then
-        echo "6. Use GUI: Open 'Servin Container Runtime' from Applications folder"
+        echo "4. Use GUI: Open 'Servin GUI' from Applications folder"
         echo "   Or run: servin-gui"
-    fi
-    
-    echo ""
-    print_info "Installed binaries:"
-    echo "  • servin (CLI runtime)"
-    if [[ -f "$INSTALL_DIR/servin-desktop" ]]; then
-        echo "  • servin-desktop (Terminal UI)"
-    fi
-    if [[ -f "$INSTALL_DIR/servin-gui" ]]; then
-        echo "  • servin-gui (Graphical UI)"
     fi
     echo ""
     echo "Service will start automatically on boot."

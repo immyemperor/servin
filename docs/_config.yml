@@ -1,0 +1,86 @@
+# Jekyll Configuration for Servin Documentation
+title: "Servin Container Runtime"
+description: "A Docker-compatible container runtime with Kubernetes CRI support and professional desktop interface"
+url: "https://immyemperor.github.io"
+baseurl: "/servin"
+
+# GitHub Pages settings
+github:
+  repository_url: "https://github.com/immyemperor/servin"
+  repository_name: "servin"
+  owner_name: "immyemperor"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+# Plugin settings
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Kramdown settings
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false
+
+# Collections
+collections:
+  pages:
+    output: true
+    permalink: /:name/
+
+# Navigation
+nav_order:
+  - Overview
+  - Architecture
+  - Features
+  - Installation
+  - Configuration
+  - Quick Start
+  - CLI
+  - TUI
+  - GUI
+  - Containers
+  - Images
+  - Volumes
+  - Registry
+  - CRI
+  - API
+  - Monitoring
+  - Building
+  - Development
+  - Contributing
+  - Troubleshooting
+  - FAQ
+  - Resources
+
+# Default layout
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+
+# Include
+include:
+  - _pages

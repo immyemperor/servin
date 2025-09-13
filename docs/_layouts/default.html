@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+
+{%- include head.html -%}
+
+<body>
+  {%- include header.html -%}
+
+  <div class="page-wrapper">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h2>🚀 Servin Runtime</h2>
+        <p class="version">v1.0.0</p>
+      </div>
+      
+      <div class="sidebar-search">
+        <input type="text" id="search-input" placeholder="Search docs..." />
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section">
+          <h4 class="nav-title">Overview</h4>
+          <a href="{{ '/overview' | relative_url }}" class="nav-link">Project Overview</a>
+          <a href="{{ '/architecture' | relative_url }}" class="nav-link">Architecture</a>
+          <a href="{{ '/features' | relative_url }}" class="nav-link">Features</a>
+        </div>
+
+        <div class="nav-section">
+          <h4 class="nav-title">Getting Started</h4>
+          <a href="{{ '/installation' | relative_url }}" class="nav-link">Installation</a>
+          <a href="{{ '/quick-start' | relative_url }}" class="nav-link">Quick Start</a>
+          <a href="{{ '/configuration' | relative_url }}" class="nav-link">Configuration</a>
+        </div>
+
+        <div class="nav-section">
+          <h4 class="nav-title">User Interfaces</h4>
+          <a href="{{ '/cli' | relative_url }}" class="nav-link">Command Line (CLI)</a>
+          <a href="{{ '/tui' | relative_url }}" class="nav-link">Terminal UI (TUI)</a>
+          <a href="{{ '/gui' | relative_url }}" class="nav-link">Desktop GUI</a>
+        </div>
+
+        <div class="nav-section">
+          <h4 class="nav-title">Core Features</h4>
+          <a href="{{ '/containers' | relative_url }}" class="nav-link">Container Management</a>
+          <a href="{{ '/images' | relative_url }}" class="nav-link">Image Management</a>
+          <a href="{{ '/volumes' | relative_url }}" class="nav-link">Volume Management</a>
+          <a href="{{ '/registry' | relative_url }}" class="nav-link">Registry Operations</a>
+        </div>
+
+        <div class="nav-section">
+          <h4 class="nav-title">Integration</h4>
+          <a href="{{ '/cri' | relative_url }}" class="nav-link">Kubernetes CRI</a>
+          <a href="{{ '/api' | relative_url }}" class="nav-link">API Reference</a>
+          <a href="{{ '/monitoring' | relative_url }}" class="nav-link">Logging & Monitoring</a>
+        </div>
+
+        <div class="nav-section">
+          <h4 class="nav-title">Development</h4>
+          <a href="{{ '/building' | relative_url }}" class="nav-link">Building from Source</a>
+          <a href="{{ '/development' | relative_url }}" class="nav-link">Development Guide</a>
+          <a href="{{ '/contributing' | relative_url }}" class="nav-link">Contributing</a>
+        </div>
+
+        <div class="nav-section">
+          <h4 class="nav-title">Support</h4>
+          <a href="{{ '/troubleshooting' | relative_url }}" class="nav-link">Troubleshooting</a>
+          <a href="{{ '/faq' | relative_url }}" class="nav-link">FAQ</a>
+          <a href="{{ '/resources' | relative_url }}" class="nav-link">Resources</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        {{ content }}
+      </div>
+    </main>
+  </div>
+
+  {%- include footer.html -%}
+
+  <script>
+    // Simple search functionality
+    document.getElementById('search-input').addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const navLinks = document.querySelectorAll('.nav-link');
+      
+      navLinks.forEach(link => {
+        const text = link.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+          link.style.display = 'block';
+          link.parentElement.style.display = 'block';
+        } else {
+          link.style.display = 'none';
+        }
+      });
+    });
+
+    // Add active class to current page
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+      if (link.getAttribute('href') === currentPath) {
+        link.classList.add('active');
+      }
+    });
+  </script>
+</body>
+
+</html>

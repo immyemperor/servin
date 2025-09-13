@@ -7,16 +7,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"servin/pkg/image"
-
 	"golang.org/x/sys/unix"
+	"servin/pkg/image"
 )
 
 // RootFS manages container root filesystem
 type RootFS struct {
-	ContainerID  string
-	RootPath     string
-	ImagePath    string
+	ContainerID string
+	RootPath    string
+	ImagePath   string
 	ImageManager *image.Manager
 }
 
@@ -91,6 +90,7 @@ func (r *RootFS) createBasicRootFS() error {
 
 	fmt.Printf("Created basic rootfs at %s\n", r.RootPath)
 	return nil
+}
 }
 
 // Enter enters the container's root filesystem using chroot

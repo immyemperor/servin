@@ -59,9 +59,6 @@ build_binaries() {
     # Build main servin binary
     GOOS=$platform GOARCH=$arch CGO_ENABLED=0 go build -ldflags="-w -s -X main.version=$VERSION" -o "$output_dir/servin$ext" .
     
-    # Build TUI binary (servin-desktop)
-    GOOS=$platform GOARCH=$arch CGO_ENABLED=0 go build -ldflags="-w -s -X main.version=$VERSION" -o "$output_dir/servin-desktop$ext" ./cmd/servin-desktop
-    
     # Build GUI binary (only for platforms that support it)
     if [[ "$platform" != "linux" ]] || command -v pkg-config >/dev/null 2>&1; then
         if [[ "$platform" == "windows" ]]; then

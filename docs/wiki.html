@@ -613,18 +613,8 @@
 │   ├── windows/               # NSIS-based Windows installer
 │   ├── linux/                 # Python/Tkinter Linux installer
 │   └── macos/                 # Python/Tkinter macOS installer
-├── build/                     # Development builds (platform-organized)
-│   └── darwin-arm64/          # Current platform binaries
-│       ├── servin            # Core runtime
-│       ├── servin-desktop    # TUI binary
-│       ├── servin-gui        # GUI binary
-│       └── README.md         # Platform info
-├── dist/                      # Distribution packages (production-ready)
-│   ├── servin-macos-1.0.0/   # macOS installer package
-│   │   ├── servin*           # All binaries
-│   │   ├── install.sh        # Installer script
-│   │   └── README.md         # Installation guide
-│   └── servin-macos-1.0.0.tar.gz  # Compressed package
+├── build/                     # Build artifacts
+├── dist/                      # Distribution packages
 └── docs/                      # Documentation</code></pre>
             </section>
 
@@ -797,251 +787,53 @@ sudo python3 servin-installer.py</code></pre>
                 <h2>Build Commands</h2>
                 <div class="grid grid-2">
                     <div class="card">
-                        <div class="card-header">🔨 Platform-Organized Building</div>
+                        <div class="card-header">🔨 Building Applications</div>
                         <pre><code># Clone repository
 git clone https://github.com/yourusername/servin
 cd servin
 
-# Build for current platform (recommended)
-./build-local.sh               # Creates build/&lt;platform&gt;/
-make build-local               # Alternative via Makefile
+# Build all components
+.\build.ps1                    # Windows
+./build.sh                     # Linux/macOS
 
-# Quick rebuild
-./rebuild.sh
-
-# Cross-platform building
-./build-cross.sh --all         # All supported platforms
-./build-cross.sh --current     # Current platform only
-./build-cross.sh --platform linux/amd64 --platform windows/amd64
-
-# Via Makefile
-make build-cross               # All platforms</code></pre>
+# Build specific components
+go build -o servin main.go                    # CLI
+go build -o servin-desktop cmd/servin-desktop/ # TUI
+go build -o servin-gui cmd/servin-gui/         # GUI</code></pre>
                     </div>
                     <div class="card">
-                        <div class="card-header">📦 Build Output Structure</div>
-                        <pre><code>build/
-├── README.md                  # Build documentation
-├── darwin-arm64/             # macOS Apple Silicon
-│   ├── README.md
-│   ├── servin
-│   ├── servin-desktop
-│   └── servin-gui
-├── linux-amd64/             # Linux 64-bit
-│   ├── README.md
-│   ├── servin
-│   └── servin-desktop
-└── windows-amd64/            # Windows 64-bit
-    ├── README.md
-    ├── servin.exe
-    └── servin-desktop.exe</code></pre>
-                    </div>
-                </div>
+                        <div class="card-header">📦 Building Installers</div>
+                        <pre><code># Windows NSIS installer
+.\build-installer.ps1
 
-                <h2>Supported Platforms</h2>
-                <div class="card">
-                    <div class="card-header">🌍 Cross-Platform Support</div>
-                    <div class="grid grid-3">
-                        <div>
-                            <h4>Linux</h4>
-                            <ul>
-                                <li><span class="badge badge-success">✓</span> linux/amd64 (Intel/AMD 64-bit)</li>
-                                <li><span class="badge badge-success">✓</span> linux/arm64 (ARM 64-bit)</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4>macOS</h4>
-                            <ul>
-                                <li><span class="badge badge-success">✓</span> darwin/amd64 (Intel)</li>
-                                <li><span class="badge badge-success">✓</span> darwin/arm64 (Apple Silicon)</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4>Windows</h4>
-                            <ul>
-                                <li><span class="badge badge-success">✓</span> windows/amd64 (64-bit)</li>
-                                <li><span class="badge badge-warning">⚠</span> GUI may require CGO</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+# Creates: dist\ServinSetup-1.0.0.exe
 
-                <h2>Build Output Structure</h2>
-                <div class="grid grid-2">
-                    <div class="card">
-                        <div class="card-header">🔨 Development Builds (build/)</div>
-                        <pre><code># For local development and testing
-build/
-├── darwin-arm64/          # Current platform
-│   ├── servin            # Core runtime
-│   ├── servin-desktop    # TUI binary
-│   ├── servin-gui        # GUI binary
-│   └── README.md         # Platform info
-└── README.md             # Build overview
-
-# Quick development workflow
-./build-local.sh          # Build current platform
-./build/darwin-arm64/servin --version</code></pre>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">📦 Distribution Packages (dist/)</div>
-                        <pre><code># For production deployment and distribution
-dist/
-├── servin-macos-1.0.0/   # macOS installer package
-│   ├── servin            # All binaries included
-│   ├── servin-desktop    
-│   ├── servin-gui        
-│   ├── install.sh        # Platform installer
-│   └── README.md         # Installation guide
-├── servin-macos-1.0.0.tar.gz  # Compressed package
-└── servin-linux-1.0.0/  # Linux installer package
-
-# Production deployment workflow
-./build.sh macos          # Create macOS package
-tar -xzf dist/servin-macos-1.0.0.tar.gz</code></pre>
-                    </div>
-                </div>
-
-                <h2>Legacy Build Methods</h2>
-                <div class="grid grid-2">
-                    <div class="card">
-                        <div class="card-header">📦 Distribution Packages</div>
-                        <pre><code># Original cross-platform script (now enhanced)
-./build.sh                     # All platforms
-./build.sh macos               # macOS only 
-./build.sh linux               # Linux only
-
-# Creates packages in dist/ directory
-# Includes installers and archives</code></pre>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">🔧 Direct Go Commands</div>
-                        <pre><code># Manual building (not recommended)
-go build -o servin main.go
-go build -o servin-desktop ./cmd/servin-desktop/
-go build -o servin-gui ./cmd/servin-gui/
-
-# Cross-compilation example
-GOOS=linux GOARCH=amd64 go build -o servin-linux main.go</code></pre>
-                    </div>
-                </div>
-
-                <h2>Build Scripts Reference</h2>
-                <div class="grid grid-2">
-                    <div class="card">
-                        <div class="card-header">📝 Available Build Scripts</div>
-                        <ul>
-                            <li><strong>build-local.sh</strong> - Current platform builds → build/</li>
-                            <li><strong>build.sh</strong> - Distribution packages → dist/</li>
-                            <li><strong>rebuild.sh</strong> - Quick rebuild shortcut</li>
-                        </ul>
-                        <p><strong>Key Components Built:</strong></p>
-                        <ul>
-                            <li><code>servin</code> - Core container runtime (CLI)</li>
-                            <li><code>servin-desktop</code> - Terminal UI (TUI)</li>
-                            <li><code>servin-gui</code> - Graphical UI (GUI)</li>
-                        </ul>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">🎯 Makefile Targets</div>
-                        <ul>
-                            <li><code>make build-local</code> - Current platform</li>
-                            <li><code>make build-cross</code> - All platforms</li>
-                            <li><code>make build</code> - Main binary only</li>
-                            <li><code>make build-all</code> - All in project root</li>
-                            <li><code>make clean</code> - Clean artifacts</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <h2>Development Workflow</h2>
-                <div class="card">
-                    <div class="card-header">🔄 Recommended Development Process</div>
-                    <div class="grid grid-3">
-                        <div>
-                            <h4>Daily Development</h4>
-                            <ol>
-                                <li>Make code changes</li>
-                                <li>Run <code>./build-local.sh</code></li>
-                                <li>Test in <code>build/&lt;platform&gt;/</code></li>
-                                <li>Iterate as needed</li>
-                            </ol>
-                        </div>
-                        <div>
-                            <h4>Cross-Platform Testing</h4>
-                            <ol>
-                                <li>Complete feature development</li>
-                                <li>Run <code>./build-cross.sh --all</code></li>
-                                <li>Test each platform build</li>
-                                <li>Fix platform-specific issues</li>
-                            </ol>
-                        </div>
-                        <div>
-                            <h4>Release Preparation</h4>
-                            <ol>
-                                <li>Final cross-platform build</li>
-                                <li>Run distribution scripts</li>
-                                <li>Create installers</li>
-                                <li>Package for release</li>
-                            </ol>
-                        </div>
+# Cross-platform packages
+.\build.ps1 -Target all        # All platforms
+.\build.ps1 -Target windows    # Windows only
+.\build.ps1 -Target linux      # Linux only
+.\build.ps1 -Target macos      # macOS only</code></pre>
                     </div>
                 </div>
 
                 <h2>Verification</h2>
                 <div class="card">
-                    <div class="card-header">Testing Platform-Specific Builds</div>
-                    <pre><code># Navigate to your platform directory
-cd build/&lt;platform-arch&gt;/    # e.g., build/darwin-arm64/
+                    <div class="card-header">Testing Installation</div>
+                    <pre><code># Check version
+servin version
 
-# Check version
-./servin --help              # Linux/macOS
-./servin.exe --help          # Windows
-
-# Test CLI functionality
-./servin ls                  # List containers
-./servin image ls            # List images
+# Test CLI
+servin containers ls
+servin images ls
 
 # Test TUI
-./servin-desktop             # Linux/macOS
-./servin-desktop.exe         # Windows
+servin-desktop
 
-# Test GUI (if available)
-./servin-gui                 # Linux/macOS
-./servin-gui.exe             # Windows
+# Test GUI
+servin-gui
 
-# Examples for different platforms:
-# macOS Apple Silicon:
-cd build/darwin-arm64 && ./servin --help
-
-# Linux:
-cd build/linux-amd64 && ./servin --help
-
-# Windows:
-cd build/windows-amd64 && ./servin.exe --help</code></pre>
-                </div>
-
-                <h2>Build Features</h2>
-                <div class="grid grid-2">
-                    <div class="card">
-                        <div class="card-header">✨ Build System Features</div>
-                        <ul>
-                            <li><span class="badge badge-success">✓</span> Platform-specific organization</li>
-                            <li><span class="badge badge-success">✓</span> Automatic platform detection</li>
-                            <li><span class="badge badge-success">✓</span> Cross-compilation support</li>
-                            <li><span class="badge badge-success">✓</span> Clean build environment</li>
-                            <li><span class="badge badge-success">✓</span> Git-based versioning</li>
-                            <li><span class="badge badge-success">✓</span> Auto-generated documentation</li>
-                        </ul>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">📊 Binary Sizes</div>
-                        <ul>
-                            <li><strong>servin:</strong> ~11MB (Main runtime)</li>
-                            <li><strong>servin-desktop:</strong> ~3MB (TUI)</li>
-                            <li><strong>servin-gui:</strong> ~31MB (GUI with Fyne)</li>
-                        </ul>
-                        <p><small>Note: GUI binary may not be available for all platforms due to CGO requirements.</small></p>
-                    </div>
+# Test CRI (if enabled)
+crictl --runtime-endpoint unix:///var/run/servin.sock version</code></pre>
                 </div>
             </section>
 
@@ -1497,19 +1289,6 @@ sudo python3 servin-installer.py
 # Follow native installer</code></pre>
                         <div class="badge badge-success">3 minutes</div>
                     </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">🔧 Alternative: Build from Source</div>
-                    <p>For developers who want to build from source or contribute to the project:</p>
-                    <pre><code># Clone and build for current platform
-git clone https://github.com/yourusername/servin
-cd servin
-./build-local.sh
-
-# Binaries will be in build/&lt;platform&gt;/
-# See "Building from Source" section for more details</code></pre>
-                    <div class="badge badge-info">5 minutes</div>
                 </div>
 
                 <h2>Step 2: Verify Installation</h2>
@@ -3383,46 +3162,45 @@ make build</code></pre>
                 <h2>Build System</h2>
                 <div class="grid grid-3">
                     <div class="card">
-                        <div class="card-header">🔨 Development Builds</div>
-                        <pre><code># Platform-organized development builds
-./build-local.sh           # Current platform → build/&lt;platform&gt;/
-./rebuild.sh               # Quick rebuild shortcut
+                        <div class="card-header">🔨 Makefile Targets</div>
+                        <pre><code># Build all binaries
+make build
 
-# Output: build/darwin-arm64/
-#   ├── servin            # Core runtime
-#   ├── servin-desktop    # TUI binary  
-#   ├── servin-gui        # GUI binary
-#   └── README.md         # Platform info
+# Build specific component
+make build-daemon
+make build-cli
+make build-gui
 
-# Makefile aliases
-make build-local           # Via Makefile</code></pre>
+# Cross-platform builds
+make build-linux
+make build-windows
+make build-darwin
+
+# Clean build artifacts
+make clean
+
+# Install locally
+make install</code></pre>
                     </div>
                     <div class="card">
-                        <div class="card-header">📦 Distribution Packages</div>
-                        <pre><code># Production-ready installer packages
-./build.sh macos           # → dist/servin-macos-1.0.0/
-./build.sh linux           # → dist/servin-linux-1.0.0/
-./build.sh windows         # → dist/servin-windows-1.0.0/
-./build.sh                 # Build all platforms
+                        <div class="card-header">🧪 Testing</div>
+                        <pre><code># Run all tests
+make test
 
-# Output: dist/servin-&lt;platform&gt;-&lt;version&gt;/
-#   ├── servin*           # All binaries
-#   ├── install.sh        # Platform installer
-#   ├── README.md         # Installation guide
-#   └── &lt;archive&gt;.tar.gz   # Compressed package</code></pre>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">🌍 Cross-Platform Support</div>
-                        <pre><code># Supported platforms
-darwin/arm64              # macOS Apple Silicon
-darwin/amd64              # macOS Intel
-linux/amd64               # Linux 64-bit
-linux/arm64               # Linux ARM64
-windows/amd64             # Windows 64-bit
+# Unit tests only
+make test-unit
 
-# Platform detection (automatic)
-# build-local.sh detects current platform
-# build.sh creates specific packages</code></pre>
+# Integration tests
+make test-integration
+
+# End-to-end tests
+make test-e2e
+
+# Test coverage
+make test-coverage
+
+# Benchmark tests
+make test-bench</code></pre>
                     </div>
                     <div class="card">
                         <div class="card-header">📦 Packaging</div>
@@ -3440,48 +3218,6 @@ make release
 
 # Sign binaries
 make sign</code></pre>
-                    </div>
-                </div>
-
-                <h2>🔄 Dual Build System Workflow</h2>
-                <div class="grid grid-2">
-                    <div class="card">
-                        <div class="card-header">💻 Development Workflow</div>
-                        <pre><code># 1. Local development and testing
-./build-local.sh           # Fast builds for current platform
-./build/darwin-arm64/servin --version
-
-# 2. Test all components
-./build/darwin-arm64/servin-desktop
-./build/darwin-arm64/servin-gui
-
-# 3. Quick iteration
-./rebuild.sh              # Rebuild only if needed
-
-# Benefits:
-# - Fast development builds
-# - Platform-organized output
-# - Automatic platform detection
-# - Includes all components (CLI/TUI/GUI)</code></pre>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">🚀 Distribution Workflow</div>
-                        <pre><code># 1. Create distribution packages
-./build.sh macos           # macOS installer package
-./build.sh linux           # Linux installer package
-
-# 2. Verify package contents
-ls -la dist/servin-macos-1.0.0/
-tar -tzf dist/servin-macos-1.0.0.tar.gz
-
-# 3. Deploy/distribute
-scp dist/servin-*.tar.gz user@server:/packages/
-
-# Benefits:
-# - Production-ready packages
-# - Includes installers and docs
-# - Cross-platform deployment
-# - Compressed archives for distribution</code></pre>
                     </div>
                 </div>
 
