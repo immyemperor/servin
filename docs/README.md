@@ -1,51 +1,223 @@
-# Servin Container Runtime Documentation
+# Servin Documentation
 
-This directory contains comprehensive documentation for the Servin Container Runtime project.
+This directory contains the complete documentation for Servin Container Runtime, built with Jekyll and hosted on GitHub Pages.
 
-## 📚 Documentation Files
+## 🌐 Live Documentation
 
-### **HTML Wiki**
-- **`wiki.html`** - Complete interactive HTML wiki with navigation
-- **Features**: Responsive design, search functionality, syntax highlighting, copy buttons
-- **Sections**: Installation, usage guides, API reference, troubleshooting, and more
+Visit the live documentation at: **https://immyemperor.github.io/servin**
 
-### **Wiki Server Scripts**
-- **`serve-wiki.py`** - Python HTTP server to serve the wiki locally
-- **`serve-wiki.bat`** - Windows batch script to start the wiki server
-- **`serve-wiki.sh`** - Linux/macOS shell script to start the wiki server
+## 📁 Structure
 
-## 🚀 Quick Start
-
-### **View the Wiki Locally**
-
-#### **Windows**
-```cmd
-# Navigate to docs directory
-cd docs
-
-# Double-click serve-wiki.bat or run:
-serve-wiki.bat
+```
+docs/
+├── _config.yml              # Jekyll configuration
+├── _layouts/                # Page layouts
+│   └── default.html        # Main layout with sidebar
+├── _includes/               # Reusable components
+│   ├── head.html           # HTML head section
+│   ├── header.html         # Site header
+│   └── footer.html         # Site footer
+├── assets/                  # CSS and other assets
+│   └── sidebar.css         # Custom styles for sidebar
+├── index.md                 # Home page
+├── overview.md              # Project overview
+├── architecture.md          # Architecture documentation
+├── installation.md          # Installation guide
+└── [other-pages].md        # Additional documentation pages
 ```
 
-#### **Linux/macOS**
-```bash
-# Navigate to docs directory
-cd docs
+## 🚀 Local Development
 
-# Make executable and run
-chmod +x serve-wiki.sh
-./serve-wiki.sh
+### Prerequisites
 
-# Or run Python script directly
-python3 serve-wiki.py
-```
+- Ruby 3.0+
+- Bundler
+- Jekyll
 
-### **Direct File Access**
-You can also open `wiki.html` directly in any web browser:
-- Right-click `wiki.html` → "Open with" → Browser
-- Or navigate to file:///path/to/servin/docs/wiki.html
+### Setup
 
-## 🌟 Wiki Features
+1. **Install dependencies:**
+   ```bash
+   cd docs
+   bundle install
+   ```
+
+2. **Start development server:**
+   ```bash
+   bundle exec jekyll serve
+   ```
+
+3. **Open in browser:**
+   ```
+   http://localhost:4000/servin
+   ```
+
+### Live Reload
+
+The development server automatically reloads when you make changes to:
+- Markdown files
+- HTML layouts
+- CSS files
+- Configuration
+
+## ✨ Features
+
+### 📱 Responsive Design
+- Mobile-friendly sidebar navigation
+- Responsive grid layouts
+- Touch-friendly interface
+
+### 🔍 Search Functionality
+- Client-side search in sidebar
+- Filter navigation items
+- Fast and responsive
+
+### 🎨 Professional Styling
+- Modern, clean design
+- Syntax highlighting for code blocks
+- Professional typography
+- GitHub-compatible markdown
+
+### 📊 Navigation
+- Hierarchical sidebar navigation
+- Active page highlighting
+- Smooth scrolling
+- Keyboard navigation support
+
+## 📝 Content Management
+
+### Adding New Pages
+
+1. **Create markdown file:**
+   ```bash
+   touch docs/new-page.md
+   ```
+
+2. **Add front matter:**
+   ```yaml
+   ---
+   layout: default
+   title: New Page
+   permalink: /new-page/
+   ---
+   ```
+
+3. **Add to navigation:**
+   Edit `_layouts/default.html` to add navigation link
+
+### Writing Content
+
+- Use standard markdown syntax
+- Add front matter to all pages
+- Use relative URLs: `{{ '/page' | relative_url }}`
+- Include code syntax highlighting: ```language
+
+### Styling Components
+
+Available CSS classes:
+- `.feature-grid` - Responsive grid layout
+- `.feature-box` - Feature highlight boxes
+- `.badge` - Status badges
+- `.btn` - Button styling
+- `.architecture-diagram` - Monospace diagrams
+
+## 🔧 Configuration
+
+### Jekyll Configuration (`_config.yml`)
+
+Key settings:
+- Site title and description
+- GitHub repository information
+- Navigation order
+- Plugin configuration
+
+### Custom Styling (`assets/sidebar.css`)
+
+- Sidebar navigation styling
+- Responsive breakpoints
+- Color scheme variables
+- Component styles
+
+## 📤 Deployment
+
+### Automatic Deployment
+
+Documentation is automatically deployed via GitHub Actions when:
+- Changes are pushed to `main` or `master` branch
+- Files in `docs/` directory are modified
+
+### Manual Deployment
+
+1. **Build site:**
+   ```bash
+   cd docs
+   bundle exec jekyll build
+   ```
+
+2. **Deploy to GitHub Pages:**
+   - Enable GitHub Pages in repository settings
+   - Select "GitHub Actions" as source
+   - Push changes to trigger deployment
+
+## 🎯 GitHub Pages Setup
+
+1. **Enable GitHub Pages:**
+   - Go to repository Settings
+   - Navigate to Pages section
+   - Select "GitHub Actions" as source
+
+2. **Configure custom domain (optional):**
+   - Add `CNAME` file with your domain
+   - Configure DNS settings
+
+3. **Enable HTTPS:**
+   - GitHub Pages automatically provides HTTPS
+   - Check "Enforce HTTPS" option
+
+## 🔍 SEO Optimization
+
+The documentation includes:
+- Meta tags for social sharing
+- Structured data markup
+- Sitemap generation
+- Search engine optimization
+- Fast loading times
+
+## 📱 Mobile Experience
+
+Optimized for mobile devices:
+- Collapsible sidebar navigation
+- Touch-friendly interface
+- Responsive typography
+- Fast loading on mobile networks
+
+## 🤝 Contributing
+
+To contribute to the documentation:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes in the `docs/` directory
+4. Test locally with Jekyll
+5. Submit a pull request
+
+### Documentation Guidelines
+
+- Write clear, concise content
+- Use proper markdown formatting
+- Include code examples where helpful
+- Test all links and references
+- Follow the existing style and structure
+
+## 📞 Support
+
+- **Documentation Issues**: [GitHub Issues](https://github.com/immyemperor/servin/issues)
+- **General Support**: See main README
+- **Feature Requests**: Submit via GitHub Issues
+
+---
+
+**Built with ❤️ using Jekyll and GitHub Pages**
 
 ### **🎯 Interactive Navigation**
 - **Sidebar navigation** with categorized sections
