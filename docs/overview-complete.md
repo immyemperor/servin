@@ -38,7 +38,7 @@ Servin Container Runtime is a comprehensive container management solution that p
 
 ## 🎯 Target Users
 
-### **👩‍� Developers**
+### **👩‍💻 Developers**
 - **Container-based development** - Modern application development workflows
 - **Local testing** - Rapid container testing and iteration
 - **Multi-platform development** - Consistent environment across platforms
@@ -96,6 +96,32 @@ Servin Container Runtime is a comprehensive container management solution that p
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### **Core Services**
+
+#### **Container Management Service**
+- **Lifecycle Operations** - Create, start, stop, pause, restart, and remove containers
+- **Resource Management** - CPU, memory, and I/O resource control and monitoring
+- **Security Context** - User namespaces, capabilities, and security policies
+- **Process Management** - Container process monitoring and signal handling
+
+#### **Image Management Service**
+- **Registry Integration** - Pull, push, and authentication with Docker registries
+- **Layer Management** - Efficient image layer storage and sharing
+- **Build Support** - Dockerfile-based image building and caching
+- **Multi-architecture** - Support for multiple CPU architectures (AMD64, ARM64)
+
+#### **Volume Management Service**
+- **Storage Drivers** - Multiple storage backend support (local, network, cloud)
+- **Mount Management** - Bind mounts, named volumes, and tmpfs mounts
+- **Data Protection** - Volume backup, restore, and migration capabilities
+- **Permission Control** - Fine-grained access control for volume operations
+
+#### **Network Management Service**
+- **CNI Integration** - Container Network Interface plugin support
+- **Network Isolation** - Container network segmentation and security
+- **Service Discovery** - Built-in DNS and service discovery capabilities
+- **Load Balancing** - Traffic distribution and load balancing features
+
 ## 🌟 Key Differentiators
 
 ### **Unified Experience**
@@ -115,6 +141,12 @@ Servin Container Runtime is a comprehensive container management solution that p
 - **Rich Documentation** - Comprehensive guides and API documentation
 - **Extensible Architecture** - Plugin system for custom extensions
 - **Open Source** - Transparent development and community contributions
+
+### **Modern Technology Stack**
+- **Go Language** - High-performance, memory-safe implementation
+- **Cloud-native Design** - Built for cloud and hybrid environments
+- **Standards Compliance** - OCI, CRI, and Docker compatibility
+- **Future-proof Architecture** - Designed for emerging container technologies
 
 ## 🔄 Integration Ecosystem
 
@@ -136,6 +168,32 @@ Servin Container Runtime is a comprehensive container management solution that p
 - **GitLab CI/CD** - GitLab runner support for container-based builds
 - **Azure DevOps** - Azure Pipelines integration for Microsoft environments
 
+### **Monitoring and Observability**
+- **Prometheus** - Native Prometheus metrics export
+- **Grafana** - Pre-built Grafana dashboards for monitoring
+- **ELK Stack** - Elasticsearch, Logstash, and Kibana log integration
+- **Jaeger/Zipkin** - Distributed tracing integration for microservices
+
+## 🛡️ Security and Compliance
+
+### **Security Features**
+- **Rootless Containers** - Enhanced security through non-root execution
+- **Namespace Isolation** - Linux namespaces for process and resource isolation
+- **Capability Management** - Fine-grained Linux capability control
+- **Security Scanning** - Built-in vulnerability scanning for images and containers
+
+### **Compliance Support**
+- **SOC 2 Type II** - Security controls and audit compliance
+- **FIPS 140-2** - Federal cryptographic standards compliance
+- **Common Criteria** - International security evaluation standards
+- **Industry Standards** - NIST, ISO 27001, and other compliance frameworks
+
+### **Access Control**
+- **RBAC Integration** - Role-based access control for user permissions
+- **LDAP/AD Integration** - Enterprise directory service integration
+- **Multi-factor Authentication** - Enhanced authentication security
+- **Audit Logging** - Comprehensive security event logging and reporting
+
 ## 🌍 Cross-Platform Support
 
 ### **Operating Systems**
@@ -147,6 +205,12 @@ Servin Container Runtime is a comprehensive container management solution that p
 - **AMD64/x86_64** - Standard 64-bit Intel and AMD processors
 - **ARM64/AArch64** - Apple Silicon, AWS Graviton, and ARM-based servers
 - **ARMv7** - Raspberry Pi and embedded systems support
+
+### **Cloud Platforms**
+- **AWS** - Native integration with Amazon Web Services
+- **Azure** - Microsoft Azure cloud platform support
+- **Google Cloud** - Google Cloud Platform integration
+- **Hybrid Cloud** - Multi-cloud and on-premises deployment flexibility
 
 ---
 
