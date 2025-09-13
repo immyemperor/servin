@@ -27,14 +27,12 @@
   --sidebar-width: 280px;
 }
 
-/* Dark theme support */
+/* Dark theme support - Only for specific elements, not entire page */
 @media (prefers-color-scheme: dark) {
   :root {
-    --light-bg: var(--dark-bg);
-    --light-surface: var(--dark-surface);
-    --light-border: var(--dark-border);
-    --text-primary: #f9fafb;
-    --text-secondary: #d1d5db;
+    /* Keep page background light, only adjust specific elements */
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
     --text-muted: #9ca3af;
   }
 }
