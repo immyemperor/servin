@@ -180,9 +180,9 @@ jobs:
           cd ../..
           
           if [ -f "build/${{ matrix.platform }}/servin-gui${{ matrix.ext }}" ]; then
-            echo "✅ GUI binary built successfully"
+            echo "GUI binary built successfully"
           else
-            echo "⚠️ GUI binary build failed - continuing without GUI"
+            echo "GUI binary build failed - continuing without GUI"
           fi
         else
           echo "GUI source not found, skipping GUI build"
@@ -244,9 +244,9 @@ jobs:
         
         foreach ($binary in $requiredBinaries) {
           if (Test-Path $binary) {
-            Write-Host "✓ Found: $binary"
+            Write-Host "Found: $binary"
           } else {
-            Write-Host "✗ Missing: $binary"
+            Write-Host "Missing: $binary"
             $missingBinaries += $binary
           }
         }
@@ -277,7 +277,7 @@ jobs:
             # Check if installer was created
             if (Test-Path "ServinSetup-1.0.0.exe") {
               Move-Item "ServinSetup-1.0.0.exe" "../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.exe"
-              Write-Host "✅ Windows installer wizard created successfully"
+              Write-Host "Windows installer wizard created successfully"
               Write-Host "Installer includes: CLI, TUI, and GUI (if available)"
             } else {
               Write-Host "Warning: Windows installer creation failed, will create ZIP fallback"
@@ -304,9 +304,9 @@ jobs:
         
         for binary in "${required_binaries[@]}"; do
           if [ -f "$binary" ]; then
-            echo "✓ Found: $binary"
+            echo "Found: $binary"
           else
-            echo "✗ Missing: $binary"
+            echo "Missing: $binary"
             missing_binaries+=("$binary")
           fi
         done
@@ -329,7 +329,7 @@ jobs:
             
             if [ -f "../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run" ]; then
               chmod +x ../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run
-              echo "✅ Linux installer wizard created successfully"
+              echo "Linux installer wizard created successfully"
               echo "Installer includes: CLI, TUI, and GUI (if available)"
             else
               echo "Warning: Linux installer creation failed, will create tar.gz fallback"
@@ -356,9 +356,9 @@ jobs:
         
         for binary in "${required_binaries[@]}"; do
           if [ -f "$binary" ]; then
-            echo "✓ Found: $binary"
+            echo "Found: $binary"
           else
-            echo "✗ Missing: $binary"
+            echo "Missing: $binary"
             missing_binaries+=("$binary")
           fi
         done
@@ -380,7 +380,7 @@ jobs:
             }
             
             if [ -f "../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.pkg" ]; then
-              echo "✅ macOS installer wizard created successfully"
+              echo "macOS installer wizard created successfully"
               echo "Installer includes: CLI, TUI, and GUI (if available)"
             else
               echo "Warning: macOS installer creation failed, will create tar.gz fallback"
@@ -435,17 +435,17 @@ jobs:
         echo "Verifying package creation..."
         if [ "${{ matrix.platform }}" = "windows" ]; then
           if [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.exe" ] && [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.zip" ]; then
-            echo "❌ No Windows package was created!"
+            echo "No Windows package was created!"
             exit 1
           fi
         else
           if [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run" ] && [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.pkg" ] && [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.tar.gz" ]; then
-            echo "❌ No ${{ matrix.platform }} package was created!"
+            echo "No ${{ matrix.platform }} package was created!"
             exit 1
           fi
         fi
         
-        echo "✅ Package creation completed successfully"
+        echo "Package creation completed successfully"
 
     # Verify build artifacts
     - name: Verify build artifacts
@@ -501,16 +501,16 @@ jobs:
           if [ -f "$file" ]; then
             filename=$(basename "$file")
             size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "unknown")
-            echo "📦 $filename ($size bytes)"
+            echo "[$filename] ($size bytes)"
             
             # Identify package type
             case "$filename" in
-              *installer.exe) echo "   🎯 Windows NSIS Installer Wizard" ;;
-              *installer.run) echo "   🎯 Linux GUI Installer Wizard" ;;
-              *installer.pkg) echo "   🎯 macOS Package Installer" ;;
-              *.zip) echo "   📁 Windows ZIP Archive (fallback)" ;;
-              *.tar.gz) echo "   📁 Unix/Linux Archive (fallback)" ;;
-              *) echo "   ❓ Unknown package type" ;;
+              *installer.exe) echo "   -> Windows NSIS Installer Wizard" ;;
+              *installer.run) echo "   -> Linux GUI Installer Wizard" ;;
+              *installer.pkg) echo "   -> macOS Package Installer" ;;
+              *.zip) echo "   -> Windows ZIP Archive (fallback)" ;;
+              *.tar.gz) echo "   -> Unix/Linux Archive (fallback)" ;;
+              *) echo "   -> Unknown package type" ;;
             esac
           fi
         done
@@ -546,9 +546,9 @@ jobs:
         prerelease: false
         generate_release_notes: true
         body: |
-          ## 🚀 Servin Container Runtime v${{ env.APP_VERSION }}
+          ## Servin Container Runtime v${{ env.APP_VERSION }}
           
-          ### 📦 Installation Options
+          ### Installation Options
           
           **Windows:**
           - `servin-windows-${{ env.APP_VERSION }}-installer.exe` - NSIS Installer Wizard (Recommended)
@@ -565,7 +565,7 @@ jobs:
           **Cross-Platform:**
           - `servin-cross-platform-${{ env.APP_VERSION }}.zip` - All platforms in one archive
           
-          ### 🔧 What's Included
+          ### What's Included
           
           Each package contains:
           - **servin** - CLI container runtime
@@ -614,17 +614,17 @@ jobs:
         echo "Testing TUI binary..."
         if [ "${{ matrix.platform }}" = "windows" ]; then
           if [ -f "./build/${{ matrix.platform }}/servin-desktop.exe" ]; then
-            echo "✓ TUI binary exists: servin-desktop.exe"
+            echo "TUI binary exists: servin-desktop.exe"
           else
-            echo "✗ TUI binary missing: servin-desktop.exe"
+            echo "TUI binary missing: servin-desktop.exe"
             exit 1
           fi
         else
           if [ -f "./build/${{ matrix.platform }}/servin-desktop" ]; then
             chmod +x ./build/${{ matrix.platform }}/servin-desktop
-            echo "✓ TUI binary exists: servin-desktop"
+            echo "TUI binary exists: servin-desktop"
           else
-            echo "✗ TUI binary missing: servin-desktop"
+            echo "TUI binary missing: servin-desktop"
             exit 1
           fi
         fi
@@ -635,16 +635,16 @@ jobs:
         echo "Testing GUI binary..."
         if [ "${{ matrix.platform }}" = "windows" ]; then
           if [ -f "./build/${{ matrix.platform }}/servin-gui.exe" ]; then
-            echo "✓ GUI binary exists: servin-gui.exe"
+            echo "GUI binary exists: servin-gui.exe"
           else
-            echo "⚠ GUI binary missing: servin-gui.exe (CGO build may have failed)"
+            echo "GUI binary missing: servin-gui.exe (CGO build may have failed)"
           fi
         else
           if [ -f "./build/${{ matrix.platform }}/servin-gui" ]; then
             chmod +x ./build/${{ matrix.platform }}/servin-gui
-            echo "✓ GUI binary exists: servin-gui"
+            echo "GUI binary exists: servin-gui"
           else
-            echo "⚠ GUI binary missing: servin-gui (CGO build may have failed)"
+            echo "GUI binary missing: servin-gui (CGO build may have failed)"
           fi
         fi
 
@@ -654,20 +654,20 @@ jobs:
         echo "Verifying installer packages:"
         if [ "${{ matrix.platform }}" = "windows" ]; then
           if [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.exe" ]; then
-            echo "✓ Windows NSIS installer created successfully"
+            echo "Windows NSIS installer created successfully"
           elif [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.zip" ]; then
-            echo "✓ Windows ZIP package created as fallback"
+            echo "Windows ZIP package created as fallback"
           else
-            echo "✗ No Windows installer package found"
+            echo "No Windows installer package found"
             exit 1
           fi
         else
           if [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run" ] || [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.pkg" ]; then
-            echo "✓ ${{ matrix.platform }} installer wizard created successfully"
+            echo "${{ matrix.platform }} installer wizard created successfully"
           elif [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.tar.gz" ]; then
-            echo "✓ ${{ matrix.platform }} tar.gz package created as fallback"
+            echo "${{ matrix.platform }} tar.gz package created as fallback"
           else
-            echo "✗ No ${{ matrix.platform }} installer package found"
+            echo "No ${{ matrix.platform }} installer package found"
             exit 1
           fi
         fi
