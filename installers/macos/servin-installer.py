@@ -188,12 +188,14 @@ The installation requires administrator privileges and approximately 100MB of di
         license_frame.columnconfigure(0, weight=1)
         license_frame.rowconfigure(0, weight=1)
         
-        # License text with native scrolling
-        text_widget = tk.Text(license_frame, height=18, wrap=tk.WORD, 
-                             font=("SF Mono", 10), borderwidth=1, relief=tk.SOLID)
+        # License text with scrolling - reduced height to force scrolling
+        text_widget = tk.Text(license_frame, height=12, wrap=tk.WORD, 
+                             font=("SF Mono", 10), borderwidth=1, relief=tk.SOLID,
+                             bg="white", fg="black")
         scrollbar = ttk.Scrollbar(license_frame, orient=tk.VERTICAL, command=text_widget.yview)
         text_widget.configure(yscrollcommand=scrollbar.set)
         
+        # Extended license text to ensure scrolling is needed
         license_text = """Apache License 2.0
 
 Copyright 2025 Servin Project
@@ -210,14 +212,81 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+FULL LICENSE TEXT:
+
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to use, reproduce, modify, display, perform,
+      sublicense, and distribute the Work and such Derivative Works in
+      Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License;
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files;
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work.
+
 DISCLAIMER: This software is provided "AS IS" without warranty of any kind, 
 express or implied, including but not limited to the warranties of 
-merchantability, fitness for a particular purpose and noninfringement."""
+merchantability, fitness for a particular purpose and noninfringement.
+
+By using this software, you acknowledge that you have read this license
+agreement and agree to be bound by its terms and conditions."""
         
         text_widget.insert(tk.END, license_text)
         text_widget.configure(state=tk.DISABLED)
         
+        # Enable mouse wheel scrolling
+        def on_mousewheel(event):
+            text_widget.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        # Bind mouse wheel to text widget for macOS
+        text_widget.bind("<MouseWheel>", on_mousewheel)
+        text_widget.bind("<Button-4>", lambda e: text_widget.yview_scroll(-1, "units"))
+        text_widget.bind("<Button-5>", lambda e: text_widget.yview_scroll(1, "units"))
+        
         text_widget.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        
+        # Ensure text widget gets focus for scrolling
+        text_widget.focus_set()
         scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
         
         # Agreement checkbox
@@ -320,17 +389,27 @@ merchantability, fitness for a particular purpose and noninfringement."""
         ttk.Label(page, text="Installation Summary", 
                  font=("SF Pro Display", 14, "bold")).grid(row=0, column=0, sticky=tk.W, pady=(0, 15))
         
-        # Summary text area
+        # Summary text area with enhanced scrolling
         summary_frame = ttk.Frame(page)
         summary_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         summary_frame.columnconfigure(0, weight=1)
         summary_frame.rowconfigure(0, weight=1)
         
-        self.summary_text = tk.Text(summary_frame, height=18, wrap=tk.WORD, 
+        # Reduced height to ensure scrolling is visible and functional
+        self.summary_text = tk.Text(summary_frame, height=12, wrap=tk.WORD, 
                                    font=("SF Mono", 10), borderwidth=1, relief=tk.SOLID,
-                                   state=tk.DISABLED)
+                                   bg="white", fg="black", state=tk.DISABLED)
         summary_scrollbar = ttk.Scrollbar(summary_frame, orient=tk.VERTICAL, command=self.summary_text.yview)
         self.summary_text.configure(yscrollcommand=summary_scrollbar.set)
+        
+        # Enable mouse wheel scrolling for summary page
+        def on_summary_mousewheel(event):
+            self.summary_text.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        # Bind mouse wheel events for macOS
+        self.summary_text.bind("<MouseWheel>", on_summary_mousewheel)
+        self.summary_text.bind("<Button-4>", lambda e: self.summary_text.yview_scroll(-1, "units"))
+        self.summary_text.bind("<Button-5>", lambda e: self.summary_text.yview_scroll(1, "units"))
         
         self.summary_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         summary_scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
@@ -459,32 +538,84 @@ merchantability, fitness for a particular purpose and noninfringement."""
         if self.create_app_bundle.get():
             components.append("Application Bundle")
         
-        summary = f"""Installation Configuration:
+        summary = f"""Installation Configuration Summary:
 
-Installation Directory: {self.install_dir.get()}
-Data Directory: {self.data_dir.get()}
-Configuration Directory: {self.config_dir.get()}
+Target Directories:
+────────────────────────────────────────────────────
+• Installation Directory: {self.install_dir.get()}
+• Data Directory: {self.data_dir.get()}
+• Configuration Directory: {self.config_dir.get()}
 
-Components to Install:
-• Core Runtime (servin)
+Core Components:
+────────────────────────────────────────────────────
+• Servin Container Runtime (servin)
+• Servin Terminal UI (servin-tui)
 """
         
         for component in components:
             summary += f"• {component}\n"
         
-        if self.create_user.get():
-            summary += "\nAdvanced Options:\n• Create system user '_servin'\n"
-        if self.add_to_path.get():
-            summary += "• Add to PATH environment\n"
-        if self.install_cli_tools.get():
-            summary += "• Install command-line tools\n"
+        if components:
+            summary += "\nOptional Components:\n────────────────────────────────────────────────────\n"
         
-        summary += "\nClick 'Install' to begin the installation process."
+        if self.create_user.get():
+            summary += "• System user '_servin' will be created\n"
+        if self.add_to_path.get():
+            summary += "• Commands will be added to PATH environment\n"
+        if self.install_cli_tools.get():
+            summary += "• Command-line tools and utilities\n"
+        
+        summary += f"""
+Installation Details:
+────────────────────────────────────────────────────
+• Platform: macOS ({self.get_platform()})
+• Installation type: {'System-wide' if self.is_root else 'User-specific'}
+• Required permissions: {'Administrator' if self.is_root else 'User'}
+
+Files to be installed:
+────────────────────────────────────────────────────
+• servin (main executable)
+• servin-tui (terminal interface)"""
+        
+        if self.install_gui.get():
+            summary += "\n• servin-gui (desktop application)"
+        
+        if self.create_app_bundle.get():
+            summary += "\n• Servin.app (macOS application bundle)"
+        
+        if self.install_service.get():
+            summary += "\n• com.servin.daemon.plist (launchd service)"
+        
+        summary += f"""
+
+Post-installation:
+────────────────────────────────────────────────────
+• Configuration files will be created in {self.config_dir.get()}
+• Log files will be stored in {self.data_dir.get()}/logs
+• Service will be registered with launchd (if selected)
+• Desktop shortcuts will be created (if GUI selected)
+
+Ready to Install:
+────────────────────────────────────────────────────
+Click 'Install' to begin the installation process.
+This will copy files, create directories, and configure
+the Servin container runtime on your system."""
         
         self.summary_text.configure(state=tk.NORMAL)
         self.summary_text.delete(1.0, tk.END)
         self.summary_text.insert(tk.END, summary)
         self.summary_text.configure(state=tk.DISABLED)
+    
+    def get_platform(self):
+        """Detect the macOS platform architecture"""
+        import platform
+        arch = platform.machine()
+        if arch == "arm64":
+            return "Apple Silicon (M1/M2/M3)"
+        elif arch == "x86_64":
+            return "Intel x64"
+        else:
+            return f"Unknown ({arch})"
     
     def go_back(self):
         if self.current_page > 0:

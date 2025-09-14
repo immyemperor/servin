@@ -17,7 +17,7 @@ Servin is a lightweight container runtime built from scratch in Go that provides
 ### 🪟 Windows (Development Environment)
 - **Cross-platform container simulation** for development workflows
 - **Image management system** with full import/export capabilities
-- **Container state persistence** in user home directory (`~/.servin`)
+- **Container state persistence** in user home directory (`cd `)
 - **Development-friendly** with automatic dev mode enabling
 - **CLI compatibility** with all commands available
 
