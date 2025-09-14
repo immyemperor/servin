@@ -153,6 +153,9 @@ Section "Core Runtime" SecCore
   ; Install main executable
   File "servin.exe"
   
+  ; Install TUI (Terminal User Interface)
+  File "servin-desktop.exe"
+  
   ; Create data directories
   CreateDirectory "$APPDATA\Servin"
   CreateDirectory "$APPDATA\Servin\config"
@@ -217,6 +220,7 @@ Section "Start Menu Shortcuts" SecStartMenu
   
   CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin GUI.lnk" "$INSTDIR\servin-gui.exe"
+  CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin Desktop (TUI).lnk" "$INSTDIR\servin-desktop.exe"
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin Command Prompt.lnk" "cmd.exe" "/k cd /d $\"$INSTDIR$\""
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall Servin.lnk" "$INSTDIR\Uninstall.exe"
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\README.lnk" "$INSTDIR\README.txt"
