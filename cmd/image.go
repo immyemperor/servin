@@ -89,10 +89,7 @@ func init() {
 }
 
 func runImageList(cmd *cobra.Command, args []string) error {
-	if err := checkRoot(); err != nil {
-		return err
-	}
-
+	// Image listing doesn't require root privileges
 	imgManager := image.NewManager()
 	images, err := imgManager.ListImages()
 	if err != nil {
@@ -180,22 +177,22 @@ func runImageRemove(cmd *cobra.Command, args []string) error {
 }
 
 func runImagePull(cmd *cobra.Command, args []string) error {
-	if err := checkRoot(); err != nil {
-		return err
-	}
-
+	// Remove root check for image pulling - it only requires write access to image directory
 	imageRef := args[0]
 	fmt.Printf("Pulling image %s...\n", imageRef)
 
-	// For now, this is a placeholder
-	return fmt.Errorf("registry pulling not yet implemented. Please use 'servin image import' with a tarball")
+	imgManager := image.NewManager()
+
+	// Try to pull from Docker Hub/registry
+	if err := imgManager.PullImage(imageRef); err != nil {
+		return fmt.Errorf("failed to pull image: %v", err)
+	}
+
+	return nil
 }
 
 func runImageInspect(cmd *cobra.Command, args []string) error {
-	if err := checkRoot(); err != nil {
-		return err
-	}
-
+	// Image inspection doesn't require root privileges
 	imageRef := args[0]
 
 	imgManager := image.NewManager()

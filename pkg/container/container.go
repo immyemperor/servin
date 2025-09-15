@@ -102,6 +102,16 @@ func (c *Container) Run() error {
 		return fmt.Errorf("failed to create rootfs: %v", err)
 	}
 
+	// Setup filesystem mounts for the container
+	if err := c.RootFS.SetupMounts(); err != nil {
+		fmt.Printf("Warning: failed to setup mounts: %v\n", err)
+	}
+
+	// Prepare rootfs environment (sets SERVIN_ROOTFS env var)
+	if err := c.RootFS.Enter(); err != nil {
+		return fmt.Errorf("failed to prepare rootfs environment: %v", err)
+	}
+
 	// Create cgroups for resource control
 	if err := c.CGroup.Create(); err != nil {
 		fmt.Printf("Warning: failed to create cgroups: %v\n", err)
@@ -155,11 +165,13 @@ func (c *Container) Run() error {
 
 	// Create namespace configuration
 	nsConfig := &namespaces.ContainerConfig{
-		Command:  c.Config.Command,
-		Args:     c.Config.Args,
-		Hostname: c.Config.Hostname,
-		WorkDir:  c.Config.WorkDir,
-		LogDir:   logDir,
+		Command:     c.Config.Command,
+		Args:        c.Config.Args,
+		Hostname:    c.Config.Hostname,
+		WorkDir:     c.Config.WorkDir,
+		LogDir:      logDir,
+		RootFS:      c.RootPath + "/rootfs", // Pass the rootfs path
+		Environment: c.Config.Env,           // Pass environment variables
 		Namespaces: []namespaces.NamespaceFlags{
 			namespaces.CLONE_NEWPID, // New PID namespace
 			namespaces.CLONE_NEWUTS, // New UTS namespace (hostname)

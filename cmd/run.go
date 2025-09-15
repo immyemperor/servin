@@ -32,6 +32,7 @@ var (
 	env           []string
 	hostname      string
 	ports         []string
+	detach        bool
 )
 
 func init() {
@@ -47,10 +48,11 @@ func init() {
 	runCmd.Flags().StringSliceVar(&env, "env", []string{}, "Set environment variables")
 	runCmd.Flags().StringVar(&hostname, "hostname", "", "Container hostname")
 	runCmd.Flags().StringSliceVarP(&ports, "publish", "p", []string{}, "Publish container ports (host:container or hostPort:containerPort/protocol)")
+	runCmd.Flags().BoolVarP(&detach, "detach", "d", false, "Run container in background and print container ID")
 }
 
 func runContainer(cmd *cobra.Command, args []string) error {
-	if err := checkRoot(); err != nil {
+	if err := checkRootForContainerOps(); err != nil {
 		return err
 	}
 
@@ -92,7 +94,20 @@ func runContainer(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Command: %s %v\n", command, commandArgs)
 	}
 
-	return c.Run()
+	if detach {
+		// Run in background
+		fmt.Printf("%s\n", c.ID)
+		go func() {
+			if err := c.Run(); err != nil {
+				fmt.Printf("Container %s exited with error: %v\n", c.ID[:12], err)
+			}
+		}()
+		return nil
+	} else {
+		// Show exit instructions for foreground runs
+		fmt.Printf("Starting container... (Press Ctrl+C to exit)\n")
+		return c.Run()
+	}
 }
 
 // parseEnvVars parses environment variables from KEY=VALUE format

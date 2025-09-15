@@ -138,6 +138,17 @@ func (r *RootFS) Enter() error {
 	return nil
 }
 
+// EnterChroot is not available on non-Linux platforms
+func (r *RootFS) EnterChroot() error {
+	return fmt.Errorf("chroot not available on %s", runtime.GOOS)
+}
+
+// SetupMounts simulates filesystem mounts (cross-platform)
+func (r *RootFS) SetupMounts() error {
+	fmt.Printf("Simulating filesystem mounts for %s (not available on %s)\n", r.RootPath, runtime.GOOS)
+	return nil
+}
+
 // Cleanup removes the container's filesystem (cross-platform)
 func (r *RootFS) Cleanup() error {
 	if r.RootPath != "" {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -34,12 +35,14 @@ const (
 
 // ContainerConfig holds namespace configuration
 type ContainerConfig struct {
-	Command    string
-	Args       []string
-	Namespaces []NamespaceFlags
-	Hostname   string
-	WorkDir    string
-	LogDir     string // Directory to store container logs
+	Command     string
+	Args        []string
+	Namespaces  []NamespaceFlags
+	Hostname    string
+	WorkDir     string
+	LogDir      string            // Directory to store container logs
+	RootFS      string            // RootFS path for the container
+	Environment map[string]string // Environment variables
 
 	// User namespace configuration
 	UserNamespace *UserNamespaceConfig
@@ -62,6 +65,22 @@ func CreateContainer(config *ContainerConfig) error {
 	cmd := exec.Command("/proc/self/exe", append([]string{"init"}, config.Command)...)
 	cmd.Args = append(cmd.Args, config.Args...)
 	cmd.Stdin = os.Stdin
+
+	// Set environment variables
+	cmd.Env = os.Environ() // Start with current environment
+	if config.RootFS != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("SERVIN_ROOTFS=%s", config.RootFS))
+	}
+	if config.Hostname != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("HOSTNAME=%s", config.Hostname))
+	}
+	if config.WorkDir != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("WORKDIR=%s", config.WorkDir))
+	}
+	// Add custom environment variables
+	for key, value := range config.Environment {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+	}
 
 	// Set up log redirection if LogDir is specified
 	if config.LogDir != "" {
@@ -97,8 +116,46 @@ func CreateContainer(config *ContainerConfig) error {
 		fmt.Printf("User namespace enabled with UID mappings: %+v\n", config.UserNamespace.UIDMappings)
 	}
 
-	// Wait for the process to complete
-	return cmd.Wait()
+	// Set up signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
+
+	// Wait for the process to complete or signal
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+
+	select {
+	case err := <-done:
+		// Process completed normally
+		return err
+	case sig := <-sigChan:
+		// Received signal, terminate the container
+		fmt.Printf("\nReceived signal %v, terminating container...\n", sig)
+
+		// First try graceful termination
+		if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+			fmt.Printf("Failed to send SIGTERM: %v\n", err)
+		}
+
+		// Wait a bit for graceful shutdown
+		timeout := time.After(2 * time.Second)
+		select {
+		case err := <-done:
+			fmt.Println("Container terminated gracefully")
+			return err
+		case <-timeout:
+			// Force kill if it doesn't respond
+			fmt.Println("Container didn't respond to SIGTERM, force killing...")
+			if err := cmd.Process.Kill(); err != nil {
+				fmt.Printf("Failed to kill process: %v\n", err)
+			}
+			<-done // Wait for the process to actually exit
+			return fmt.Errorf("container forcefully terminated")
+		}
+	}
 }
 
 // SetupNamespace configures the namespace environment

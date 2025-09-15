@@ -113,3 +113,49 @@ func checkRoot() error {
 	logger.Debug("Root privileges confirmed on Linux")
 	return nil
 }
+
+// checkRootForContainerOps ensures root privileges only for container operations that need them
+func checkRootForContainerOps() error {
+	logger.Debug("Checking root privileges for container operations on platform: %s", runtime.GOOS)
+
+	// Handle different platforms
+	switch runtime.GOOS {
+	case "windows":
+		logger.Info("Running on Windows - containerization features limited")
+		fmt.Println("Note: Running on Windows - true containerization not available, running process directly")
+		return nil
+	case "darwin":
+		logger.Info("Running on macOS - containerization features limited")
+		fmt.Println("Note: Running on macOS - true containerization requires Linux, running process with limited isolation")
+		// Check for development mode flag
+		if devMode, _ := rootCmd.PersistentFlags().GetBool("dev"); devMode {
+			logger.Info("Development mode enabled - skipping root check")
+			fmt.Println("Note: Development mode - running without full containerization")
+			return nil
+		}
+		// On macOS, we can run without root but with warnings
+		if os.Geteuid() != 0 {
+			fmt.Println("Warning: Running without root privileges - containerization features will be simulated")
+			return nil
+		}
+		logger.Debug("Root privileges confirmed on macOS")
+		return nil
+	}
+
+	// On Linux, we need root for real containerization
+	// Check for development mode flag
+	if devMode, _ := rootCmd.PersistentFlags().GetBool("dev"); devMode {
+		logger.Info("Development mode enabled - skipping root check")
+		fmt.Println("Note: Development mode - containerization may not work properly without root")
+		return nil
+	}
+
+	if os.Geteuid() != 0 {
+		err := errors.NewPermissionError("checkRootForContainerOps", "root privileges required for containerization on Linux")
+		logger.Error("Root privilege check failed: %v", err)
+		return fmt.Errorf("containerization requires root privileges on Linux. Please run with sudo")
+	}
+
+	logger.Debug("Root privileges confirmed on Linux")
+	return nil
+}

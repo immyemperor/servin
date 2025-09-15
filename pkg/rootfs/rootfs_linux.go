@@ -93,8 +93,19 @@ func (r *RootFS) createBasicRootFS() error {
 	return nil
 }
 
-// Enter enters the container's root filesystem using chroot
+// Enter enters the container's root filesystem and sets up the environment
 func (r *RootFS) Enter() error {
+	// Set environment variable for the init process to use
+	if err := os.Setenv("SERVIN_ROOTFS", r.RootPath); err != nil {
+		return fmt.Errorf("failed to set SERVIN_ROOTFS environment: %v", err)
+	}
+
+	fmt.Printf("Prepared rootfs environment at %s\n", r.RootPath)
+	return nil
+}
+
+// EnterChroot performs actual chroot operation (used by init process)
+func (r *RootFS) EnterChroot() error {
 	// Change to the container's root filesystem
 	if err := unix.Chroot(r.RootPath); err != nil {
 		return fmt.Errorf("failed to chroot to %s: %v", r.RootPath, err)
@@ -106,6 +117,38 @@ func (r *RootFS) Enter() error {
 	}
 
 	fmt.Printf("Entered container rootfs (chroot to %s)\n", r.RootPath)
+	return nil
+}
+
+// SetupMounts sets up necessary filesystems inside the container
+func (r *RootFS) SetupMounts() error {
+	mounts := []struct {
+		source string
+		target string
+		fstype string
+		flags  uintptr
+		data   string
+	}{
+		{"proc", "/proc", "proc", 0, ""},
+		{"sysfs", "/sys", "sysfs", 0, ""},
+		{"tmpfs", "/tmp", "tmpfs", 0, ""},
+		{"devtmpfs", "/dev", "devtmpfs", 0, ""},
+	}
+
+	for _, mount := range mounts {
+		targetPath := filepath.Join(r.RootPath, mount.target)
+		if err := os.MkdirAll(targetPath, 0755); err != nil {
+			fmt.Printf("Warning: failed to create mount point %s: %v\n", targetPath, err)
+			continue
+		}
+
+		if err := unix.Mount(mount.source, targetPath, mount.fstype, mount.flags, mount.data); err != nil {
+			fmt.Printf("Warning: failed to mount %s: %v\n", mount.target, err)
+		} else {
+			fmt.Printf("Mounted %s at %s\n", mount.source, targetPath)
+		}
+	}
+
 	return nil
 }
 
