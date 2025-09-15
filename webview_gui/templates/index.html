@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servin Desktop GUI</title>
+    <link rel="stylesheet" href="/static/style.css?v={{ timestamp }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-cube"></i>
+                    <span>Servin Desktop GUI</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="system-status" id="systemStatus">
+                    <span class="status-indicator" id="statusIndicator"></span>
+                    <span id="statusText">Connecting...</span>
+                </div>
+                <button class="refresh-btn" id="refreshBtn" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar Navigation -->
+            <nav class="sidebar">
+                <ul class="nav-list">
+                    <li class="nav-item active" data-section="containers">
+                        <i class="fas fa-cube"></i>
+                        <span>Containers</span>
+                    </li>
+                    <li class="nav-item" data-section="images">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Images</span>
+                    </li>
+                    <li class="nav-item" data-section="volumes">
+                        <i class="fas fa-hdd"></i>
+                        <span>Volumes</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Containers Section -->
+                <div class="content-section active" id="containersSection">
+                    <div class="section-header">
+                        <h2>Containers</h2>
+                        <div class="section-actions">
+                            <button class="action-btn primary" id="createContainerBtn">
+                                <i class="fas fa-plus"></i>
+                                Create Container
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Container List (default view) -->
+                    <div id="containersList" class="containers-view">
+                        <div class="table-container">
+                            <table class="data-table" id="containersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Image</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Ports</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="containersTableBody">
+                                    <!-- Container rows will be populated here -->
+                                </tbody>
+                            </table>
+                            <div id="containersEmpty" class="empty-state" style="display: none;">
+                                <i class="fas fa-cube"></i>
+                                <h3>No containers found</h3>
+                                <p>Create your first container to get started</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Container Details View (replaces list when container is clicked) -->
+                    <div id="containerDetails" class="container-details-view" style="display: none;">
+                        <div class="details-header">
+                            <div class="header-left">
+                                <button class="back-btn" id="backToContainers">
+                                    <i class="fas fa-arrow-left"></i>
+                                    Back to Containers
+                                </button>
+                                <div class="container-overview-inline">
+                                    <h2 id="containerDetailsTitle">Container Details</h2>
+                                    <span class="container-info">
+                                        <span id="detailsContainerName">-</span> 
+                                        (<span id="detailsContainerId">-</span>)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="header-right">
+                                <div class="details-actions">
+                                    <button class="action-btn success" id="startContainerBtn">
+                                        <i class="fas fa-play"></i>
+                                        Start
+                                    </button>
+                                    <button class="action-btn warning" id="stopContainerBtn">
+                                        <i class="fas fa-stop"></i>
+                                        Stop
+                                    </button>
+                                    <button class="action-btn secondary" id="restartContainerBtn">
+                                        <i class="fas fa-redo"></i>
+                                        Restart
+                                    </button>
+                                    <button class="action-btn danger" id="removeContainerBtn">
+                                        <i class="fas fa-trash"></i>
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="details-content">
+                            <!-- Remove the old overview section and move directly to tabs -->
+                            <div class="details-tabs">
+                                <div class="tab-navigation">
+                                    <button class="tab-btn active" data-tab="logs">
+                                        <i class="fas fa-file-alt"></i>
+                                        Logs
+                                    </button>
+                                    <button class="tab-btn" data-tab="files">
+                                        <i class="fas fa-folder"></i>
+                                        Files
+                                    </button>
+                                    <button class="tab-btn" data-tab="exec">
+                                        <i class="fas fa-terminal"></i>
+                                        Exec
+                                    </button>
+                                    <button class="tab-btn" data-tab="env">
+                                        <i class="fas fa-cog"></i>
+                                        Environment
+                                    </button>
+                                    <button class="tab-btn" data-tab="volumes">
+                                        <i class="fas fa-hdd"></i>
+                                        Volumes
+                                    </button>
+                                    <button class="tab-btn" data-tab="network">
+                                        <i class="fas fa-network-wired"></i>
+                                        Network
+                                    </button>
+                                    <button class="tab-btn" data-tab="stats">
+                                        <i class="fas fa-chart-bar"></i>
+                                        Stats
+                                    </button>
+                                </div>
+
+                                <div class="tab-content">
+                                    <!-- Logs Tab -->
+                                    <div class="tab-pane active" id="logsTab">
+                                        <div class="logs-container">
+                                            <div class="logs-toolbar">
+                                                <button class="action-btn secondary" id="clearLogsBtn">
+                                                    <i class="fas fa-trash"></i>
+                                                    Clear
+                                                </button>
+                                                <button class="action-btn secondary" id="downloadLogsBtn">
+                                                    <i class="fas fa-download"></i>
+                                                    Download
+                                                </button>
+                                                <label>
+                                                    <input type="checkbox" id="autoRefreshLogs" checked>
+                                                    Auto-refresh
+                                                </label>
+                                            </div>
+                                            <div class="logs-content" id="logsContent">
+                                                <div class="loading">Loading logs...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Files Tab -->
+                                    <div class="tab-pane" id="filesTab">
+                                        <div class="files-container">
+                                            <div class="files-toolbar">
+                                                <div class="files-path">
+                                                    <span>Path: </span>
+                                                    <span id="currentPath">/</span>
+                                                </div>
+                                                <button class="action-btn secondary" id="refreshFilesBtn">
+                                                    <i class="fas fa-sync"></i>
+                                                    Refresh
+                                                </button>
+                                            </div>
+                                            <div class="files-content" id="filesContent">
+                                                <div class="loading">Loading files...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Exec Tab -->
+                                    <div class="tab-pane" id="execTab">
+                                        <div class="exec-container">
+                                            <div class="exec-toolbar">
+                                                <select id="execShell" class="exec-shell-select">
+                                                    <option value="/bin/bash">bash</option>
+                                                    <option value="/bin/sh">sh</option>
+                                                    <option value="/bin/zsh">zsh</option>
+                                                </select>
+                                                <button class="action-btn primary" id="connectExecBtn">
+                                                    <i class="fas fa-plug"></i>
+                                                    Connect
+                                                </button>
+                                            </div>
+                                            <div class="exec-terminal" id="execTerminal">
+                                                <div class="terminal-placeholder">
+                                                    Click "Connect" to open a terminal session in the container
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Environment Tab -->
+                                    <div class="tab-pane" id="envTab">
+                                        <div class="env-container">
+                                            <div class="env-toolbar">
+                                                <button class="action-btn secondary" id="refreshEnvBtn">
+                                                    <i class="fas fa-sync"></i>
+                                                    Refresh
+                                                </button>
+                                                <button class="action-btn secondary" id="exportEnvBtn">
+                                                    <i class="fas fa-download"></i>
+                                                    Export
+                                                </button>
+                                            </div>
+                                            <div class="env-content" id="envContent">
+                                                <div class="loading">Loading environment variables...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Volumes Tab -->
+                                    <div class="tab-pane" id="volumesTab">
+                                        <div class="volumes-container">
+                                            <div class="volumes-toolbar">
+                                                <button class="action-btn secondary" id="refreshVolumesBtn">
+                                                    <i class="fas fa-sync"></i>
+                                                    Refresh
+                                                </button>
+                                            </div>
+                                            <div class="volumes-content" id="volumesContent">
+                                                <div class="loading">Loading volume information...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Network Tab -->
+                                    <div class="tab-pane" id="networkTab">
+                                        <div class="network-container">
+                                            <div class="network-toolbar">
+                                                <button class="action-btn secondary" id="refreshNetworkBtn">
+                                                    <i class="fas fa-sync"></i>
+                                                    Refresh
+                                                </button>
+                                            </div>
+                                            <div class="network-content" id="networkContent">
+                                                <div class="loading">Loading network information...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Stats Tab -->
+                                    <div class="tab-pane" id="statsTab">
+                                        <div class="stats-container">
+                                            <div class="stats-toolbar">
+                                                <button class="action-btn secondary" id="refreshStatsBtn">
+                                                    <i class="fas fa-sync"></i>
+                                                    Refresh
+                                                </button>
+                                                <label>
+                                                    <input type="checkbox" id="autoRefreshStats" checked>
+                                                    Auto-refresh
+                                                </label>
+                                            </div>
+                                            <div class="stats-content" id="statsContent">
+                                                <div class="loading">Loading container statistics...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Images Section -->
+                <div class="content-section" id="imagesSection">
+                    <div class="section-header">
+                        <h2>Images</h2>
+                        <div class="section-actions">
+                            <button class="action-btn primary" id="pullImageBtn">
+                                <i class="fas fa-download"></i>
+                                Pull Image
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="imagesTable">
+                            <thead>
+                                <tr>
+                                    <th>Repository</th>
+                                    <th>Tag</th>
+                                    <th>Image ID</th>
+                                    <th>Created</th>
+                                    <th>Size</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="imagesTableBody">
+                                <!-- Image rows will be populated here -->
+                            </tbody>
+                        </table>
+                        <div id="imagesEmpty" class="empty-state" style="display: none;">
+                            <i class="fas fa-layer-group"></i>
+                            <h3>No images found</h3>
+                            <p>Pull an image to get started</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Volumes Section -->
+                <div class="content-section" id="volumesSection">
+                    <div class="section-header">
+                        <h2>Volumes</h2>
+                        <div class="section-actions">
+                            <button class="action-btn primary" id="createVolumeBtn">
+                                <i class="fas fa-plus"></i>
+                                Create Volume
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="volumesTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Driver</th>
+                                    <th>Mountpoint</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="volumesTableBody">
+                                <!-- Volume rows will be populated here -->
+                            </tbody>
+                        </table>
+                        <div id="volumesEmpty" class="empty-state" style="display: none;">
+                            <i class="fas fa-hdd"></i>
+                            <h3>No volumes found</h3>
+                            <p>Create a volume to get started</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/static/script.js?v={{ timestamp }}"></script>
+</body>
+</html>

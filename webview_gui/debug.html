@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+</head>
+<body>
+    <h1>Debug Test</h1>
+    <div id="status"></div>
+    <div id="containers"></div>
+    
+    <script>
+        async function testAPI() {
+            const statusDiv = document.getElementById('status');
+            const containersDiv = document.getElementById('containers');
+            
+            try {
+                statusDiv.innerHTML = 'Testing API...';
+                
+                // Test containers API
+                const response = await fetch('/api/containers');
+                statusDiv.innerHTML = `API Status: ${response.status} ${response.statusText}`;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    containersDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    containersDiv.innerHTML = 'Failed to load data';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `Error: ${error.message}`;
+                containersDiv.innerHTML = 'Connection failed';
+            }
+        }
+        
+        testAPI();
+    </script>
+</body>
+</html>
