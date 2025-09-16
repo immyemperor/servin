@@ -301,7 +301,7 @@ jobs:
           2. Extract and run `./ServinInstaller.sh`
           3. Or use Terminal: `sudo ./install-servin.sh`
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.SERVIN_TOKEN }}
 
   # Test installations (optional)
   test:
