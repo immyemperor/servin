@@ -621,8 +621,15 @@ EOF
                 cp "$DIST_DIR/servin-webview.bat" "$installer_dir/package/"
                 cp -r "$DIST_DIR/webview_gui" "$installer_dir/package/"
                 cp -r "$DIST_DIR/icons" "$installer_dir/package/"
-                cp "$DIST_DIR/README.md" "$installer_dir/package/"
-                cp "$DIST_DIR/LICENSE" "$installer_dir/package/"
+                
+                # Copy and rename files to match NSIS expectations
+                cp "$DIST_DIR/README.md" "$installer_dir/package/README.txt"
+                cp "$DIST_DIR/LICENSE" "$installer_dir/package/LICENSE.txt"
+                
+                # Copy configuration file if it exists
+                if [[ -f "installers/windows/servin.conf" ]]; then
+                    cp "installers/windows/servin.conf" "$installer_dir/package/"
+                fi
                 
                 # Create build script for NSIS installer
                 cat > "$installer_dir/build-installer.bat" << 'EOF'

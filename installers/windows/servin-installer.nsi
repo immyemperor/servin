@@ -75,7 +75,7 @@ VIAddVersionKey "InternalName" "ServinSetup"
 ; Finish page
 !define MUI_FINISHPAGE_TITLE "Servin Container Runtime Installation Complete"
 !define MUI_FINISHPAGE_TEXT "Servin Container Runtime has been successfully installed on your computer.$\r$\n$\r$\nThe Servin service will start automatically. You can launch the GUI from the Start Menu or desktop shortcut."
-!define MUI_FINISHPAGE_RUN "$INSTDIR\servin-gui.exe"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\servin-desktop.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Launch Servin GUI"
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\README.txt"
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Show README"
@@ -151,10 +151,10 @@ Section "Core Runtime" SecCore
   ExecWait 'sc stop "ServinRuntime"'
   
   ; Install main executable
-  File "servin.exe"
+  File "package\servin.exe"
   
   ; Install TUI (Terminal User Interface)
-  File "servin-desktop.exe"
+  File "package\servin-desktop.exe"
   
   ; Create data directories
   CreateDirectory "$APPDATA\Servin"
@@ -164,14 +164,14 @@ Section "Core Runtime" SecCore
   CreateDirectory "$APPDATA\Servin\volumes"
   CreateDirectory "$APPDATA\Servin\images"
   
-  ; Install configuration file
+  ; Install configuration file (if available)
   SetOutPath "$APPDATA\Servin\config"
-  File "servin.conf"
+  File /nonfatal "package\servin.conf"
   
   ; Install documentation
   SetOutPath "$INSTDIR"
-  File "README.txt"
-  File "LICENSE.txt"
+  File "package\README.txt"
+  File "package\LICENSE.txt"
   
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -196,10 +196,10 @@ SectionEnd
 ; GUI Application
 Section "Desktop GUI" SecGUI
   SetOutPath "$INSTDIR"
-  File "servin-gui.exe"
+  File "package\servin-desktop.exe"
   
   ; Create desktop shortcut
-  CreateShortcut "$DESKTOP\Servin GUI.lnk" "$INSTDIR\servin-gui.exe" "" "$INSTDIR\servin-gui.exe" 0
+  CreateShortcut "$DESKTOP\Servin GUI.lnk" "$INSTDIR\servin-desktop.exe" "" "$INSTDIR\servin-desktop.exe" 0
 SectionEnd
 
 ; Windows Service
@@ -219,7 +219,7 @@ Section "Start Menu Shortcuts" SecStartMenu
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
   
   CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-  CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin GUI.lnk" "$INSTDIR\servin-gui.exe"
+  CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin GUI.lnk" "$INSTDIR\servin-desktop.exe"
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin Desktop (TUI).lnk" "$INSTDIR\servin-desktop.exe"
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin Command Prompt.lnk" "cmd.exe" "/k cd /d $\"$INSTDIR$\""
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall Servin.lnk" "$INSTDIR\Uninstall.exe"
@@ -246,7 +246,7 @@ Section "Uninstall"
   
   ; Remove files
   Delete "$INSTDIR\servin.exe"
-  Delete "$INSTDIR\servin-gui.exe"
+  Delete "$INSTDIR\servin-desktop.exe"
   Delete "$INSTDIR\README.txt"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\Uninstall.exe"
