@@ -96,10 +96,12 @@ build_for_arch() {
             echo -e "${YELLOW}📦 Building for ${target_arch}${NC}"
             ;;
         linux)
+            arch_suffix="-${target_arch}"
             goos="linux"
             echo -e "${YELLOW}📦 Building for ${target_arch}${NC}"
             ;;
         windows)
+            arch_suffix="-${target_arch}"
             goos="windows"
             exe_ext=".exe"
             echo -e "${YELLOW}📦 Building for ${target_arch}${NC}"
