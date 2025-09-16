@@ -432,7 +432,7 @@ Click 'Install' to begin the installation process."""
             self.status_label.configure(text="Installing binaries...")
             script_dir = os.path.dirname(os.path.abspath(__file__))
             
-            binaries = ["servin", "servin-desktop"]
+            binaries = ["servin", "servin-tui"]
             if self.install_gui.get():
                 binaries.append("servin-gui")
             

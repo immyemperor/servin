@@ -651,11 +651,18 @@ the Servin container runtime on your system."""
     def log_message(self, message):
         self.log_text.insert(tk.END, f"{message}\n")
         self.log_text.see(tk.END)
+        self.root.update_idletasks()  # Better UI responsiveness
+        self.root.update()
+    
+    def update_status(self, message):
+        """Update status label and force UI update"""
+        self.status_label.configure(text=message)
+        self.root.update_idletasks()
         self.root.update()
     
     def perform_installation(self):
         try:
-            self.status_label.configure(text="Creating directories...")
+            self.update_status("Creating directories...")
             self.log_message("🚀 Starting Servin installation for macOS")
             
             # Create directories
@@ -668,15 +675,25 @@ the Servin container runtime on your system."""
                 "/usr/local/var/log/servin"
             ]
             
-            for directory in directories:
-                os.makedirs(directory, exist_ok=True)
-                self.log_message(f"📁 Created directory: {directory}")
+            for i, directory in enumerate(directories):
+                try:
+                    os.makedirs(directory, exist_ok=True)
+                    self.log_message(f"📁 Created directory: {directory}")
+                    self.root.update_idletasks()  # Update UI during loop
+                except OSError as e:
+                    self.log_message(f"❌ Failed to create directory {directory}: {e}")
+                    raise
             
             # Install binaries
-            self.status_label.configure(text="Installing binaries...")
+            self.update_status("Installing binaries...")
             script_dir = os.path.dirname(os.path.abspath(__file__))
             
-            binaries = ["servin"]
+            # Check for package directory first
+            package_dir = os.path.join(script_dir, "package")
+            if os.path.exists(package_dir):
+                script_dir = package_dir
+            
+            binaries = ["servin", "servin-tui"]
             if self.install_gui.get():
                 binaries.append("servin-gui")
             
@@ -740,6 +757,7 @@ enable_notifications=true"""
     
     def create_system_user(self):
         try:
+            self.update_status("Creating system user...")
             # Find next available UID in system range
             uid = 200
             while uid < 500:
@@ -759,8 +777,16 @@ enable_notifications=true"""
                 ['dscl', '.', '-create', '/Users/_servin', 'NFSHomeDirectory', '/var/empty']
             ]
             
-            for cmd in commands:
-                subprocess.run(cmd, check=True, capture_output=True)
+            for i, cmd in enumerate(commands):
+                try:
+                    result = subprocess.run(cmd, timeout=10, capture_output=True, text=True)
+                    if result.returncode != 0:
+                        self.log_message(f"⚠️  Warning: dscl command {i+1} failed: {result.stderr}")
+                    self.root.update_idletasks()
+                except subprocess.TimeoutExpired:
+                    self.log_message(f"⚠️  Warning: dscl command {i+1} timed out")
+                except Exception as e:
+                    self.log_message(f"⚠️  Warning: dscl command {i+1} failed: {e}")
             
             self.log_message(f"👤 Created system user '_servin' with UID {uid}")
             
@@ -768,75 +794,105 @@ enable_notifications=true"""
             self.log_message(f"⚠️  Warning: Could not create system user: {str(e)}")
     
     def install_launchd_service(self):
-        plist_path = "/Library/LaunchDaemons/com.servin.runtime.plist"
-        
-        plist_data = {
-            'Label': 'com.servin.runtime',
-            'ProgramArguments': [
-                f"{self.install_dir.get()}/servin",
-                'daemon',
-                '--config',
-                f"{self.config_dir.get()}/servin.conf"
-            ],
-            'UserName': '_servin' if self.create_user.get() else 'root',
-            'GroupName': 'staff',
-            'RunAtLoad': True,
-            'KeepAlive': {
-                'SuccessfulExit': False,
-                'Crashed': True
-            },
-            'StandardOutPath': '/usr/local/var/log/servin/servin.stdout.log',
-            'StandardErrorPath': '/usr/local/var/log/servin/servin.stderr.log',
-            'WorkingDirectory': self.data_dir.get(),
-            'EnvironmentVariables': {
-                'PATH': '/usr/local/bin:/usr/bin:/bin'
-            },
-            'ThrottleInterval': 10
-        }
-        
-        with open(plist_path, 'wb') as f:
-            plistlib.dump(plist_data, f)
-        
-        os.chmod(plist_path, 0o644)
-        subprocess.run(['launchctl', 'load', plist_path], check=False)
-        
-        self.log_message("🔧 Installed launchd service")
+        try:
+            self.update_status("Installing launchd service...")
+            plist_path = "/Library/LaunchDaemons/com.servin.runtime.plist"
+            
+            plist_data = {
+                'Label': 'com.servin.runtime',
+                'ProgramArguments': [
+                    f"{self.install_dir.get()}/servin",
+                    'daemon',
+                    '--config',
+                    f"{self.config_dir.get()}/servin.conf"
+                ],
+                'UserName': '_servin' if self.create_user.get() else 'root',
+                'GroupName': 'staff',
+                'RunAtLoad': True,
+                'KeepAlive': {
+                    'SuccessfulExit': False,
+                    'Crashed': True
+                },
+                'StandardOutPath': '/usr/local/var/log/servin/servin.stdout.log',
+                'StandardErrorPath': '/usr/local/var/log/servin/servin.stderr.log',
+                'WorkingDirectory': self.data_dir.get(),
+                'EnvironmentVariables': {
+                    'PATH': '/usr/local/bin:/usr/bin:/bin'
+                },
+                'ThrottleInterval': 10
+            }
+            
+            with open(plist_path, 'wb') as f:
+                plistlib.dump(plist_data, f)
+            
+            os.chmod(plist_path, 0o644)
+            
+            # Load service with timeout
+            try:
+                result = subprocess.run(['launchctl', 'load', plist_path], 
+                                      timeout=30, capture_output=True, text=True)
+                if result.returncode != 0:
+                    self.log_message(f"⚠️  Warning: launchctl load returned {result.returncode}: {result.stderr}")
+                else:
+                    self.log_message("🔧 Installed launchd service")
+            except subprocess.TimeoutExpired:
+                self.log_message("⚠️  Warning: launchctl load timed out, service may still be loading")
+            except Exception as e:
+                self.log_message(f"⚠️  Warning: Failed to load service: {e}")
+                
+        except Exception as e:
+            self.log_message(f"❌ Failed to install launchd service: {e}")
+            raise
     
     def create_application_bundle(self):
-        app_path = "/Applications/Servin GUI.app"
-        contents_path = f"{app_path}/Contents"
-        macos_path = f"{contents_path}/MacOS"
-        resources_path = f"{contents_path}/Resources"
-        
-        # Create directory structure
-        for path in [macos_path, resources_path]:
-            os.makedirs(path, exist_ok=True)
-        
-        # Copy executable
-        gui_exe = f"{self.install_dir.get()}/servin-gui"
-        if os.path.exists(gui_exe):
-            shutil.copy2(gui_exe, f"{macos_path}/Servin GUI")
-            os.chmod(f"{macos_path}/Servin GUI", 0o755)
-        
-        # Create Info.plist
-        info_plist = {
-            'CFBundleExecutable': 'Servin GUI',
-            'CFBundleIdentifier': 'com.servin.gui',
-            'CFBundleName': 'Servin GUI',
-            'CFBundleDisplayName': 'Servin GUI',
-            'CFBundleVersion': '1.0.0',
-            'CFBundleShortVersionString': '1.0.0',
-            'CFBundlePackageType': 'APPL',
-            'CFBundleSignature': 'SERV',
-            'LSMinimumSystemVersion': '10.12',
-            'NSHighResolutionCapable': True,
-            'LSApplicationCategoryType': 'public.app-category.developer-tools'
-        }
-        
-        with open(f"{contents_path}/Info.plist", 'wb') as f:
-            plistlib.dump(info_plist, f)
-        
-        self.log_message("🍎 Created application bundle")
+        try:
+            self.update_status("Creating application bundle...")
+            app_path = "/Applications/Servin GUI.app"
+            contents_path = f"{app_path}/Contents"
+            macos_path = f"{contents_path}/MacOS"
+            resources_path = f"{contents_path}/Resources"
+            
+            # Create directory structure
+            for path in [macos_path, resources_path]:
+                os.makedirs(path, exist_ok=True)
+                self.root.update_idletasks()
+            
+            # Copy executable
+            gui_exe = f"{self.install_dir.get()}/servin-gui"
+            if os.path.exists(gui_exe):
+                try:
+                    shutil.copy2(gui_exe, f"{macos_path}/Servin GUI")
+                    os.chmod(f"{macos_path}/Servin GUI", 0o755)
+                    self.log_message("📱 Copied GUI executable to app bundle")
+                except Exception as e:
+                    self.log_message(f"⚠️  Warning: Failed to copy GUI executable: {e}")
+            else:
+                self.log_message("⚠️  Warning: GUI executable not found, skipping app bundle")
+                return
+            
+            # Create Info.plist
+            info_plist = {
+                'CFBundleExecutable': 'Servin GUI',
+                'CFBundleIdentifier': 'com.servin.gui',
+                'CFBundleName': 'Servin GUI',
+                'CFBundleDisplayName': 'Servin GUI',
+                'CFBundleVersion': '1.0.0',
+                'CFBundleShortVersionString': '1.0.0',
+                'CFBundlePackageType': 'APPL',
+                'CFBundleSignature': 'SERV',
+                'LSMinimumSystemVersion': '10.12',
+                'NSHighResolutionCapable': True,
+                'LSApplicationCategoryType': 'public.app-category.developer-tools'
+            }
+            
+            with open(f"{contents_path}/Info.plist", 'wb') as f:
+                plistlib.dump(info_plist, f)
+            
+            self.log_message("🍎 Created application bundle")
+            
+        except Exception as e:
+            self.log_message(f"❌ Failed to create application bundle: {e}")
+            # Don't raise here as it's not critical
     
     def update_success_page(self):
         components = ["Core Runtime (servin)"]
@@ -857,9 +913,20 @@ enable_notifications=true"""
         # Perform final actions
         if self.start_service.get() and self.install_service.get():
             try:
-                subprocess.run(['launchctl', 'start', 'com.servin.runtime'], check=True)
-                self.log_message("✅ Started Servin service")
-            except:
+                result = subprocess.run(['launchctl', 'start', 'com.servin.runtime'], 
+                                      timeout=15, capture_output=True, text=True)
+                if result.returncode == 0:
+                    self.log_message("✅ Started Servin service")
+                else:
+                    self.log_message(f"⚠️  Service start returned {result.returncode}: {result.stderr}")
+                    messagebox.showwarning("Service", "Could not start Servin service automatically.\n"
+                                         "You can start it manually from System Preferences.")
+            except subprocess.TimeoutExpired:
+                self.log_message("⚠️  Service start timed out")
+                messagebox.showwarning("Service", "Service start timed out.\n"
+                                     "You can start it manually from System Preferences.")
+            except Exception as e:
+                self.log_message(f"⚠️  Service start failed: {e}")
                 messagebox.showwarning("Service", "Could not start Servin service automatically.\n"
                                      "You can start it manually from System Preferences.")
         
@@ -867,10 +934,16 @@ enable_notifications=true"""
             try:
                 if self.create_app_bundle.get():
                     subprocess.Popen(['open', '/Applications/Servin GUI.app'], start_new_session=True)
+                    self.log_message("🚀 Launched GUI application")
                 else:
                     gui_path = f"{self.install_dir.get()}/servin-gui"
-                    subprocess.Popen([gui_path], start_new_session=True)
-            except:
+                    if os.path.exists(gui_path):
+                        subprocess.Popen([gui_path], start_new_session=True)
+                        self.log_message("🚀 Launched GUI application")
+                    else:
+                        self.log_message("⚠️  GUI executable not found")
+            except Exception as e:
+                self.log_message(f"⚠️  Failed to launch GUI: {e}")
                 pass
         
         if self.open_applications.get():

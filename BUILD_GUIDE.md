@@ -6,7 +6,7 @@ This document describes the build scripts and processes for the Servin Container
 
 ### `build-local.sh` ⭐ **Recommended for Current Platform**
 - **Purpose**: Builds all Servin binaries for the current platform into `build/<platform>/`
-- **Output**: Creates `build/<platform>/servin`, `build/<platform>/servin-desktop`, `build/<platform>/servin-gui`
+- **Output**: Creates `build/<platform>/servin`, `build/<platform>/servin-tui`, `build/<platform>/servin-gui`
 - **Usage**: `./build-local.sh`
 - **Features**:
   - Clean build environment (removes old build directory)
@@ -57,7 +57,7 @@ This document describes the build scripts and processes for the Servin Container
 - Builds only the main `servin` binary in project root
 
 ### `make build-tui`
-- Builds only the `servin-desktop` TUI binary in project root
+- Builds only the `servin-tui` TUI binary in project root
 
 ### `make build-gui`
 - Builds only the `servin-gui` GUI binary in project root
@@ -77,17 +77,17 @@ build/
 ├── darwin-arm64/               # macOS Apple Silicon binaries
 │   ├── README.md               # Platform-specific docs
 │   ├── servin                  # Main runtime
-│   ├── servin-desktop          # TUI application
+│   ├── servin-tui          # TUI application
 │   └── servin-gui              # GUI application
 ├── linux-amd64/               # Linux 64-bit binaries
 │   ├── README.md
 │   ├── servin
-│   ├── servin-desktop
+│   ├── servin-tui
 │   └── servin-gui
 └── windows-amd64/              # Windows 64-bit binaries
     ├── README.md
     ├── servin.exe
-    ├── servin-desktop.exe
+    ├── servin-tui.exe
     └── servin-gui.exe
 ```
 
@@ -96,7 +96,7 @@ build/
 | Binary | Size | Description |
 |--------|------|-------------|
 | `servin` | ~11MB | Main container runtime |
-| `servin-desktop` | ~3MB | Terminal UI application |
+| `servin-tui` | ~3MB | Terminal UI application |
 | `servin-gui` | ~31MB | Desktop GUI application |
 
 ## Quick Commands
@@ -116,7 +116,7 @@ make build-local
 
 # Test the binaries (example for macOS)
 ./build/darwin-arm64/servin --help
-./build/darwin-arm64/servin-desktop
+./build/darwin-arm64/servin-tui
 ./build/darwin-arm64/servin-gui
 
 # Cross-platform usage

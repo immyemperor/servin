@@ -86,9 +86,9 @@ eval "go build $LDFLAGS -o $PLATFORM_DIR/servin$EXT ."
 print_success "Built servin binary"
 
 # Build TUI desktop binary
-print_info "Building servin-desktop TUI binary..."
-eval "go build $LDFLAGS -o $PLATFORM_DIR/servin-desktop$EXT ./cmd/servin-desktop"
-print_success "Built servin-desktop TUI binary"
+print_info "Building servin-tui TUI binary..."
+eval "go build $LDFLAGS -o $PLATFORM_DIR/servin-tui$EXT ./cmd/servin-tui"
+print_success "Built servin-tui TUI binary"
 
 # Build GUI binary (optional)
 print_info "Building servin-gui binary..."
@@ -116,9 +116,9 @@ This directory contains the compiled binaries for the Servin Container Runtime b
 - **Usage**: \`./servin$EXT [command] [flags]\`
 - **Help**: \`./servin$EXT --help\`
 
-### \`servin-desktop$EXT\`
+### \`servin-tui$EXT\`
 - **Description**: Terminal User Interface (TUI) for Servin  
-- **Usage**: \`./servin-desktop$EXT\`
+- **Usage**: \`./servin-tui$EXT\`
 - **Features**: Interactive terminal-based management interface
 
 ### \`servin-gui$EXT\`
@@ -143,7 +143,7 @@ This directory contains the compiled binaries for the Servin Container Runtime b
    \`\`\`
 
 2. **GUI Interface**: \`./servin-gui$EXT\`
-3. **TUI Interface**: \`./servin-desktop$EXT\`
+3. **TUI Interface**: \`./servin-tui$EXT\`
 
 ## Rebuilding
 
@@ -163,7 +163,7 @@ build/
 └── $PLATFORM-$ARCH/          # Current platform binaries
     ├── README.md             # Platform-specific documentation
     ├── servin$EXT            # Main runtime binary
-    ├── servin-desktop$EXT    # TUI binary
+    ├── servin-tui$EXT    # TUI binary
     └── servin-gui$EXT        # GUI binary (if available)
 \`\`\`
 
@@ -178,7 +178,7 @@ Navigate to your platform directory and run the binaries:
 \`\`\`bash
 cd $PLATFORM-$ARCH
 ./servin$EXT --help
-./servin-desktop$EXT
+./servin-tui$EXT
 ./servin-gui$EXT
 \`\`\`
 
@@ -207,5 +207,5 @@ print_success "All binaries are available in the '$PLATFORM_DIR' directory"
 echo ""
 print_info "Usage:"
 echo "  Runtime: ./$PLATFORM_DIR/servin$EXT --help"
-echo "  TUI:     ./$PLATFORM_DIR/servin-desktop$EXT"
+echo "  TUI:     ./$PLATFORM_DIR/servin-tui$EXT"
 echo "  GUI:     ./$PLATFORM_DIR/servin-gui$EXT"

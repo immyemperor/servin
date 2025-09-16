@@ -4,13 +4,51 @@
 
 Servin is a lightweight container runtime built from scratch in Go that provides comprehensive containerization capabilities with cross-platform support for development and production environments. It includes advanced security features such as user namespaces, rootless containers, and local registry support.
 
-## 📚 Documentation
+## � Quick Installation
+
+### Download from GitHub Releases
+
+Get the latest release from: **[GitHub Releases](https://github.com/immyemperor/servin/releases/latest)**
+
+#### 🍎 macOS
+```bash
+# Download and install via DMG (Recommended)
+# 1. Download Servin-Container-Runtime.dmg from releases
+# 2. Double-click to mount
+# 3. Drag Servin.app to Applications
+
+# Or use the installer wizard
+curl -O https://github.com/immyemperor/servin/releases/latest/download/servin-macos-universal.tar.gz
+tar -xzf servin-macos-universal.tar.gz
+cd servin-macos-universal
+sudo ./ServinInstaller.command
+```
+
+#### 🐧 Linux
+```bash
+# Download and extract
+wget https://github.com/immyemperor/servin/releases/latest/download/servin-linux-amd64.tar.gz
+tar -xzf servin-linux-amd64.tar.gz
+cd servin-linux-amd64
+
+# Run installer wizard
+sudo ./ServinInstaller.sh
+```
+
+#### 🪟 Windows
+```powershell
+# Download servin-windows-amd64.zip from releases
+# Extract and run installer
+.\ServinSetup.exe
+```
+
+## �📚 Documentation
 
 **Complete documentation is available at: [https://immyemperor.github.io/servin](https://immyemperor.github.io/servin)**
 
 The documentation includes:
 - 🛠️ **Installation guides** for Windows, Linux, and macOS
-- 🖥️ **User interface documentation** (CLI, TUI, Desktop GUI, WebView)
+- 🖥️ **User interface documentation** (CLI, TUI, Desktop GUI)
 - 📖 **API reference** and developer guides
 - 🏗️ **Architecture overview** and technical details
 - 🔧 **Configuration** and troubleshooting guides
@@ -39,87 +77,34 @@ The documentation includes:
 - **Sudo requirement handling** with `--dev` flag bypass option
 - **Native macOS path conventions**
 
-## Core Features
+## 🎯 Core Features
 
-### Container Management
-- **Lifecycle management**: create, start, stop, remove containers
-- **Process isolation**: namespace-based process separation (Linux)
-- **Resource limits**: CPU and memory constraints via cgroups (Linux)
-- **Enhanced security**: User namespaces with UID/GID mapping for privilege isolation
-- **State persistence**: JSON-based container state tracking across platforms
-- **Log capture**: Automatic stdout/stderr capture with timestamp support
+### 🛡️ Security First
+- **User Namespaces**: Complete user and group ID mapping
+- **Rootless Containers**: Run containers without root privileges
+- **PID Isolation**: Process ID namespace isolation
+- **Network Isolation**: Dedicated network namespaces per container
+- **cgroup v2 Integration**: Advanced resource management and limits
 
-### Image System
-- **Tarball import/export**: Full image packaging system
-- **Metadata management**: JSON-based image indexing
-- **Multi-tag support**: Repository-style image tagging and re-tagging
-- **Cross-platform storage**: Platform-appropriate paths for all systems
-- **Buildfile support**: Docker-compatible image building from Buildfiles
+### 🏗️ Container Management
+- **Lifecycle Control**: Create, start, stop, pause, resume containers
+- **Multi-format Support**: OCI, Docker images, and custom rootfs
+- **Volume Management**: Bind mounts and named volumes
+- **Network Management**: Custom networking with IPAM
+- **Compose Support**: Multi-container application orchestration
 
-### Networking (Linux Only)
-- **Bridge networking**: Default `servin0` bridge with IPAM
-- **Container connectivity**: veth pair creation and management
-- **Port mapping**: Host-to-container port forwarding
-- **NAT integration**: iptables-based network address translation
+### 🖥️ Multiple User Interfaces
+- **CLI**: Command-line interface for automation and scripting
+- **TUI**: Text-based user interface for interactive management
+- **Desktop GUI**: Native desktop application (Flask + pywebview, distributed as binary)
+- **CRI Support**: Kubernetes Container Runtime Interface compatible
 
-### Volume Management
-- **Named volumes**: Create and manage persistent data volumes
-- **Cross-platform storage**: Platform-appropriate volume paths
-- **Label support**: Metadata and organization capabilities
-- **Lifecycle management**: Create, list, inspect, and remove volumes
-- **Bulk operations**: Remove all volumes with confirmation
-
-### Security and Isolation
-- **User namespaces**: Enhanced security with UID/GID mapping and privilege isolation
-- **Rootless containers**: Run containers without root privileges for improved security
-- **Capability management**: Fine-grained capability control and privilege dropping
-- **Security policies**: Configurable security constraints and no-new-privileges support
-- **Security validation**: Built-in security feature detection and testing
-
-### Compose Orchestration
-- **Multi-service applications**: Define and run applications with multiple containers
-- **YAML configuration**: Docker Compose-compatible `servin-compose.yml` format
-- **Service dependencies**: Automatic dependency resolution and startup ordering
-- **Shared networking**: Services can communicate using service names
-- **Volume sharing**: Named volumes and bind mounts across services
-- **Environment management**: Service-specific environment variables and configuration
-- **Lifecycle management**: Up/down operations for entire application stacks
-
-### Container Runtime Interface (CRI)
-- **Kubernetes compatibility**: HTTP-based CRI server implementing Kubernetes CRI specification v1alpha2
-- **Pod sandbox operations**: Create, list, start, stop, and remove pod sandboxes for Kubernetes pod management
-- **Container lifecycle**: Full CRI-compatible container operations including create, start, stop, remove, and status
-- **Image service**: Comprehensive image operations with list, pull, remove, and status functionality
-- **Health monitoring**: Built-in health endpoints for monitoring CRI server status
-- **RESTful API**: HTTP endpoints at `/v1/runtime/` and `/v1/image/` for easy integration
-- **Development friendly**: Simple HTTP-based approach instead of complex gRPC for easier testing and debugging
-
-#### CRI Usage
-```bash
-# Start CRI server
-servin cri start --port 8080
-
-# Available endpoints:
-# GET  /health                     - Health check
-# POST /v1/runtime/version         - Get runtime version
-# GET  /v1/runtime/status          - Get runtime status  
-# POST /v1/runtime/sandbox/list    - List pod sandboxes
-# POST /v1/runtime/sandbox/create  - Create pod sandbox
-# POST /v1/runtime/sandbox/start   - Start pod sandbox
-# POST /v1/runtime/sandbox/stop    - Stop pod sandbox
-# POST /v1/runtime/sandbox/remove  - Remove pod sandbox
-# POST /v1/runtime/container/list  - List containers
-# POST /v1/runtime/container/create - Create container
-# POST /v1/runtime/container/start - Start container
-# POST /v1/runtime/container/stop  - Stop container
-# POST /v1/runtime/container/remove - Remove container
-# POST /v1/runtime/container/status - Get container status
-# POST /v1/image/list              - List images
-# POST /v1/image/status            - Get image status
-# POST /v1/image/pull              - Pull image
-# POST /v1/image/remove            - Remove image
-# POST /v1/image/fs                - Get filesystem usage
-```
+### 🚀 Recent Improvements
+- **Binary Distribution**: Desktop GUI now ships as a compiled binary for better performance
+- **Professional Installers**: Cross-platform installer wizards with proper privilege handling
+- **macOS .dmg Support**: Professional disk image distribution for macOS
+- **Enhanced Security**: Improved privilege escalation and user consent flows
+- **Better Error Handling**: Comprehensive timeout mechanisms and UI responsiveness
 
 ### Desktop Interface
 - **Terminal User Interface (TUI)**: Full-featured text-based interface for all Servin operations
@@ -127,7 +112,6 @@ servin cri start --port 8080
 - **Real-time feedback**: Command output and status updates displayed directly in terminal
 - **Cross-platform**: Works on Windows, Linux, and macOS with no additional dependencies
 - **Docker Desktop-like experience**: Familiar interface for container management workflows
-- **Future GUI support**: Planned graphical interface using Go-native frameworks
 
 ### Kubernetes Integration
 - **Container Runtime Interface (CRI)**: HTTP-based CRI server for Kubernetes compatibility
@@ -334,12 +318,24 @@ go run test-platform.go
 
 > **📖 For detailed installation instructions with professional installers, see the [Installation Guide](https://immyemperor.github.io/servin/installation/)**
 
-### Prerequisites
+### Recommended: Download from Releases
+**Get the latest release from: [GitHub Releases](https://github.com/immyemperor/servin/releases/latest)**
+
+Pre-built binaries are available for:
+- **macOS**: Universal binary + professional .dmg installer
+- **Linux**: AMD64 binary + installer wizard
+- **Windows**: AMD64 binary + setup wizard
+
+### Building from Source (Development)
+For development or custom builds:
+
+#### Prerequisites
 - **Go 1.21+** for building from source
+- **Python 3.8+** for desktop GUI development
 - **Linux kernel 3.8+** for full containerization features
 - **Root privileges** for production Linux deployment
 
-### Quick Start
+#### Quick Start
 ```bash
 # Clone and build
 git clone <repository>

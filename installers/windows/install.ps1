@@ -45,7 +45,7 @@ function Install-Servin {
 
     # Copy executables
     Write-ColoredText "Copying executables..."
-    $executables = @("servin.exe", "servin-desktop.exe", "servin-gui.exe")
+    $executables = @("servin.exe", "servin-tui.exe", "servin-gui.exe")
     foreach ($exe in $executables) {
         if (Test-Path $exe) {
             Copy-Item $exe -Destination (Join-Path $InstallDir $exe) -Force

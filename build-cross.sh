@@ -128,10 +128,10 @@ build_platform() {
     fi
     
     # Build TUI desktop binary
-    if GOOS=$goos GOARCH=$goarch CGO_ENABLED=0 go build -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME" -o "$platform_dir/servin-desktop$ext" ./cmd/servin-desktop 2>/dev/null; then
-        print_success "Built servin-desktop TUI binary for $platform_name"
+    if GOOS=$goos GOARCH=$goarch CGO_ENABLED=0 go build -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME" -o "$platform_dir/servin-tui$ext" ./cmd/servin-tui 2>/dev/null; then
+        print_success "Built servin-tui TUI binary for $platform_name"
     else
-        print_error "Failed to build servin-desktop TUI binary for $platform_name"
+        print_error "Failed to build servin-tui TUI binary for $platform_name"
     fi
     
     # Build GUI binary (requires CGO, might fail for cross-compilation)
@@ -164,9 +164,9 @@ This directory contains the compiled binaries for the Servin Container Runtime b
 - **Usage**: \`./servin$ext [command] [flags]\`
 - **Help**: \`./servin$ext --help\`
 
-### \`servin-desktop$ext\`
+### \`servin-tui$ext\`
 - **Description**: Terminal User Interface (TUI) for Servin  
-- **Usage**: \`./servin-desktop$ext\`
+- **Usage**: \`./servin-tui$ext\`
 - **Features**: Interactive terminal-based management interface
 
 ### \`servin-gui$ext\`
@@ -191,7 +191,7 @@ This directory contains the compiled binaries for the Servin Container Runtime b
    \`\`\`
 
 2. **GUI Interface**: \`./servin-gui$ext\`
-3. **TUI Interface**: \`./servin-desktop$ext\`
+3. **TUI Interface**: \`./servin-tui$ext\`
 
 ## Cross-Platform Note
 
@@ -267,7 +267,7 @@ Navigate to your platform directory and run the binaries:
 # Example for your current platform
 cd \$(go env GOOS)-\$(go env GOARCH)
 ./servin --help
-./servin-desktop
+./servin-tui
 ./servin-gui
 \`\`\`
 

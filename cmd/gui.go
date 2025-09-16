@@ -60,8 +60,8 @@ func runGUI(cmd *cobra.Command, args []string) error {
 		return runTUI()
 	}
 
-	// Try to launch Fyne GUI first, fall back to TUI if it fails
-	if err := runFyneGUI(); err != nil {
+	// Try to launch WebView GUI first, fall back to TUI if it fails
+	if err := runWebViewGUI(); err != nil {
 		fmt.Printf("GUI launch failed: %v\n", err)
 		fmt.Println("Falling back to Terminal UI...")
 		return runTUI()
@@ -84,7 +84,7 @@ func canRunGUI() bool {
 	}
 }
 
-func runFyneGUI() error {
+func runWebViewGUI() error {
 	fmt.Println("Starting Servin Desktop GUI...")
 
 	// Get the path to the current executable
@@ -93,8 +93,9 @@ func runFyneGUI() error {
 		return fmt.Errorf("failed to get executable path: %v", err)
 	}
 
-	// Look for servin-gui executable in the same directory
-	guiPath := filepath.Join(filepath.Dir(execPath), "servin-gui")
+	// Look for servin-gui executable in the same directory as the main executable
+	execDir := filepath.Dir(execPath)
+	guiPath := filepath.Join(execDir, "servin-gui")
 	if runtime.GOOS == "windows" {
 		guiPath += ".exe"
 	}
@@ -104,11 +105,16 @@ func runFyneGUI() error {
 		return fmt.Errorf("GUI executable not found at %s", guiPath)
 	}
 
-	// Launch the GUI
+	// Launch the GUI executable
 	cmd := exec.Command(guiPath)
+
 	if devMode {
 		cmd.Args = append(cmd.Args, "--dev")
 	}
+
+	// Set environment variables
+	cmd.Env = append(os.Environ(), fmt.Sprintf("SERVIN_GUI_PORT=%d", guiPort))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("SERVIN_GUI_HOST=%s", guiHost))
 
 	return cmd.Start()
 }
@@ -122,8 +128,8 @@ func runTUI() error {
 		return fmt.Errorf("failed to get executable path: %v", err)
 	}
 
-	// Look for servin-desktop executable in the same directory
-	tuiPath := filepath.Join(filepath.Dir(execPath), "servin-desktop")
+	// Look for servin-tui executable in the same directory
+	tuiPath := filepath.Join(filepath.Dir(execPath), "servin-tui")
 	if runtime.GOOS == "windows" {
 		tuiPath += ".exe"
 	}

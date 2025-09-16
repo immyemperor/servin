@@ -60,12 +60,12 @@ else
 fi
 
 # Desktop binary (optional)
-if [ -f "$SCRIPT_DIR/servin-desktop" ]; then
-    cp "$SCRIPT_DIR/servin-desktop" "$INSTALL_DIR/"
-    chmod +x "$INSTALL_DIR/servin-desktop"
-    echo -e "${GREEN}✓ Installed: servin-desktop${NC}"
+if [ -f "$SCRIPT_DIR/servin-tui" ]; then
+    cp "$SCRIPT_DIR/servin-tui" "$INSTALL_DIR/"
+    chmod +x "$INSTALL_DIR/servin-tui"
+    echo -e "${GREEN}✓ Installed: servin-tui${NC}"
 else
-    echo -e "${YELLOW}⚠️  Warning: servin-desktop not found, skipping${NC}"
+    echo -e "${YELLOW}⚠️  Warning: servin-tui not found, skipping${NC}"
 fi
 
 # Create configuration file
@@ -116,7 +116,7 @@ for config_file in "${SHELL_CONFIGS[@]}"; do
 done
 
 # Create desktop integration (Linux only)
-if [ "$PLATFORM" = "linux" ] && [ -f "$INSTALL_DIR/servin-desktop" ]; then
+if [ "$PLATFORM" = "linux" ] && [ -f "$INSTALL_DIR/servin-tui" ]; then
     echo -e "${YELLOW}🖥️  Creating desktop integration...${NC}"
     
     DESKTOP_DIR="$HOME/.local/share/applications"
@@ -124,7 +124,7 @@ if [ "$PLATFORM" = "linux" ] && [ -f "$INSTALL_DIR/servin-desktop" ]; then
     mkdir -p "$DESKTOP_DIR"
     
     # Install icon if available
-    ICON_NAME="servin-desktop"
+    ICON_NAME="servin-tui"
     ICON_REFERENCE="application-x-executable"  # fallback
     
     # Try to install different icon sizes
@@ -139,13 +139,13 @@ if [ "$PLATFORM" = "linux" ] && [ -f "$INSTALL_DIR/servin-desktop" ]; then
     done
     
     # Create desktop file
-    cat > "$DESKTOP_DIR/servin-desktop.desktop" << EOF
+    cat > "$DESKTOP_DIR/servin-tui.desktop" << EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=Servin Desktop
 Comment=Container Management with Servin
-Exec=$INSTALL_DIR/servin-desktop
+Exec=$INSTALL_DIR/servin-tui
 Icon=$ICON_REFERENCE
 Terminal=false
 Categories=Development;System;
@@ -153,12 +153,12 @@ Keywords=container;docker;runtime;
 StartupNotify=true
 EOF
     
-    chmod +x "$DESKTOP_DIR/servin-desktop.desktop"
+    chmod +x "$DESKTOP_DIR/servin-tui.desktop"
     echo -e "${GREEN}✓ Created desktop entry${NC}"
 fi
 
 # Create macOS app bundle (macOS only)
-if [ "$PLATFORM" = "mac" ] && [ -f "$INSTALL_DIR/servin-desktop" ]; then
+if [ "$PLATFORM" = "mac" ] && [ -f "$INSTALL_DIR/servin-tui" ]; then
     echo -e "${YELLOW}🍎 Creating macOS application bundle...${NC}"
     
     APP_PATH="$HOME/Applications/Servin Desktop.app"
@@ -170,7 +170,7 @@ if [ "$PLATFORM" = "mac" ] && [ -f "$INSTALL_DIR/servin-desktop" ]; then
     mkdir -p "$RESOURCES_PATH"
     
     # Copy executable
-    cp "$INSTALL_DIR/servin-desktop" "$MACOS_PATH/Servin Desktop"
+    cp "$INSTALL_DIR/servin-tui" "$MACOS_PATH/Servin Desktop"
     chmod +x "$MACOS_PATH/Servin Desktop"
     
     # Copy icon if available

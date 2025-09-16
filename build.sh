@@ -215,12 +215,12 @@ build_binaries() {
         -ldflags="-w -s -X main.version=$VERSION" \
         -o "$output_dir/servin$ext" .
     
-    # Build TUI binary (servin-desktop)
+    # Build TUI binary (servin-tui)
     print_info "  Building TUI binary..."
     GOOS=$platform GOARCH=$arch CGO_ENABLED=0 go build \
         -ldflags="-w -s -X main.version=$VERSION" \
-        -o "$output_dir/servin-desktop$ext" \
-        ./cmd/servin-desktop
+        -o "$output_dir/servin-tui$ext" \
+        ./cmd/servin-tui
     
     # Build WebView GUI (cross-platform Python-based)
     build_webview_gui "$platform" "$arch" "$ext"
@@ -272,7 +272,7 @@ Version: $VERSION
 
 Components:
 - servin.exe               : Command-line interface
-- servin-desktop.exe       : Terminal user interface  
+- servin-tui.exe       : Terminal user interface  
 - servin-webview.bat       : WebView GUI launcher (Python-based)
 - servin-webview-standalone.exe : Standalone WebView GUI (if available)
 - webview_gui/             : WebView GUI source files
@@ -296,7 +296,7 @@ This will:
 
 Usage:
 - CLI: servin.exe --help
-- TUI: servin-desktop.exe
+- TUI: servin-tui.exe
 - WebView GUI: servin-webview.bat or servin-webview-standalone.exe
 - Service: Start-Service ServinRuntime
 
@@ -385,7 +385,7 @@ Version: $VERSION
 
 ## Components
 - \`servin\`                    : Command-line interface
-- \`servin-desktop\`            : Terminal user interface
+- \`servin-tui\`            : Terminal user interface
 - \`servin-webview\`            : WebView GUI launcher (Python-based)
 - \`servin-webview-standalone\` : Standalone WebView GUI (if available)
 - \`webview_gui/\`              : WebView GUI source files
@@ -440,7 +440,7 @@ sudo pacman -S webkit2gtk
 
 ## Usage
 - CLI: \`servin --help\`
-- TUI: \`servin-desktop\`
+- TUI: \`servin-tui\`
 - WebView GUI: \`./servin-webview\` or \`./servin-webview-standalone\`
 - Service: \`sudo systemctl start servin\`
 
@@ -555,7 +555,7 @@ Version: $VERSION
 
 ## Components
 - \`servin\`                    : Command-line interface
-- \`servin-desktop\`            : Terminal user interface
+- \`servin-tui\`            : Terminal user interface
 - \`servin-webview\`            : WebView GUI launcher (Python-based)
 - \`servin-webview-standalone\` : Standalone WebView GUI (if available)
 - \`Servin WebView.app\`        : WebView macOS application bundle
@@ -593,7 +593,7 @@ brew install python3
 
 ## Usage
 - CLI: \`servin --help\`
-- TUI: \`servin-desktop\`
+- TUI: \`servin-tui\`
 - WebView GUI: Open "Servin" from Applications, run \`./servin-webview\`, or double-click "Servin.app"
 - Service: Starts automatically (launchd)
 
@@ -693,7 +693,7 @@ show_summary() {
     echo ""
     print_info "GUI Options included:"
     echo "- WebView GUI: Modern web-based interface (servin-webview)"
-    echo "- TUI: Terminal-based interface (servin-desktop)"
+    echo "- TUI: Terminal-based interface (servin-tui)"
     echo ""
     print_info "WebView GUI Features:"
     echo "- Cross-platform Python-based implementation"

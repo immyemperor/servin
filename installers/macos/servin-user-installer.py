@@ -212,7 +212,7 @@ The installer will automatically add {self.install_dir.get()} to your PATH."""
         ttk.Checkbutton(components_frame, text="Core Runtime (servin) - Required", 
                        state=tk.DISABLED, variable=tk.BooleanVar(value=True)).grid(row=0, column=0, sticky=tk.W, pady=3)
         
-        ttk.Checkbutton(components_frame, text="Desktop Application (servin-desktop)", 
+        ttk.Checkbutton(components_frame, text="Desktop Application (servin-tui)", 
                        variable=self.install_desktop).grid(row=1, column=0, sticky=tk.W, pady=3)
         
         ttk.Checkbutton(components_frame, text="Create macOS Application Bundle", 
@@ -281,7 +281,7 @@ CONFIGURATION:
 
 WHAT WILL BE INSTALLED:
 • servin - Main container runtime CLI
-{'• servin-desktop - Desktop GUI application' if self.install_desktop.get() else ''}
+{'• servin-tui - Desktop GUI application' if self.install_desktop.get() else ''}
 • Configuration files and documentation
 • Shell integration for PATH
 
@@ -436,7 +436,7 @@ The desktop application is available in your Applications folder."""
             
             binaries = ["servin"]
             if self.install_desktop.get():
-                binaries.append("servin-desktop")
+                binaries.append("servin-tui")
             
             for binary in binaries:
                 src = os.path.join(script_dir, binary)
@@ -534,7 +534,7 @@ enable_notifications=true"""
             path.mkdir(parents=True, exist_ok=True)
         
         # Copy executable
-        desktop_exe = Path(self.install_dir.get()) / "servin-desktop"
+        desktop_exe = Path(self.install_dir.get()) / "servin-tui"
         if desktop_exe.exists():
             target_exe = macos_path / "Servin Desktop"
             shutil.copy2(desktop_exe, target_exe)

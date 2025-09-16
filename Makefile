@@ -2,8 +2,7 @@
 
 # Build variables
 BINARY_NAME=servin
-TUI_BINARY=servin-desktop
-GUI_BINARY=servin-gui
+TUI_BINARY=servin-tui
 VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME=$(shell date +%Y-%m-%dT%H:%M:%S)
 LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
@@ -12,14 +11,12 @@ LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 ifeq ($(OS),Windows_NT)
     BINARY_EXT=.exe
     TUI_BINARY_EXT=.exe
-    GUI_BINARY_EXT=.exe
 else
     BINARY_EXT=
     TUI_BINARY_EXT=
-    GUI_BINARY_EXT=
 endif
 
-.PHONY: build build-tui build-gui build-all clean test help install run-tui
+.PHONY: build build-tui build-all clean test help install run-tui setup-webview-gui
 
 # Default target
 all: build build-tui
@@ -32,24 +29,32 @@ build:
 # Build TUI component
 build-tui:
 	@echo "Building Servin Desktop TUI..."
-	go build $(LDFLAGS) -o $(TUI_BINARY)$(TUI_BINARY_EXT) ./cmd/servin-desktop
+	go build $(LDFLAGS) -o $(TUI_BINARY)$(TUI_BINARY_EXT) ./cmd/servin-tui
 
-# Build GUI component (when ready)
-build-gui:
-	@echo "Building Servin Desktop GUI..."
-	go get fyne.io/fyne/v2/app
-	go get fyne.io/fyne/v2/widget
-	go build $(LDFLAGS) -o $(GUI_BINARY)$(GUI_BINARY_EXT) ./cmd/servin-gui
+# Setup WebView GUI dependencies
+setup-webview-gui:
+	@echo "Setting up WebView GUI dependencies..."
+	@if [ -d "webview_gui" ]; then \
+		cd webview_gui && \
+		python3 -m venv venv 2>/dev/null || python -m venv venv && \
+		. venv/bin/activate && \
+		pip install -r requirements.txt; \
+	else \
+		echo "WebView GUI directory not found"; \
+	fi
 
 # Build all components
-build-all: build build-tui build-gui
+build-all: build build-tui setup-webview-gui
 
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
 	rm -f $(BINARY_NAME)$(BINARY_EXT)
 	rm -f $(TUI_BINARY)$(TUI_BINARY_EXT)
-	rm -f $(GUI_BINARY)$(GUI_BINARY_EXT)
+	@if [ -d "webview_gui/venv" ]; then \
+		echo "Cleaning WebView GUI virtual environment..."; \
+		rm -rf webview_gui/venv; \
+	fi
 
 # Run TUI
 run-tui: build build-tui

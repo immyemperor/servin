@@ -281,8 +281,8 @@ jobs:
           
           Each package contains:
           - **servin** - CLI container runtime
-          - **servin-desktop** - Terminal User Interface (TUI)
-          - **servin-webview** - Modern WebView GUI interface
+          - **servin-tui** - Terminal User Interface (TUI)
+          - **servin-gui** - Modern GUI application (PyInstaller binary)
           - **Wizard installers** - Interactive GUI installation wizards
           - **Professional icons** - Multi-format icon set
           - **Documentation** - README, LICENSE, and usage guides
@@ -373,38 +373,38 @@ jobs:
       run: |
         echo "Testing Desktop TUI binary..."
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ -f "test-install/servin-desktop.exe" ]; then
-            echo "Desktop TUI binary exists: servin-desktop.exe"
+          if [ -f "test-install/servin-tui.exe" ]; then
+            echo "Desktop TUI binary exists: servin-tui.exe"
           else
             echo "Desktop TUI binary missing"
             exit 1
           fi
         else
-          if [ -f "test-install/servin-desktop" ]; then
-            chmod +x test-install/servin-desktop
-            echo "Desktop TUI binary exists: servin-desktop"
+          if [ -f "test-install/servin-tui" ]; then
+            chmod +x test-install/servin-tui
+            echo "Desktop TUI binary exists: servin-tui"
           else
             echo "Desktop TUI binary missing"
             exit 1
           fi
         fi
 
-    - name: Test WebView GUI launcher
+    - name: Test GUI launcher
       shell: bash
       run: |
-        echo "Testing WebView GUI launcher..."
+        echo "Testing GUI launcher..."
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ -f "test-install/servin-webview.bat" ]; then
-            echo "WebView GUI launcher exists: servin-webview.bat"
+          if [ -f "test-install/servin-gui.exe" ]; then
+            echo "GUI executable exists: servin-gui.exe"
           else
-            echo "WebView GUI launcher missing"
+            echo "GUI executable missing"
           fi
         else
-          if [ -f "test-install/servin-webview" ]; then
-            chmod +x test-install/servin-webview
-            echo "WebView GUI launcher exists: servin-webview"
+          if [ -f "test-install/servin-gui" ]; then
+            chmod +x test-install/servin-gui
+            echo "GUI executable exists: servin-gui"
           else
-            echo "WebView GUI launcher missing"
+            echo "GUI executable missing"
           fi
         fi
 
@@ -434,18 +434,4 @@ jobs:
           fi
         fi
 
-    - name: Test WebView GUI components
-      shell: bash
-      run: |
-        echo "Testing WebView GUI components..."
-        if [ -d "test-install/webview_gui" ]; then
-          echo "WebView GUI directory found"
-          if [ -f "test-install/webview_gui/requirements.txt" ]; then
-            echo "WebView GUI requirements.txt found"
-          fi
-          if [ -f "test-install/webview_gui/main.py" ]; then
-            echo "WebView GUI main.py found"
-          fi
-        else
-          echo "WebView GUI directory missing"
-        fi
+

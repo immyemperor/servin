@@ -213,7 +213,7 @@ The installer will automatically add {self.install_dir.get()} to your PATH."""
         ttk.Checkbutton(components_frame, text="Core Runtime (servin) - Required", 
                        state=tk.DISABLED, variable=tk.BooleanVar(value=True)).grid(row=0, column=0, sticky=tk.W, pady=3)
         
-        ttk.Checkbutton(components_frame, text="Desktop Application (servin-desktop)", 
+        ttk.Checkbutton(components_frame, text="Desktop Application (servin-tui)", 
                        variable=self.install_desktop).grid(row=1, column=0, sticky=tk.W, pady=3)
         
         ttk.Checkbutton(components_frame, text="Create Desktop Files (.desktop)", 
@@ -282,7 +282,7 @@ CONFIGURATION:
 
 WHAT WILL BE INSTALLED:
 • servin - Main container runtime CLI
-{'• servin-desktop - Desktop GUI application' if self.install_desktop.get() else ''}
+{'• servin-tui - Desktop GUI application' if self.install_desktop.get() else ''}
 • Configuration files and documentation
 • Shell integration for PATH
 {'• Desktop entries for application menu' if self.create_desktop_files.get() else ''}
@@ -438,7 +438,7 @@ The desktop application is available in your application menu."""
             
             binaries = ["servin"]
             if self.install_desktop.get():
-                binaries.append("servin-desktop")
+                binaries.append("servin-tui")
             
             for binary in binaries:
                 src = os.path.join(script_dir, binary)
@@ -534,7 +534,7 @@ enable_notifications=true"""
         script_dir = os.path.dirname(os.path.abspath(__file__))
         
         icon_installed = False
-        icon_name = "servin-desktop"
+        icon_name = "servin-tui"
         
         # Try to install icon in different sizes
         icon_sizes = [16, 32, 48, 64, 128, 256]
@@ -569,7 +569,7 @@ Version=1.0
 Type=Application
 Name=Servin Desktop
 Comment=Container Management with Servin
-Exec={self.install_dir.get()}/servin-desktop
+Exec={self.install_dir.get()}/servin-tui
 Icon={icon_reference}
 Terminal=false
 Categories=Development;System;
@@ -577,7 +577,7 @@ Keywords=container;docker;runtime;
 StartupNotify=true
 """
         
-        desktop_file = desktop_dir / "servin-desktop.desktop"
+        desktop_file = desktop_dir / "servin-tui.desktop"
         with open(desktop_file, 'w') as f:
             f.write(desktop_content)
         

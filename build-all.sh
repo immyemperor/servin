@@ -3,6 +3,9 @@
 
 set -e
 
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -116,15 +119,15 @@ build_for_arch() {
     GOOS=${goos} GOARCH=${target_arch} go build -ldflags="-s -w" -o "${arch_build_dir}/servin${exe_ext}" ./main.go
     
     # Build Desktop
-    echo -e "${YELLOW}  📦 Building Desktop (servin-desktop${arch_suffix}${exe_ext})${NC}"
-    GOOS=${goos} GOARCH=${target_arch} go build -ldflags="-s -w" -o "${arch_build_dir}/servin-desktop${exe_ext}" ./cmd/servin-desktop/main.go
+    echo -e "${YELLOW}  📦 Building Desktop (servin-tui${arch_suffix}${exe_ext})${NC}"
+    GOOS=${goos} GOARCH=${target_arch} go build -ldflags="-s -w" -o "${arch_build_dir}/servin-tui${exe_ext}" ./cmd/servin-tui/main.go
     
     return 0
 }
 
 # Function to build WebView GUI (architecture-independent)
 build_webview_gui() {
-    echo -e "${YELLOW}📦 Building WebView GUI${NC}"
+    echo -e "${YELLOW}📦 Building WebView GUI with PyInstaller${NC}"
     
     # Check if webview_gui directory exists
     if [[ ! -d "webview_gui" ]]; then
@@ -132,111 +135,108 @@ build_webview_gui() {
         return
     fi
     
-    # Copy WebView GUI source files to build directory
-    local webview_build_dir="$BUILD_DIR/webview_gui"
-    mkdir -p "$webview_build_dir"
-    cp -r webview_gui/* "$webview_build_dir/"
+    # Check for cross-compilation limitations
+    local host_os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    if [[ "$PLATFORM" == "windows" && "$host_os" != "mingw"* && "$host_os" != "msys"* ]]; then
+        echo -e "${YELLOW}  ⚠️ PyInstaller cannot cross-compile from $host_os to Windows${NC}"
+        echo -e "${YELLOW}  ⚠️ Skipping WebView GUI build for Windows target...${NC}"
+        echo -e "${YELLOW}  💡 To build Windows GUI: run this script on Windows${NC}"
+        return
+    fi
     
-    # Create platform-specific launcher script in build directory
+    # Set platform-specific variables
+    local exe_ext=""
+    local gui_name="servin-gui"
+    
     case $PLATFORM in
-        mac)
-            cat > "$BUILD_DIR/servin-webview" << 'EOF'
-#!/bin/bash
-
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WEBVIEW_DIR="$SCRIPT_DIR/webview_gui"
-
-# Check if Python 3 is available
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "Error: Python 3 is not installed or not in PATH"
-    echo "Please install Python 3.7+ using Homebrew: brew install python3"
-    exit 1
-fi
-
-# Setup virtual environment if it doesn't exist
-if [[ ! -d "$WEBVIEW_DIR/venv" ]]; then
-    echo "Setting up WebView GUI environment..."
-    python3 -m venv "$WEBVIEW_DIR/venv"
-    source "$WEBVIEW_DIR/venv/bin/activate"
-    pip install -r "$WEBVIEW_DIR/requirements.txt"
-else
-    source "$WEBVIEW_DIR/venv/bin/activate"
-fi
-
-# Launch the WebView GUI
-cd "$WEBVIEW_DIR"
-python main.py
-EOF
-            chmod +x "$BUILD_DIR/servin-webview"
-            ;;
-        linux)
-            cat > "$BUILD_DIR/servin-webview" << 'EOF'
-#!/bin/bash
-
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WEBVIEW_DIR="$SCRIPT_DIR/webview_gui"
-
-# Check if Python 3 is available
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "Error: Python 3 is not installed or not in PATH"
-    echo "Please install Python 3.7+ from your package manager"
-    exit 1
-fi
-
-# Setup virtual environment if it doesn't exist
-if [[ ! -d "$WEBVIEW_DIR/venv" ]]; then
-    echo "Setting up WebView GUI environment..."
-    python3 -m venv "$WEBVIEW_DIR/venv"
-    source "$WEBVIEW_DIR/venv/bin/activate"
-    pip install -r "$WEBVIEW_DIR/requirements.txt"
-else
-    source "$WEBVIEW_DIR/venv/bin/activate"
-fi
-
-# Launch the WebView GUI
-cd "$WEBVIEW_DIR"
-python main.py
-EOF
-            chmod +x "$BUILD_DIR/servin-webview"
-            ;;
         windows)
-            cat > "$BUILD_DIR/servin-webview.bat" << 'EOF'
-@echo off
-REM Servin WebView GUI Launcher for Windows
-
-REM Get the directory where this script is located
-set "SCRIPT_DIR=%~dp0"
-set "WEBVIEW_DIR=%SCRIPT_DIR%webview_gui"
-
-REM Check if Python 3 is available
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo Error: Python 3 is not installed or not in PATH
-    echo Please install Python 3.7+ from https://python.org
-    pause
-    exit /b 1
-)
-
-REM Setup virtual environment if it doesn't exist
-if not exist "%WEBVIEW_DIR%\venv" (
-    echo Setting up WebView GUI environment...
-    python -m venv "%WEBVIEW_DIR%\venv"
-    call "%WEBVIEW_DIR%\venv\Scripts\activate.bat"
-    pip install -r "%WEBVIEW_DIR%\requirements.txt"
-) else (
-    call "%WEBVIEW_DIR%\venv\Scripts\activate.bat"
-)
-
-REM Launch the WebView GUI
-cd /d "%WEBVIEW_DIR%"
-python main.py
-EOF
+            exe_ext=".exe"
+            gui_name="servin-gui.exe"
             ;;
     esac
     
-    echo -e "${GREEN}  ✅ WebView GUI built${NC}"
+    # Create temporary build directory for PyInstaller
+    local temp_build_dir="$BUILD_DIR/webview_build_temp"
+    mkdir -p "$temp_build_dir"
+    
+    # Copy webview_gui source to temp directory
+    cp -r webview_gui/* "$temp_build_dir/"
+    
+    echo -e "${YELLOW}  🐍 Setting up Python environment...${NC}"
+    cd "$temp_build_dir"
+    
+    # Check if Python 3 is available
+    local python_cmd=""
+    if command -v python3 >/dev/null 2>&1; then
+        python_cmd="python3"
+    elif command -v python >/dev/null 2>&1; then
+        python_cmd="python"
+    else
+        echo -e "${RED}  ❌ Python not found, skipping WebView GUI build...${NC}"
+        cd "$SCRIPT_DIR"
+        return
+    fi
+    
+    # Create virtual environment and install dependencies
+    if ! $python_cmd -m venv venv 2>/dev/null; then
+        echo -e "${RED}  ❌ Failed to create virtual environment, skipping WebView GUI build...${NC}"
+        cd "$SCRIPT_DIR"
+        return
+    fi
+    
+    # Activate virtual environment (based on host OS, not target platform)
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+        source venv/Scripts/activate
+    else
+        source venv/bin/activate
+    fi
+    
+    # Install dependencies including PyInstaller
+    echo -e "${YELLOW}  📦 Installing dependencies...${NC}"
+    if ! pip install -r requirements.txt >/dev/null 2>&1; then
+        echo -e "${RED}  ❌ Failed to install dependencies, skipping WebView GUI build...${NC}"
+        cd "$SCRIPT_DIR"
+        return
+    fi
+    
+    # Build with PyInstaller
+    echo -e "${YELLOW}  🔨 Building executable with PyInstaller...${NC}"
+    if pyinstaller --clean --onefile --name "$gui_name" \
+        --add-data "templates:templates" \
+        --add-data "static:static" \
+        --hidden-import=flask \
+        --hidden-import=flask_cors \
+        --hidden-import=webview \
+        --hidden-import=tkinter \
+        --exclude-module=matplotlib \
+        --exclude-module=numpy \
+        --exclude-module=pandas \
+        --exclude-module=scipy \
+        --windowed \
+        main.py >/dev/null 2>&1; then
+        
+        # Copy the built executable to the build directory
+        if [[ -f "dist/$gui_name" ]]; then
+            echo -e "${YELLOW}  📋 Copying $gui_name from $(pwd)/dist/ to $SCRIPT_DIR/$BUILD_DIR/${NC}"
+            cp "dist/$gui_name" "$SCRIPT_DIR/$BUILD_DIR/"
+            chmod +x "$SCRIPT_DIR/$BUILD_DIR/$gui_name"
+            echo -e "${GREEN}  ✅ WebView GUI executable built: $gui_name${NC}"
+        else
+            echo -e "${RED}  ❌ PyInstaller succeeded but executable not found, skipping WebView GUI...${NC}"
+            cd "$SCRIPT_DIR"
+            return
+        fi
+    else
+        echo -e "${RED}  ❌ PyInstaller failed, skipping WebView GUI build...${NC}"
+        cd "$SCRIPT_DIR"
+        return
+    fi
+    
+    # Clean up temp directory
+    cd "$SCRIPT_DIR"
+    rm -rf "$temp_build_dir"
+    
+    echo -e "${GREEN}  ✅ WebView GUI build completed${NC}"
 }
 
 # Function to create distribution packages
@@ -267,13 +267,10 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Get the script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Install binaries
 echo "📦 Installing binaries to $INSTALL_DIR..."
 cp "$SCRIPT_DIR/servin" "$INSTALL_DIR/"
-cp "$SCRIPT_DIR/servin-desktop" "$INSTALL_DIR/"
+cp "$SCRIPT_DIR/servin-tui" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/servin-webview" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR"/servin*
 
@@ -301,7 +298,7 @@ echo "✅ Servin Container Runtime installed successfully!"
 echo ""
 echo "Usage:"
 echo "  servin --help                 # CLI interface"
-echo "  servin-desktop               # Terminal UI"  
+echo "  servin-tui               # Terminal UI"  
 echo "  servin-webview               # Modern web GUI"
 echo ""
 echo "The WebView GUI provides the best user experience with:"
@@ -340,13 +337,10 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Get the script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Install binaries
 echo "📦 Installing binaries to $INSTALL_DIR..."
 cp "$SCRIPT_DIR/servin" "$INSTALL_DIR/"
-cp "$SCRIPT_DIR/servin-desktop" "$INSTALL_DIR/"
+cp "$SCRIPT_DIR/servin-tui" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/servin-webview" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR"/servin*
 
@@ -402,7 +396,7 @@ echo "✅ Servin Container Runtime installed successfully!"
 echo ""
 echo "Usage:"
 echo "  servin --help                 # CLI interface"
-echo "  servin-desktop               # Terminal UI"  
+echo "  servin-tui               # Terminal UI"  
 echo "  servin-webview               # Modern web GUI"
 echo "  sudo systemctl start servin  # Start service"
 echo ""
@@ -450,7 +444,7 @@ REM Install binaries
 echo 📦 Installing binaries to "%INSTALL_DIR%"...
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 copy "%SCRIPT_DIR%servin.exe" "%INSTALL_DIR%\" > nul
-copy "%SCRIPT_DIR%servin-desktop.exe" "%INSTALL_DIR%\" > nul
+copy "%SCRIPT_DIR%servin-tui.exe" "%INSTALL_DIR%\" > nul
 copy "%SCRIPT_DIR%servin-webview.bat" "%INSTALL_DIR%\" > nul
 
 REM Install WebView GUI
@@ -488,7 +482,7 @@ echo "%INSTALL_DIR%\servin.exe" %%* >> "%START_MENU%\Servin CLI.bat"
 
 REM Create Desktop GUI shortcut
 echo @echo off > "%START_MENU%\Servin Desktop.bat"
-echo "%INSTALL_DIR%\servin-desktop.exe" >> "%START_MENU%\Servin Desktop.bat"
+echo "%INSTALL_DIR%\servin-tui.exe" >> "%START_MENU%\Servin Desktop.bat"
 
 REM Create WebView GUI shortcut
 echo @echo off > "%START_MENU%\Servin WebView.bat"
@@ -500,7 +494,7 @@ echo ✅ Servin Container Runtime installed successfully!
 echo.
 echo Usage:
 echo   servin --help                 # CLI interface
-echo   servin-desktop               # Terminal UI  
+echo   servin-tui               # Terminal UI  
 echo   servin-webview               # Modern web GUI
 echo.
 echo The WebView GUI provides the best user experience with:
@@ -534,12 +528,101 @@ EOF
     echo -e "${GREEN}  ✅ Distribution package created${NC}"
 }
 
+# Function to create macOS .dmg file
+create_macos_dmg() {
+    if [[ "$PLATFORM" != "mac" ]]; then
+        return
+    fi
+    
+    echo -e "${YELLOW}📦 Creating macOS .dmg file${NC}"
+    
+    local dmg_name="Servin-Container-Runtime"
+    local dmg_temp_dir="$BUILD_DIR/dmg_temp"
+    local dmg_file="$DIST_DIR/${dmg_name}.dmg"
+    
+    # Clean up any existing DMG temp directory
+    rm -rf "$dmg_temp_dir"
+    mkdir -p "$dmg_temp_dir"
+    
+    # Create Servin.app bundle structure
+    local app_dir="$dmg_temp_dir/Servin.app"
+    mkdir -p "$app_dir/Contents/MacOS"
+    mkdir -p "$app_dir/Contents/Resources"
+    
+    # Copy binaries to app bundle
+    cp "$DIST_DIR/servin" "$app_dir/Contents/MacOS/"
+    cp "$DIST_DIR/servin-tui" "$app_dir/Contents/MacOS/"
+    if [[ -f "$DIST_DIR/servin-gui" ]]; then
+        cp "$DIST_DIR/servin-gui" "$app_dir/Contents/MacOS/"
+    fi
+    
+    # Create Info.plist for the app bundle
+    cat > "$app_dir/Contents/Info.plist" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>servin-gui</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.servin.runtime</string>
+    <key>CFBundleName</key>
+    <string>Servin</string>
+    <key>CFBundleDisplayName</key>
+    <string>Servin Container Runtime</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>
+EOF
+    
+    # Copy icon if available
+    if [[ -f "icons/tool_icon.png" ]]; then
+        cp "icons/tool_icon.png" "$app_dir/Contents/Resources/AppIcon.png"
+    fi
+    
+    # Copy documentation
+    cp "$DIST_DIR/README.md" "$dmg_temp_dir/"
+    cp "$DIST_DIR/LICENSE" "$dmg_temp_dir/"
+    
+    # Create Applications symlink
+    ln -sf /Applications "$dmg_temp_dir/Applications"
+    
+    # Create the DMG
+    echo -e "${YELLOW}  🔨 Building DMG file...${NC}"
+    
+    # Remove any existing DMG
+    rm -f "$dmg_file"
+    
+    # Create the DMG directly from the temp directory
+    if hdiutil create -srcfolder "$dmg_temp_dir" -volname "Servin Container Runtime" -format UDZO -imagekey zlib-level=9 "$dmg_file" >/dev/null 2>&1; then
+        local dmg_size=$(ls -lh "$dmg_file" | awk '{print $5}')
+        echo -e "${GREEN}  ✅ macOS DMG created: ${dmg_name}.dmg (${dmg_size})${NC}"
+    else
+        echo -e "${RED}  ❌ Failed to create DMG file${NC}"
+    fi
+    
+    # Clean up
+    rm -rf "$dmg_temp_dir"
+}
+
 # Function to create wizard installer packages
 create_wizard_installer() {
     echo -e "${YELLOW}🧙 Creating wizard installer package${NC}"
     
     case $PLATFORM in
         mac)
+            # Create .dmg file first
+            create_macos_dmg
+            
             # Create macOS wizard installer package
             local installer_dir="$DIST_DIR/installer"
             mkdir -p "$installer_dir"
@@ -552,9 +635,10 @@ create_wizard_installer() {
                 # Create installer package directory with all components
                 mkdir -p "$installer_dir/package"
                 cp "$DIST_DIR/servin" "$installer_dir/package/"
-                cp "$DIST_DIR/servin-desktop" "$installer_dir/package/"
-                cp "$DIST_DIR/servin-webview" "$installer_dir/package/"
-                cp -r "$DIST_DIR/webview_gui" "$installer_dir/package/"
+                cp "$DIST_DIR/servin-tui" "$installer_dir/package/"
+                if [[ -f "$DIST_DIR/servin-gui" ]]; then
+                    cp "$DIST_DIR/servin-gui" "$installer_dir/package/"
+                fi
                 cp -r "$DIST_DIR/icons" "$installer_dir/package/"
                 cp "$DIST_DIR/README.md" "$installer_dir/package/"
                 cp "$DIST_DIR/LICENSE" "$installer_dir/package/"
@@ -563,8 +647,39 @@ create_wizard_installer() {
                 cat > "$DIST_DIR/ServinInstaller.command" << 'EOF'
 #!/bin/bash
 # Servin Installation Wizard Launcher
-cd "$(dirname "$0")/installer"
-python3 servin-installer.py
+
+# Get the directory containing this script
+SCRIPT_DIR="$(dirname "$0")"
+INSTALLER_DIR="$SCRIPT_DIR/installer"
+
+echo "🐳 Servin Container Runtime Installer"
+echo "====================================="
+echo ""
+
+# Check if running with sudo
+if [[ $EUID -eq 0 ]]; then
+    echo "✅ Running with administrator privileges"
+    cd "$INSTALLER_DIR"
+    python3 servin-installer.py
+else
+    echo "⚠️  Administrator privileges required for system installation"
+    echo ""
+    echo "This installer will:"
+    echo "• Install Servin binaries to /usr/local/bin"
+    echo "• Create system directories in /usr/local"
+    echo "• Install a system service (launchd)"
+    echo "• Create an Application bundle"
+    echo ""
+    read -p "Continue with installation? (y/N): " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "🔐 Requesting administrator privileges..."
+        sudo bash "$0"
+    else
+        echo "Installation cancelled."
+        exit 0
+    fi
+fi
 EOF
                 chmod +x "$DIST_DIR/ServinInstaller.command"
                 
@@ -585,9 +700,10 @@ EOF
                 # Create installer package directory with all components
                 mkdir -p "$installer_dir/package"
                 cp "$DIST_DIR/servin" "$installer_dir/package/"
-                cp "$DIST_DIR/servin-desktop" "$installer_dir/package/"
-                cp "$DIST_DIR/servin-webview" "$installer_dir/package/"
-                cp -r "$DIST_DIR/webview_gui" "$installer_dir/package/"
+                cp "$DIST_DIR/servin-tui" "$installer_dir/package/"
+                if [[ -f "$DIST_DIR/servin-gui" ]]; then
+                    cp "$DIST_DIR/servin-gui" "$installer_dir/package/"
+                fi
                 cp -r "$DIST_DIR/icons" "$installer_dir/package/"
                 cp "$DIST_DIR/README.md" "$installer_dir/package/"
                 cp "$DIST_DIR/LICENSE" "$installer_dir/package/"
@@ -617,9 +733,10 @@ EOF
                 # Create installer package directory with all components
                 mkdir -p "$installer_dir/package"
                 cp "$DIST_DIR/servin.exe" "$installer_dir/package/"
-                cp "$DIST_DIR/servin-desktop.exe" "$installer_dir/package/"
-                cp "$DIST_DIR/servin-webview.bat" "$installer_dir/package/"
-                cp -r "$DIST_DIR/webview_gui" "$installer_dir/package/"
+                cp "$DIST_DIR/servin-tui.exe" "$installer_dir/package/"
+                if [[ -f "$DIST_DIR/servin-gui.exe" ]]; then
+                    cp "$DIST_DIR/servin-gui.exe" "$installer_dir/package/"
+                fi
                 cp -r "$DIST_DIR/icons" "$installer_dir/package/"
                 
                 # Copy and rename files to match NSIS expectations
@@ -710,12 +827,12 @@ if [[ "$PLATFORM" == "mac" ]]; then
         "${BUILD_DIR}-arm64/servin" \
         -output "${BUILD_DIR}/servin"
     
-    # Create universal servin-desktop binary
-    echo -e "${YELLOW}  🔗 Creating universal servin-desktop${NC}"
+    # Create universal servin-tui binary
+    echo -e "${YELLOW}  🔗 Creating universal servin-tui${NC}"
     lipo -create \
-        "${BUILD_DIR}-amd64/servin-desktop" \
-        "${BUILD_DIR}-arm64/servin-desktop" \
-        -output "${BUILD_DIR}/servin-desktop"
+        "${BUILD_DIR}-amd64/servin-tui" \
+        "${BUILD_DIR}-arm64/servin-tui" \
+        -output "${BUILD_DIR}/servin-tui"
     
     echo -e "${GREEN}✅ Universal binaries created${NC}"
 else
@@ -745,27 +862,27 @@ else
         }
         echo "    ✅ servin.exe copied successfully"
         
-        if [[ -f "${BUILD_DIR}-amd64/servin-desktop.exe" ]]; then
-            cp "${BUILD_DIR}-amd64/servin-desktop.exe" "${BUILD_DIR}/" || {
-                echo "    ❌ ERROR: Failed to copy servin-desktop.exe"
+        if [[ -f "${BUILD_DIR}-amd64/servin-tui.exe" ]]; then
+            cp "${BUILD_DIR}-amd64/servin-tui.exe" "${BUILD_DIR}/" || {
+                echo "    ❌ ERROR: Failed to copy servin-tui.exe"
                 return 1
             }
-            echo "    ✅ servin-desktop.exe copied successfully"
+            echo "    ✅ servin-tui.exe copied successfully"
         fi
         # Remove Unix-style binaries if they exist (keep only .exe)
-        rm -f "${BUILD_DIR}/servin" "${BUILD_DIR}/servin-desktop" 2>/dev/null || true
+        rm -f "${BUILD_DIR}/servin" "${BUILD_DIR}/servin-tui" 2>/dev/null || true
     else
         # Copy Linux binaries from arch-specific directory to main build directory  
         echo -e "${YELLOW}  📁 Copying Linux binaries${NC}"
         arch_dir="${BUILD_DIR}-${ARCHITECTURES[0]}"
         if [[ -d "$arch_dir" ]]; then
             cp "${arch_dir}/servin" "${BUILD_DIR}/"
-            if [[ -f "${arch_dir}/servin-desktop" ]]; then
-                cp "${arch_dir}/servin-desktop" "${BUILD_DIR}/"
+            if [[ -f "${arch_dir}/servin-tui" ]]; then
+                cp "${arch_dir}/servin-tui" "${BUILD_DIR}/"
             fi
         fi
         # Remove Windows-style binaries if they exist (keep only Unix)
-        rm -f "${BUILD_DIR}/servin.exe" "${BUILD_DIR}/servin-desktop.exe" 2>/dev/null || true
+        rm -f "${BUILD_DIR}/servin.exe" "${BUILD_DIR}/servin-tui.exe" 2>/dev/null || true
     fi
 fi
 
@@ -798,25 +915,32 @@ if [[ "$PLATFORM" == "windows" ]]; then
     fi
     
     # Check for desktop binary
-    if [[ -f "$BUILD_DIR/servin-desktop.exe" ]]; then
-        cp "$BUILD_DIR/servin-desktop.exe" "$DIST_DIR/"
-        echo "  ✅ servin-desktop.exe copied to distribution"
-    elif [[ -f "${BUILD_DIR}-amd64/servin-desktop.exe" ]]; then
-        echo "  ⚠️ servin-desktop.exe not in main directory, copying from architecture-specific directory"
-        cp "${BUILD_DIR}-amd64/servin-desktop.exe" "$DIST_DIR/"
-        echo "  ✅ servin-desktop.exe copied to distribution from ${BUILD_DIR}-amd64/"
+    if [[ -f "$BUILD_DIR/servin-tui.exe" ]]; then
+        cp "$BUILD_DIR/servin-tui.exe" "$DIST_DIR/"
+        echo "  ✅ servin-tui.exe copied to distribution"
+    elif [[ -f "${BUILD_DIR}-amd64/servin-tui.exe" ]]; then
+        echo "  ⚠️ servin-tui.exe not in main directory, copying from architecture-specific directory"
+        cp "${BUILD_DIR}-amd64/servin-tui.exe" "$DIST_DIR/"
+        echo "  ✅ servin-tui.exe copied to distribution from ${BUILD_DIR}-amd64/"
     fi
     
-    cp "$BUILD_DIR/servin-webview.bat" "$DIST_DIR/"
+    # Copy GUI binary if it exists
+    if [[ -f "$BUILD_DIR/servin-gui.exe" ]]; then
+        cp "$BUILD_DIR/servin-gui.exe" "$DIST_DIR/"
+        echo "  ✅ servin-gui.exe copied to distribution"
+    fi
 else
     cp "$BUILD_DIR/servin" "$DIST_DIR/"
-    if [[ -f "$BUILD_DIR/servin-desktop" ]]; then
-        cp "$BUILD_DIR/servin-desktop" "$DIST_DIR/"
+    if [[ -f "$BUILD_DIR/servin-tui" ]]; then
+        cp "$BUILD_DIR/servin-tui" "$DIST_DIR/"
     fi
-    cp "$BUILD_DIR/servin-webview" "$DIST_DIR/"
+    
+    # Copy GUI binary if it exists
+    if [[ -f "$BUILD_DIR/servin-gui" ]]; then
+        cp "$BUILD_DIR/servin-gui" "$DIST_DIR/"
+        echo "  ✅ servin-gui copied to distribution"
+    fi
 fi
-
-cp -r "$BUILD_DIR/webview_gui" "$DIST_DIR/"
 
 # Copy icons
 echo -e "${YELLOW}🎨 Copying icons${NC}"
@@ -876,6 +1000,7 @@ if [[ "$PLATFORM" == "windows" ]]; then
     echo -e "${YELLOW}  🧙 Wizard Installer: ${DIST_DIR}/installer/ (Run build-installer.bat to create .exe)${NC}"
     echo -e "${YELLOW}  📜 Quick Install: ${DIST_DIR}/install-servin.bat${NC}"
 elif [[ "$PLATFORM" == "mac" ]]; then
+    echo -e "${YELLOW}  📦 macOS Disk Image: ${DIST_DIR}/Servin-Container-Runtime.dmg (Drag & Drop installer)${NC}"
     echo -e "${YELLOW}  🧙 Wizard Installer: ${DIST_DIR}/ServinInstaller.command (Double-click to run)${NC}"
     echo -e "${YELLOW}  📜 Quick Install: ${DIST_DIR}/install-servin.sh${NC}"
 else

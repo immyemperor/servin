@@ -27,7 +27,6 @@ SetCompressor /SOLID lzma
 ;--------------------------------
 ; Variables
 Var StartMenuFolder
-Var ServiceRunning
 
 ;--------------------------------
 ; Version Information
@@ -75,7 +74,7 @@ VIAddVersionKey "InternalName" "ServinSetup"
 ; Finish page
 !define MUI_FINISHPAGE_TITLE "Servin Container Runtime Installation Complete"
 !define MUI_FINISHPAGE_TEXT "Servin Container Runtime has been successfully installed on your computer.$\r$\n$\r$\nThe Servin service will start automatically. You can launch the GUI from the Start Menu or desktop shortcut."
-!define MUI_FINISHPAGE_RUN "$INSTDIR\servin-desktop.exe"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\servin-gui.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Launch Servin GUI"
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\README.txt"
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Show README"
@@ -154,7 +153,10 @@ Section "Core Runtime" SecCore
   File "package\servin.exe"
   
   ; Install TUI (Terminal User Interface)
-  File "package\servin-desktop.exe"
+  File "package\servin-tui.exe"
+  
+  ; Install GUI (Graphical User Interface)
+  File "package\servin-gui.exe"
   
   ; Create data directories
   CreateDirectory "$APPDATA\Servin"
@@ -196,10 +198,10 @@ SectionEnd
 ; GUI Application
 Section "Desktop GUI" SecGUI
   SetOutPath "$INSTDIR"
-  File "package\servin-desktop.exe"
+  File "package\servin-gui.exe"
   
   ; Create desktop shortcut
-  CreateShortcut "$DESKTOP\Servin GUI.lnk" "$INSTDIR\servin-desktop.exe" "" "$INSTDIR\servin-desktop.exe" 0
+  CreateShortcut "$DESKTOP\Servin GUI.lnk" "$INSTDIR\servin-gui.exe" "" "$INSTDIR\servin-gui.exe" 0
 SectionEnd
 
 ; Windows Service
@@ -219,8 +221,8 @@ Section "Start Menu Shortcuts" SecStartMenu
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
   
   CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-  CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin GUI.lnk" "$INSTDIR\servin-desktop.exe"
-  CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin Desktop (TUI).lnk" "$INSTDIR\servin-desktop.exe"
+  CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin GUI.lnk" "$INSTDIR\servin-gui.exe"
+  CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin Desktop (TUI).lnk" "$INSTDIR\servin-tui.exe"
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Servin Command Prompt.lnk" "cmd.exe" "/k cd /d $\"$INSTDIR$\""
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall Servin.lnk" "$INSTDIR\Uninstall.exe"
   CreateShortcut "$SMPROGRAMS\$StartMenuFolder\README.lnk" "$INSTDIR\README.txt"
@@ -246,7 +248,8 @@ Section "Uninstall"
   
   ; Remove files
   Delete "$INSTDIR\servin.exe"
-  Delete "$INSTDIR\servin-desktop.exe"
+  Delete "$INSTDIR\servin-tui.exe"
+  Delete "$INSTDIR\servin-gui.exe"
   Delete "$INSTDIR\README.txt"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\Uninstall.exe"
@@ -357,38 +360,6 @@ Function un.IsNT
   ${EndIf}
   Exch
   Pop $0
-FunctionEnd
-
-Function StrStr
-  Exch $R1
-  Exch
-  Exch $R2
-  Push $R3
-  Push $R4
-  Push $R5
-  StrLen $R3 $R1
-  StrCpy $R4 0
-  
-  loop:
-    StrCpy $R5 $R2 $R3 $R4
-    ${If} $R5 == $R1
-      StrCpy $R0 $R2 $R4
-      Goto done
-    ${EndIf}
-    ${If} $R3 >= $R4
-      StrCpy $R0 ""
-      Goto done
-    ${EndIf}
-    IntOp $R4 $R4 + 1
-    Goto loop
-  
-  done:
-  Pop $R5
-  Pop $R4
-  Pop $R3
-  Pop $R2
-  Exch $R0
-  Pop $R1
 FunctionEnd
 
 Function un.StrStr

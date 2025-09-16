@@ -17,8 +17,8 @@ Servin Container Runtime follows a modular architecture design that separates co
 │  Interfaces                                                 │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
 │  │    CLI      │ │     TUI     │ │      Desktop GUI        ││
-│  │  Command    │ │  Terminal   │ │   Fyne-based Visual     ││
-│  │   Line      │ │ Interface   │ │      Application        ││
+│  │  Command    │ │  Terminal   │ │   Flask + pywebview     ││
+│  │   Line      │ │ Interface   │ │   Binary Distribution   ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 ├─────────────────────────────────────────────────────────────┤
 │  Core Runtime Services                                      │
@@ -92,10 +92,10 @@ servin networks ls
 - Cross-platform terminal support
 
 #### Desktop GUI
-- Native desktop application using Fyne framework
-- Visual container management
-- Real-time logs and monitoring
-- Professional user experience
+- Web-based application using Flask backend and pywebview frontend
+- Real-time container status updates and responsive design
+- Cross-platform binary distribution via PyInstaller
+- Native desktop integration with professional installers
 
 ### 🌐 API Layer
 
@@ -192,14 +192,54 @@ servin networks ls
 - **Resource Pooling**: Shared resource management
 - **Async Operations**: Non-blocking operation handling
 
+## Binary Distribution Architecture
+
+### PyInstaller Integration
+- **Single-File Executables**: Complete Python runtime embedded in 13MB binary
+- **Cross-Platform Support**: Native binaries for Windows, Linux, and macOS
+- **No Dependencies**: Self-contained executables require no Python installation
+- **Optimized Performance**: Faster startup times compared to Python source execution
+
+### Build System
+```bash
+# Cross-platform build orchestration
+./build-all.sh
+
+# Platform-specific outputs:
+# ├── dist/windows/servin-gui.exe     # Windows executable
+# ├── dist/linux/servin-gui          # Linux binary  
+# └── dist/mac/servin-gui             # macOS universal binary
+```
+
+### Professional Distribution
+- **macOS .dmg Creation**: Professional disk image with app bundle structure
+- **Windows NSIS Installer**: Complete installation wizard with system integration
+- **Linux Package Distribution**: Tar.gz archives with installation scripts
+- **GitHub Releases Integration**: Automated release creation and artifact upload
+
+### Installation Wizards
+- **Cross-Platform Installers**: Python/Tkinter-based wizards for all platforms
+- **Privilege Escalation**: Proper sudo/administrator privilege handling
+- **Timeout Protection**: Robust subprocess management with comprehensive timeouts
+- **User Consent Flows**: Interactive privilege escalation with clear explanations
+- **Error Recovery**: Graceful handling of installation failures and cancellations
+
 ## Directory Structure
 
 ```
 servin/
 ├── cmd/                          # Application entry points
-│   ├── servin-desktop/          # Terminal UI application
-│   ├── servin-gui/              # Desktop GUI application
-│   └── gui.go                   # GUI command integration
+│   ├── servin-desktop/          # Terminal UI application  
+│   ├── servin-gui/              # GUI command integration
+│   └── gui.go                   # GUI launcher implementation
+├── webview_gui/                 # Desktop GUI application
+│   ├── main.py                  # PyInstaller entry point
+│   ├── app.py                   # Flask backend API
+│   ├── servin_client.py         # Servin runtime interface
+│   ├── servin-gui.spec          # PyInstaller build specification
+│   ├── requirements.txt         # Python dependencies (Flask, pywebview, etc)
+│   ├── templates/               # HTML templates for web interface
+│   └── static/                  # CSS, JavaScript, and assets
 ├── pkg/                         # Core packages
 │   ├── cri/                     # Container Runtime Interface
 │   │   ├── server/             # CRI gRPC server
@@ -234,11 +274,14 @@ servin/
 │   ├── grpc/                  # gRPC service definitions
 │   └── swagger/               # API documentation
 ├── installers/                # Installation wizards
-│   ├── windows/              # NSIS-based Windows installer
-│   ├── linux/                # Python/Tkinter Linux installer
-│   └── macos/                # Python/Tkinter macOS installer
-├── build/                    # Build artifacts
-├── dist/                     # Distribution packages
+│   ├── windows/              # NSIS-based Windows installer + Python wizard
+│   ├── linux/                # Python/Tkinter Linux installer wizard
+│   └── macos/                # Python/Tkinter macOS installer wizard
+├── build/                    # Build artifacts and platform binaries
+├── dist/                     # PyInstaller distribution packages
+│   ├── windows/              # Windows servin-gui.exe
+│   ├── linux/                # Linux servin-gui binary
+│   └── mac/                  # macOS servin-gui universal binary
 └── docs/                     # Documentation
 ```
 
