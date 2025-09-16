@@ -825,7 +825,7 @@ else
     echo -e "${YELLOW}  📜 Quick Install: ${DIST_DIR}/install-servin.sh${NC}"
 fi
 
-echo ""
+echo "All wizards created successfully!"
 echo -e "${GREEN}✨ The wizard installer provides the best user experience with:${NC}"
 echo -e "${GREEN}  • Interactive GUI installation${NC}"
 echo -e "${GREEN}  • Automatic dependency checking${NC}"
