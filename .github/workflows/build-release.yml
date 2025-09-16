@@ -188,6 +188,8 @@ jobs:
     name: Package Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Download all artifacts
