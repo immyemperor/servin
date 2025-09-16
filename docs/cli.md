@@ -34,6 +34,32 @@ servin config set registry.default docker.io
 servin config list
 ```
 
+### **Global Options**
+```bash
+# Verbose output for debugging
+servin --verbose command
+servin -v command
+
+# Development mode (skip root checks)
+servin --dev command
+
+# Custom log level
+servin --log-level debug command
+servin --log-level warn command
+
+# Custom log file location
+servin --log-file /path/to/logfile command
+
+# Combine global options
+servin --verbose --dev --log-level debug containers ls
+```
+
+#### **Available Log Levels**
+- **debug** - Detailed debugging information
+- **info** - General information (default)
+- **warn** - Warning messages only
+- **error** - Error messages only
+
 ## 📦 Container Management
 
 ### **Container Lifecycle**
@@ -195,23 +221,41 @@ servin images pull --platform linux/amd64 ubuntu:latest
 
 #### **Building Images**
 ```bash
-# Build from Dockerfile
-servin images build -t myapp:latest .
+# Build from Buildfile (separate command)
+servin build .
 
-# Build with custom Dockerfile
-servin images build -f Dockerfile.prod -t myapp:prod .
+# Build with tag
+servin build -t myapp:latest .
+
+# Build with custom Buildfile name
+servin build -f MyBuildfile -t myapp .
 
 # Build with build arguments
-servin images build --build-arg NODE_ENV=production -t myapp .
+servin build --build-arg NODE_ENV=production -t myapp .
 
 # Build with no cache
-servin images build --no-cache -t myapp .
-
-# Build with target stage
-servin images build --target production -t myapp:prod .
+servin build --no-cache -t myapp .
 
 # Build with labels
-servin images build --label version=1.0.0 --label maintainer=team@company.com -t myapp .
+servin build --label version=1.0.0 --label maintainer=team@company.com -t myapp .
+
+# Build quietly (only show image ID)
+servin build -q -t myapp .
+
+# Alternative: Build using image subcommand
+servin images build -t myapp:latest .
+servin images build -f Dockerfile.prod -t myapp:prod .
+servin images build --target production -t myapp:prod .
+```
+
+#### **Buildfile Format**
+```dockerfile
+# Example Buildfile (similar to Dockerfile)
+FROM alpine:latest
+RUN apk add --no-cache curl
+COPY . /app
+WORKDIR /app
+CMD ["./app"]
 ```
 
 #### **Image Information**
@@ -658,6 +702,131 @@ if ($stopped) {
     servin containers rm $stopped.Split("`n")
 }
 ```
+
+## 🖥️ User Interface Commands
+
+### **Desktop GUI**
+```bash
+# Launch desktop GUI application
+servin gui
+
+# Launch Terminal UI instead
+servin gui --tui
+
+# Launch GUI in development mode
+servin gui --dev
+
+# Custom port for web interface
+servin gui --port 8081 --host localhost
+```
+
+### **Available GUI Features**
+- **Container Management** - Visual container lifecycle control
+- **Image Operations** - Import, remove, tag, and inspect images
+- **CRI Server Control** - Start/stop Kubernetes CRI server
+- **System Monitoring** - Real-time logs and status updates
+
+## 🔗 Container Runtime Interface (CRI)
+
+### **CRI Server Management**
+```bash
+# Start CRI HTTP server
+servin cri start
+
+# Start on custom port
+servin cri start --port 9090
+
+# Start with verbose logging
+servin cri start --port 8080 -v
+
+# Check CRI server status
+servin cri status
+
+# Test CRI endpoints
+servin cri test
+```
+
+### **CRI Features**
+- **Kubernetes Compatibility** - Full CRI v1alpha2 specification
+- **HTTP Endpoints** - RESTful API at `/v1/runtime/` and `/v1/image/`
+- **Pod Sandbox Operations** - Complete pod lifecycle management
+- **Health Monitoring** - Built-in health checks at `/health`
+
+## 🐋 Compose Orchestration
+
+### **Multi-Service Applications**
+```bash
+# Start services from servin-compose.yml
+servin compose up
+
+# Start in detached mode
+servin compose up -d
+
+# Start with custom file
+servin compose -f custom-compose.yml up
+
+# Start with project name
+servin compose --project-name myapp up
+
+# Stop and remove services
+servin compose down
+
+# Stop and remove with volumes
+servin compose down --volumes
+
+# View service status
+servin compose ps
+
+# View service logs
+servin compose logs
+
+# Execute command in service
+servin compose exec web bash
+```
+
+### **Compose File Format**
+```yaml
+# servin-compose.yml
+version: '3'
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./html:/usr/share/nginx/html
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+    volumes:
+      - db_data:/var/lib/mysql
+volumes:
+  db_data:
+```
+
+## 🔒 Security Management
+
+### **Security Features Check**
+```bash
+# Check all security features
+servin security check
+
+# Check user namespace support only
+servin security check --user-ns
+
+# Show security configuration
+servin security info
+
+# Show security info for specific container
+servin security info --container web-server
+```
+
+### **Security Features**
+- **User Namespaces** - Enhanced privilege isolation
+- **UID/GID Mapping** - Secure user mapping between host and container
+- **Capability Management** - Fine-grained privilege control
+- **Rootless Containers** - Run containers without root privileges
 
 ---
 

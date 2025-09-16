@@ -23,25 +23,19 @@ jobs:
         include:
           - platform: windows
             os: windows-latest
-            ext: .exe
-            archive_type: zip
-            installer_script: install.ps1
-            cgo_enabled: 1
-            installer_tools: nsis
+            os_name: windows
+            arch: amd64
+            archive_ext: zip
           - platform: linux
             os: ubuntu-latest
-            ext: ""
-            archive_type: tar.gz
-            installer_script: install.sh
-            cgo_enabled: 1
-            installer_tools: python3
-          - platform: macos
+            os_name: linux
+            arch: amd64
+            archive_ext: tar.gz
+          - platform: mac
             os: macos-latest
-            ext: ""
-            archive_type: tar.gz
-            installer_script: install.sh
-            cgo_enabled: 1
-            installer_tools: python3
+            os_name: macos
+            arch: universal
+            archive_ext: tar.gz
 
     steps:
     - name: Checkout code
@@ -57,15 +51,10 @@ jobs:
       if: matrix.platform == 'windows'
       shell: powershell
       run: |
-        # Install TDM-GCC for CGO support
-        choco install tdm-gcc-webdl -y --no-progress
         # Install NSIS for installer creation
         choco install nsis -y --no-progress
         # Update PATH for current session
         $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
-        # Verify installations
-        Write-Host "Checking GCC installation..."
-        gcc --version
         Write-Host "Checking NSIS installation..."
         if (Test-Path "C:\Program Files (x86)\NSIS\makensis.exe") {
           Write-Host "NSIS found at: C:\Program Files (x86)\NSIS\makensis.exe"
@@ -78,374 +67,94 @@ jobs:
     - name: Install Linux dependencies
       if: matrix.platform == 'linux'
       run: |
-        # Update package list
         sudo apt-get update
-        # Install essential packages with timeout protection
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-          build-essential \
-          libgl1-mesa-dev \
-          xorg-dev \
-          libxrandr-dev \
-          libxinerama-dev \
-          libxcursor-dev \
-          libxi-dev \
           python3 \
           python3-tk \
-          python3-dev
-        # Verify installations
+          python3-dev \
+          python3-pip
         echo "Checking installations..."
-        gcc --version
         python3 --version
 
     - name: Install macOS dependencies
-      if: matrix.platform == 'macos'
+      if: matrix.platform == 'mac'
       run: |
-        # macOS runners should have most dependencies available
         echo "Checking existing dependencies..."
-        # Check if python3 is available
         python3 --version || echo "Python3 not found"
-        # Check if tkinter is available
         python3 -c "import tkinter; print('tkinter available')" || echo "tkinter not available"
-        # Install python-tk only if needed and available
         if ! python3 -c "import tkinter" 2>/dev/null; then
           echo "Installing python-tk..."
           brew install python-tk --quiet || echo "python-tk installation skipped"
         fi
 
-    - name: Create build directories
-      run: |
-        mkdir -p build/${{ matrix.platform }}
-        mkdir -p dist
+    # Make build script executable
+    - name: Make build script executable
+      shell: bash
+      run: chmod +x ./build-all.sh
 
-    - name: Set environment variables
+    # Build using the new build-all.sh script
+    - name: Build Servin for ${{ matrix.platform }}
       shell: bash
       run: |
-        echo "CGO_ENABLED=${{ matrix.cgo_enabled }}" >> $GITHUB_ENV
-        if [ "${{ matrix.platform }}" = "windows" ]; then
-          echo "GOOS=windows" >> $GITHUB_ENV
-          echo "GOARCH=amd64" >> $GITHUB_ENV
-        elif [ "${{ matrix.platform }}" = "linux" ]; then
-          echo "GOOS=linux" >> $GITHUB_ENV
-          echo "GOARCH=amd64" >> $GITHUB_ENV
-        else
-          echo "GOOS=darwin" >> $GITHUB_ENV
-          echo "GOARCH=amd64" >> $GITHUB_ENV
-        fi
-
-    # Build CLI binary (no CGO required)
-    - name: Build CLI binary
-      shell: bash
-      run: |
-        echo "Building Servin CLI for ${{ matrix.platform }}..."
-        CGO_ENABLED=0 go build -ldflags="-w -s" -o build/${{ matrix.platform }}/servin${{ matrix.ext }} main.go
-
-    # Build TUI binary (no CGO required)
-    - name: Build TUI binary
-      shell: bash
-      run: |
-        echo "Building Servin TUI (Desktop) for ${{ matrix.platform }}..."
-        if [ -d "cmd/servin-desktop" ]; then
-          CGO_ENABLED=0 go build -ldflags="-w -s" -o build/${{ matrix.platform }}/servin-desktop${{ matrix.ext }} ./cmd/servin-desktop
-        else
-          echo "TUI source not found, skipping TUI build"
-        fi
-
-    # Build GUI binary (requires CGO)
-    - name: Build GUI binary
-      shell: bash
-      continue-on-error: true
-      run: |
-        echo "Building Servin GUI for ${{ matrix.platform }}..."
-        if [ -d "cmd/servin-gui" ]; then
-          cd cmd/servin-gui
-          
-          # Set CGO environment
-          export CGO_ENABLED=${{ matrix.cgo_enabled }}
-          
-          # Platform-specific CGO setup
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            # Add TDM-GCC to PATH for Windows
-            export PATH="/c/TDM-GCC-64/bin:$PATH"
-            echo "Using GCC: $(which gcc 2>/dev/null || echo 'not found')"
-          fi
-          
-          # Try to build with timeout
-          timeout 600 go build -ldflags="-w -s" -o ../../build/${{ matrix.platform }}/servin-gui${{ matrix.ext }} . || {
-            echo "GUI build failed or timed out"
-            echo "This is expected on some platforms due to CGO requirements"
-            cd ../..
-            exit 0
-          }
-          
-          cd ../..
-          
-          if [ -f "build/${{ matrix.platform }}/servin-gui${{ matrix.ext }}" ]; then
-            echo "GUI binary built successfully"
-          else
-            echo "GUI binary build failed - continuing without GUI"
-          fi
-        else
-          echo "GUI source not found, skipping GUI build"
-        fi
-
-    # Copy installer files and prepare for wizard creation
-    - name: Prepare installer files
-      shell: bash
-      run: |
-        # Copy platform-specific installer files
-        if [ -d "installers/${{ matrix.platform }}" ]; then
-          cp -r installers/${{ matrix.platform }}/* build/${{ matrix.platform }}/
-        fi
-        
-        # Copy common files
-        cp README.md build/${{ matrix.platform }}/
-        cp LICENSE build/${{ matrix.platform }}/ || echo "LICENSE file not found"
-        
-        # Copy icon files if they exist
-        if [ -d "icons" ]; then
-          cp -r icons build/${{ matrix.platform }}/ || echo "Icons directory not found"
-        fi
-        
-        # Create version file
-        echo "${{ env.APP_VERSION }}" > build/${{ matrix.platform }}/VERSION
-        
-        # IMPORTANT: Ensure installer scripts can find the binaries
-        # The installer scripts expect the binaries to be in the same directory
-        echo "Verifying binaries are in place for installer wizards..."
-        if [ "${{ matrix.platform }}" = "windows" ]; then
-          # List Windows binaries that should be present
-          echo "Windows binaries in build/${{ matrix.platform }}:"
-          ls -la build/${{ matrix.platform }}/*.exe || echo "No .exe files found"
-        else
-          # List Linux/macOS binaries that should be present
-          echo "${{ matrix.platform }} binaries in build/${{ matrix.platform }}:"
-          ls -la build/${{ matrix.platform }}/servin* || echo "No servin binaries found"
-        fi
-
-    # Make scripts executable (Linux/macOS)
-    - name: Make scripts executable
-      if: matrix.platform != 'windows'
-      shell: bash
-      run: |
-        find build/${{ matrix.platform }} -name "*.sh" -exec chmod +x {} \;
-        find build/${{ matrix.platform }} -name "*.py" -exec chmod +x {} \;
-
-    # Create Windows NSIS installer
-    - name: Create Windows installer wizard
+        echo "Building Servin for ${{ matrix.platform }} using build-all.sh..."
+        PLATFORM=${{ matrix.platform }} ./build-all.sh    # Build Windows installer if NSIS is available
+    - name: Build Windows installer
       if: matrix.platform == 'windows'
       shell: powershell
+      continue-on-error: true
       run: |
-        cd build/${{ matrix.platform }}
+        cd dist/${{ matrix.platform }}/installer
         
-        # Verify all required binaries are present before creating installer
-        Write-Host "Verifying Windows binaries for installer..."
-        $requiredBinaries = @("servin.exe", "servin-desktop.exe", "servin-gui.exe")
-        $missingBinaries = @()
-        
-        foreach ($binary in $requiredBinaries) {
-          if (Test-Path $binary) {
-            Write-Host "Found: $binary"
-          } else {
-            Write-Host "Missing: $binary"
-            $missingBinaries += $binary
-          }
+        # Find NSIS makensis.exe
+        $nsisPath = ""
+        if (Test-Path "C:\Program Files (x86)\NSIS\makensis.exe") {
+          $nsisPath = "C:\Program Files (x86)\NSIS\makensis.exe"
+        } elseif (Test-Path "C:\Program Files\NSIS\makensis.exe") {
+          $nsisPath = "C:\Program Files\NSIS\makensis.exe"
+        } else {
+          $nsisPath = (Get-Command makensis -ErrorAction SilentlyContinue).Source
         }
         
-        if ($missingBinaries.Count -gt 0) {
-          Write-Host "Warning: Some binaries are missing. Installer will be created with available binaries only."
-        }
-        
-        # Update NSIS script with correct paths
-        if (Test-Path "servin-installer.nsi") {
-          Write-Host "Creating Windows installer with NSIS..."
+        if ($nsisPath -and (Test-Path "servin-installer.nsi")) {
+          Write-Host "Building Windows installer with NSIS..."
+          & "$nsisPath" servin-installer.nsi
           
-          # Find NSIS makensis.exe
-          $nsisPath = ""
-          if (Test-Path "C:\Program Files (x86)\NSIS\makensis.exe") {
-            $nsisPath = "C:\Program Files (x86)\NSIS\makensis.exe"
-          } elseif (Test-Path "C:\Program Files\NSIS\makensis.exe") {
-            $nsisPath = "C:\Program Files\NSIS\makensis.exe"
-          } else {
-            # Try to find in PATH
-            $nsisPath = (Get-Command makensis -ErrorAction SilentlyContinue).Source
-          }
-          
-          if ($nsisPath) {
-            Write-Host "Using NSIS at: $nsisPath"
-            & "$nsisPath" servin-installer.nsi
-            
-            # Check if installer was created
-            if (Test-Path "ServinSetup-1.0.0.exe") {
-              Move-Item "ServinSetup-1.0.0.exe" "../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.exe"
-              Write-Host "Windows installer wizard created successfully"
-              Write-Host "Installer includes: CLI, TUI, and GUI (if available)"
-            } else {
-              Write-Host "Warning: Windows installer creation failed, will create ZIP fallback"
-            }
-          } else {
-            Write-Host "NSIS not found, will create ZIP package instead"
+          if (Test-Path "ServinSetup-1.0.0.exe") {
+            Move-Item "ServinSetup-1.0.0.exe" "../servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe"
+            Write-Host "Windows installer created successfully"
           }
         } else {
-          Write-Host "NSIS script not found, creating ZIP package instead"
+          Write-Host "NSIS not available, skipping installer creation"
         }
 
-    # Create Linux installer wizard
-    - name: Create Linux installer wizard
-      if: matrix.platform == 'linux'
-      timeout-minutes: 10
+    # Create distribution archives
+    - name: Create distribution archive
       shell: bash
       run: |
-        cd build/${{ matrix.platform }}
+        cd dist/${{ matrix.platform }}
         
-        # Verify all required binaries are present before creating installer
-        echo "Verifying Linux binaries for installer..."
-        required_binaries=("servin" "servin-desktop" "servin-gui")
-        missing_binaries=()
+        # Create the main distribution archive
+        archive_name="servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}"
         
-        for binary in "${required_binaries[@]}"; do
-          if [ -f "$binary" ]; then
-            echo "Found: $binary"
-          else
-            echo "Missing: $binary"
-            missing_binaries+=("$binary")
-          fi
-        done
-        
-        if [ ${#missing_binaries[@]} -gt 0 ]; then
-          echo "Warning: Some binaries are missing. Installer will be created with available binaries only."
-        fi
-        
-        if [ -f "servin-installer.py" ]; then
-          echo "Creating Linux installer wizard..."
-          
-          # Check if Python and tkinter are available
-          if python3 -c "import tkinter" 2>/dev/null; then
-            echo "Python3 and tkinter are available"
-            
-            # Try to create installer package
-            timeout 300 python3 servin-installer.py --create-package --output ../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run || {
-              echo "Python installer creation failed or timed out"
-            }
-            
-            if [ -f "../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run" ]; then
-              chmod +x ../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run
-              echo "Linux installer wizard created successfully"
-              echo "Installer includes: CLI, TUI, and GUI (if available)"
-            else
-              echo "Warning: Linux installer creation failed, will create tar.gz fallback"
-            fi
-          else
-            echo "Python3 or tkinter not available, skipping GUI installer creation"
-          fi
-        else
-          echo "Python installer script not found, creating tar.gz package instead"
-        fi
-
-    # Create macOS installer wizard  
-    - name: Create macOS installer wizard
-      if: matrix.platform == 'macos'
-      timeout-minutes: 10
-      shell: bash
-      run: |
-        cd build/${{ matrix.platform }}
-        
-        # Verify all required binaries are present before creating installer
-        echo "Verifying macOS binaries for installer..."
-        required_binaries=("servin" "servin-desktop" "servin-gui")
-        missing_binaries=()
-        
-        for binary in "${required_binaries[@]}"; do
-          if [ -f "$binary" ]; then
-            echo "Found: $binary"
-          else
-            echo "Missing: $binary"
-            missing_binaries+=("$binary")
-          fi
-        done
-        
-        if [ ${#missing_binaries[@]} -gt 0 ]; then
-          echo "Warning: Some binaries are missing. Installer will be created with available binaries only."
-        fi
-        
-        if [ -f "servin-installer.py" ]; then
-          echo "Creating macOS installer wizard..."
-          
-          # Check if Python and tkinter are available
-          if python3 -c "import tkinter" 2>/dev/null; then
-            echo "Python3 and tkinter are available"
-            
-            # Try to create installer package
-            timeout 300 python3 servin-installer.py --create-app-bundle --output ../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.pkg || {
-              echo "macOS installer creation failed or timed out"
-            }
-            
-            if [ -f "../../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.pkg" ]; then
-              echo "macOS installer wizard created successfully"
-              echo "Installer includes: CLI, TUI, and GUI (if available)"
-            else
-              echo "Warning: macOS installer creation failed, will create tar.gz fallback"
-            fi
-          else
-            echo "Python3 or tkinter not available, skipping GUI installer creation"
-          fi
-        else
-          echo "Python installer script not found, creating tar.gz package instead"
-        fi
-
-    # Create fallback packages (ZIP/tar.gz) if installer wizards fail
-    - name: Create fallback installer package
-      shell: bash
-      run: |
-        cd build
-        
-        echo "Creating fallback packages..."
-        
-        # Check if wizard installer was created
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.exe" ]; then
-            echo "Creating ZIP fallback for Windows..."
-            # Use PowerShell for reliable ZIP creation on Windows
-            powershell -Command "
-              try {
-                Compress-Archive -Path '${{ matrix.platform }}/*' -DestinationPath '../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.zip' -Force
-                Write-Host 'ZIP package created successfully'
-              } catch {
-                Write-Host 'ZIP creation failed: ' + \$_.Exception.Message
-                exit 1
-              }
-            "
+          # For Windows, create ZIP archive
+          if command -v powershell >/dev/null 2>&1; then
+            powershell -Command "Compress-Archive -Path './*' -DestinationPath '../${archive_name}.zip' -Force"
           else
-            echo "Windows installer already exists, skipping ZIP creation"
+            zip -r "../${archive_name}.zip" .
           fi
+          echo "Created: ${archive_name}.zip"
         else
-          if [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run" ] && [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.pkg" ]; then
-            echo "Creating tar.gz fallback for ${{ matrix.platform }}..."
-            if tar -czf ../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.tar.gz ${{ matrix.platform }}/; then
-              echo "tar.gz package created successfully"
-            else
-              echo "tar.gz creation failed"
-              exit 1
-            fi
-          else
-            echo "${{ matrix.platform }} installer already exists, skipping tar.gz creation"
-          fi
+          # For Unix systems, create tar.gz archive
+          tar -czf "../${archive_name}.tar.gz" .
+          echo "Created: ${archive_name}.tar.gz"
         fi
         
-        # Ensure at least one package exists
-        echo "Verifying package creation..."
-        if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.exe" ] && [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.zip" ]; then
-            echo "No Windows package was created!"
-            exit 1
-          fi
-        else
-          if [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run" ] && [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.pkg" ] && [ ! -f "../dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.tar.gz" ]; then
-            echo "No ${{ matrix.platform }} package was created!"
-            exit 1
-          fi
+        # Create installer-only archive if installer exists
+        if [ -f "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe" ]; then
+          cp "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe" "../"
+          echo "Windows installer ready: servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe"
         fi
-        
-        echo "Package creation completed successfully"
 
     # Verify build artifacts
     - name: Verify build artifacts
@@ -454,12 +163,16 @@ jobs:
         echo "Build artifacts for ${{ matrix.platform }}:"
         ls -la build/${{ matrix.platform }}/
         echo ""
-        echo "Distribution packages:"
-        ls -la dist/
+        echo "Distribution directory:"
+        ls -la dist/${{ matrix.platform }}/
         echo ""
-        echo "Generated installers and packages:"
-        find dist -name "*${{ matrix.platform }}*" -type f | while read file; do
-          echo "  $(basename "$file") ($(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "unknown") bytes)"
+        echo "Final distribution packages:"
+        ls -la dist/servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*
+        echo ""
+        echo "Distribution summary:"
+        find dist -name "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*" -type f | while read file; do
+          size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "unknown")
+          echo "  $(basename "$file") (${size} bytes)"
         done
 
     # Upload build artifacts
@@ -468,8 +181,7 @@ jobs:
       with:
         name: servin-${{ matrix.platform }}-${{ env.APP_VERSION }}
         path: |
-          build/${{ matrix.platform }}/
-          dist/*${{ matrix.platform }}*
+          dist/servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*
 
   # Collect all artifacts and create release package
   package:
@@ -488,7 +200,7 @@ jobs:
         mkdir -p release
         
         # Copy distribution packages to release directory
-        find artifacts -name "*.zip" -o -name "*.tar.gz" -o -name "*.exe" -o -name "*.run" -o -name "*.pkg" | while read file; do
+        find artifacts -name "servin_${{ env.APP_VERSION }}_*" -type f | while read file; do
           cp "$file" release/
         done
         
@@ -505,17 +217,16 @@ jobs:
             
             # Identify package type
             case "$filename" in
-              *installer.exe) echo "   -> Windows NSIS Installer Wizard" ;;
-              *installer.run) echo "   -> Linux GUI Installer Wizard" ;;
-              *installer.pkg) echo "   -> macOS Package Installer" ;;
-              *.zip) echo "   -> Windows ZIP Archive (fallback)" ;;
-              *.tar.gz) echo "   -> Unix/Linux Archive (fallback)" ;;
-              *) echo "   -> Unknown package type" ;;
+              *_installer.exe) echo "   -> Windows NSIS Installer Wizard" ;;
+              *_macos_universal.tar.gz) echo "   -> macOS Universal Distribution (Intel + Apple Silicon)" ;;
+              *_linux_amd64.tar.gz) echo "   -> Linux x64 Distribution Archive" ;;
+              *_windows_amd64.zip) echo "   -> Windows x64 Distribution Archive" ;;
+              *) echo "   -> Distribution Package" ;;
             esac
           fi
         done
 
-    - name: Create release archive
+    - name: Create unified release archive
       run: |
         cd release
         zip -r ../servin-cross-platform-${{ env.APP_VERSION }}.zip .
@@ -528,7 +239,9 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: servin-cross-platform-release
-        path: servin-cross-platform-${{ env.APP_VERSION }}.zip
+        path: |
+          servin-cross-platform-${{ env.APP_VERSION }}.zip
+          release/
 
     # Create GitHub release on tag push
     - name: Create GitHub Release
@@ -536,11 +249,9 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          release/*.zip
-          release/*.tar.gz
-          release/*.exe
-          release/*.run
-          release/*.pkg
+          release/servin_${{ env.APP_VERSION }}_*.zip
+          release/servin_${{ env.APP_VERSION }}_*.tar.gz
+          release/servin_${{ env.APP_VERSION }}_*_installer.exe
           servin-cross-platform-${{ env.APP_VERSION }}.zip
         draft: false
         prerelease: false
@@ -548,31 +259,47 @@ jobs:
         body: |
           ## Servin Container Runtime v${{ env.APP_VERSION }}
           
-          ### Installation Options
+          ### 🚀 Installation Options
           
-          **Windows:**
-          - `servin-windows-${{ env.APP_VERSION }}-installer.exe` - NSIS Installer Wizard (Recommended)
-          - `servin-windows-${{ env.APP_VERSION }}.zip` - Manual Installation Archive
+          **Windows (x64):**
+          - `servin_${{ env.APP_VERSION }}_windows_amd64_installer.exe` - NSIS Installer Wizard (Recommended)
+          - `servin_${{ env.APP_VERSION }}_windows_amd64.zip` - Manual Installation Archive
           
-          **Linux:**
-          - `servin-linux-${{ env.APP_VERSION }}-installer.run` - GUI Installer Wizard (Recommended)
-          - `servin-linux-${{ env.APP_VERSION }}.tar.gz` - Manual Installation Archive
+          **Linux (x64):**
+          - `servin_${{ env.APP_VERSION }}_linux_amd64.tar.gz` - Distribution with Wizard Installer
           
-          **macOS:**
-          - `servin-macos-${{ env.APP_VERSION }}-installer.pkg` - Package Installer (Recommended)
-          - `servin-macos-${{ env.APP_VERSION }}.tar.gz` - Manual Installation Archive
+          **macOS (Universal - Intel + Apple Silicon):**
+          - `servin_${{ env.APP_VERSION }}_macos_universal.tar.gz` - Universal Distribution with Wizard Installer
           
           **Cross-Platform:**
           - `servin-cross-platform-${{ env.APP_VERSION }}.zip` - All platforms in one archive
           
-          ### What's Included
+          ### 📦 What's Included
           
           Each package contains:
           - **servin** - CLI container runtime
           - **servin-desktop** - Terminal User Interface (TUI)
-          - **servin-gui** - Graphical User Interface (GUI)
-          - **Installation wizards** - Automated setup with service integration
+          - **servin-webview** - Modern WebView GUI interface
+          - **Wizard installers** - Interactive GUI installation wizards
+          - **Professional icons** - Multi-format icon set
           - **Documentation** - README, LICENSE, and usage guides
+          
+          ### 🎯 Installation Instructions
+          
+          **Windows:**
+          1. Download `servin_${{ env.APP_VERSION }}_windows_amd64_installer.exe`
+          2. Run installer as Administrator
+          3. Or extract ZIP and use `install-servin.bat`
+          
+          **macOS:**
+          1. Download `servin_${{ env.APP_VERSION }}_macos_universal.tar.gz`
+          2. Extract and double-click `ServinInstaller.command`
+          3. Or use Terminal: `./install-servin.sh`
+          
+          **Linux:**
+          1. Download `servin_${{ env.APP_VERSION }}_linux_amd64.tar.gz`
+          2. Extract and run `./ServinInstaller.sh`
+          3. Or use Terminal: `sudo ./install-servin.sh`
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -586,10 +313,16 @@ jobs:
         include:
           - platform: windows
             os: windows-latest
+            os_name: windows
+            arch: amd64
           - platform: linux
             os: ubuntu-latest
-          - platform: macos
+            os_name: linux
+            arch: amd64
+          - platform: mac
             os: macos-latest
+            os_name: macos
+            arch: universal
     
     steps:
     - name: Download build artifacts
@@ -597,77 +330,119 @@ jobs:
       with:
         name: servin-${{ matrix.platform }}-${{ env.APP_VERSION }}
 
+    - name: Extract distribution archive
+      shell: bash
+      run: |
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          if [ -f "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip" ]; then
+            powershell -Command "Expand-Archive -Path 'servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip' -DestinationPath 'test-install'"
+          fi
+        else
+          if [ -f "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" ]; then
+            mkdir -p test-install
+            tar -xzf "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" -C test-install --strip-components=1
+          fi
+        fi
+
     - name: Test CLI binary
       shell: bash
       run: |
         echo "Testing CLI binary..."
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          ./build/${{ matrix.platform }}/servin.exe --version || echo "CLI test completed"
-        else
-          chmod +x ./build/${{ matrix.platform }}/servin
-          ./build/${{ matrix.platform }}/servin --version || echo "CLI test completed"
-        fi
-
-    - name: Test TUI binary
-      shell: bash
-      run: |
-        echo "Testing TUI binary..."
-        if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ -f "./build/${{ matrix.platform }}/servin-desktop.exe" ]; then
-            echo "TUI binary exists: servin-desktop.exe"
+          if [ -f "test-install/servin.exe" ]; then
+            ./test-install/servin.exe --version || echo "CLI test completed"
           else
-            echo "TUI binary missing: servin-desktop.exe"
+            echo "CLI binary not found"
             exit 1
           fi
         else
-          if [ -f "./build/${{ matrix.platform }}/servin-desktop" ]; then
-            chmod +x ./build/${{ matrix.platform }}/servin-desktop
-            echo "TUI binary exists: servin-desktop"
+          if [ -f "test-install/servin" ]; then
+            chmod +x test-install/servin
+            ./test-install/servin --version || echo "CLI test completed"
           else
-            echo "TUI binary missing: servin-desktop"
+            echo "CLI binary not found"
             exit 1
           fi
         fi
 
-    - name: Test GUI binary
+    - name: Test Desktop TUI binary
       shell: bash
       run: |
-        echo "Testing GUI binary..."
+        echo "Testing Desktop TUI binary..."
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ -f "./build/${{ matrix.platform }}/servin-gui.exe" ]; then
-            echo "GUI binary exists: servin-gui.exe"
+          if [ -f "test-install/servin-desktop.exe" ]; then
+            echo "Desktop TUI binary exists: servin-desktop.exe"
           else
-            echo "GUI binary missing: servin-gui.exe (CGO build may have failed)"
+            echo "Desktop TUI binary missing"
+            exit 1
           fi
         else
-          if [ -f "./build/${{ matrix.platform }}/servin-gui" ]; then
-            chmod +x ./build/${{ matrix.platform }}/servin-gui
-            echo "GUI binary exists: servin-gui"
+          if [ -f "test-install/servin-desktop" ]; then
+            chmod +x test-install/servin-desktop
+            echo "Desktop TUI binary exists: servin-desktop"
           else
-            echo "GUI binary missing: servin-gui (CGO build may have failed)"
+            echo "Desktop TUI binary missing"
+            exit 1
           fi
         fi
 
-    - name: Verify installer packages
+    - name: Test WebView GUI launcher
       shell: bash
       run: |
-        echo "Verifying installer packages:"
+        echo "Testing WebView GUI launcher..."
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.exe" ]; then
-            echo "Windows NSIS installer created successfully"
-          elif [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.zip" ]; then
-            echo "Windows ZIP package created as fallback"
+          if [ -f "test-install/servin-webview.bat" ]; then
+            echo "WebView GUI launcher exists: servin-webview.bat"
           else
-            echo "No Windows installer package found"
-            exit 1
+            echo "WebView GUI launcher missing"
           fi
         else
-          if [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.run" ] || [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}-installer.pkg" ]; then
-            echo "${{ matrix.platform }} installer wizard created successfully"
-          elif [ -f "dist/servin-${{ matrix.platform }}-${{ env.APP_VERSION }}.tar.gz" ]; then
-            echo "${{ matrix.platform }} tar.gz package created as fallback"
+          if [ -f "test-install/servin-webview" ]; then
+            chmod +x test-install/servin-webview
+            echo "WebView GUI launcher exists: servin-webview"
           else
-            echo "No ${{ matrix.platform }} installer package found"
-            exit 1
+            echo "WebView GUI launcher missing"
           fi
+        fi
+
+    - name: Verify wizard installers
+      shell: bash
+      run: |
+        echo "Verifying wizard installers:"
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          if [ -f "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe" ]; then
+            echo "Windows NSIS installer verified"
+          elif [ -d "test-install/installer" ]; then
+            echo "Windows installer package verified"
+          else
+            echo "No Windows installer found"
+          fi
+        elif [ "${{ matrix.platform }}" = "mac" ]; then
+          if [ -f "test-install/ServinInstaller.command" ]; then
+            echo "macOS wizard installer verified"
+          else
+            echo "macOS installer missing"
+          fi
+        else
+          if [ -f "test-install/ServinInstaller.sh" ]; then
+            echo "Linux wizard installer verified"
+          else
+            echo "Linux installer missing"
+          fi
+        fi
+
+    - name: Test WebView GUI components
+      shell: bash
+      run: |
+        echo "Testing WebView GUI components..."
+        if [ -d "test-install/webview_gui" ]; then
+          echo "WebView GUI directory found"
+          if [ -f "test-install/webview_gui/requirements.txt" ]; then
+            echo "WebView GUI requirements.txt found"
+          fi
+          if [ -f "test-install/webview_gui/main.py" ]; then
+            echo "WebView GUI main.py found"
+          fi
+        else
+          echo "WebView GUI directory missing"
         fi

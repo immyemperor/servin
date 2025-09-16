@@ -6,98 +6,211 @@ permalink: /tui/
 
 # 📟 Terminal User Interface (TUI)
 
-The Servin Terminal User Interface provides an interactive, menu-driven experience for container management directly in your terminal. Perfect for server environments, SSH sessions, and users who prefer keyboard-driven workflows.
+The Servin Terminal User Interface provides a simple, menu-driven experience for container management directly in your terminal. Perfect for server environments, SSH sessions, and users who prefer command-line workflows.
 
 ## 🚀 Getting Started
 
 ### **Launching the TUI**
 ```bash
 # Start the terminal interface
-servin tui
+servin-desktop
 
-# Start with specific view
-servin tui --view containers
-servin tui --view images
-servin tui --view volumes
-
-# Start with connection options
-servin tui --host unix:///var/run/servin.sock
-servin tui --host tcp://remote-host:2375
+# Alternative command
+servin desktop
 ```
 
-### **Navigation Basics**
-- **Arrow Keys** - Navigate menus and lists
-- **Tab/Shift+Tab** - Switch between panels
-- **Enter** - Select item or confirm action
-- **Escape** - Go back or cancel operation
-- **q** - Quit application
-- **/** - Search/filter
-- **?** - Show help overlay
+### **Navigation**
+- **Number Keys** - Select menu options
+- **Enter** - Confirm selection
+- **Type responses** - When prompted for input
 
 ## 🖥️ Interface Overview
 
-### **Main Dashboard**
+### **Main Menu**
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Servin Container Runtime                    │
-├─────────────────────────────────────────────────────────────────┤
-│ [Containers] [Images] [Volumes] [Networks] [System] [Help]     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  System Status:                    Resource Usage:             │
-│  ✅ Runtime: Active                 📊 CPU: 15%                  │
-│  🔌 CRI Server: Running            💾 Memory: 2.1GB/8GB        │
-│  📡 API Port: 10010                💽 Disk: 45GB/100GB         │
-│                                                                 │
-│  Quick Stats:                      Recent Activity:            │
-│  📦 Containers: 12 (8 running)     🔄 nginx-web started        │
-│  🖼️  Images: 25 (15 in use)        ⏹️  old-app stopped         │
-│  💾 Volumes: 8 (6 mounted)         📥 ubuntu:latest pulled     │
-│  🌐 Networks: 4 (3 active)         🗑️  temp-container removed   │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────┤
-│ Press Tab to navigate | ? for help | q to quit                 │
-└─────────────────────────────────────────────────────────────────┘
+╔════════════════════════════════════════════════════════════════╗
+║                         Servin Desktop                         ║
+║                Container Runtime Management                    ║
+╚════════════════════════════════════════════════════════════════╝
+
+┌─────────────────── Main Menu ────────────────────┐
+│  1. Container Management                          │
+│  2. Image Management                              │
+│  3. CRI Server Control                            │
+│  4. Volume Management                             │
+│  5. Registry Operations                           │
+│  6. System Information                            │
+│  7. Exit                                          │
+└───────────────────────────────────────────────────┘
+
+Select an option:
 ```
 
 ## 📦 Container Management
 
-### **Container List View**
+### **Container Operations Menu**
 ```
-┌─────────────────── Containers ──────────────────┐
-│ Search: [nginx___________] 🔍 Filter: [All____] │
-├──────────────────────────────────────────────────┤
-│ ID       │ Name        │ Image      │ Status    │
-├──────────┼─────────────┼────────────┼───────────┤
-│ 🟢 a1b2c3 │ web-server  │ nginx:1.21 │ Running   │
-│ 🟡 d4e5f6 │ api-service │ node:16    │ Paused    │
-│ 🔴 g7h8i9 │ old-worker  │ worker:2.0 │ Exited(0) │
-│ 🟢 j1k2l3 │ database    │ mysql:8.0  │ Running   │
-├──────────────────────────────────────────────────┤
-│ ↑/↓: Navigate | Enter: Details | Space: Select  │
-│ s: Start | t: Stop | r: Restart | d: Delete     │
-│ l: Logs | e: Exec | i: Inspect | c: Create      │
-└──────────────────────────────────────────────────┘
+┌─────────────── Container Management ──────────────┐
+│  1. List Containers                               │
+│  2. Run New Container                             │
+│  3. Start Container                               │
+│  4. Stop Container                                │
+│  5. Remove Container                              │
+│  6. View Container Logs                           │
+│  7. Execute Command in Container                  │
+│  8. Back to Main Menu                             │
+└───────────────────────────────────────────────────┘
 ```
 
-### **Container Details Panel**
+### **Available Operations**
+- **List Containers**: Display all containers with status
+- **Run New Container**: Create and start a new container
+- **Start Container**: Start a stopped container by ID/name
+- **Stop Container**: Stop a running container
+- **Remove Container**: Delete a container
+- **View Logs**: Show container output logs
+- **Execute Command**: Run commands inside containers
+
+## 🖼️ Image Management
+
+### **Image Operations Menu**
 ```
-┌─────────────── Container Details: web-server ───────────────┐
-│                                                              │
-│ General Information:                                         │
-│ 🆔 ID: a1b2c3d4e5f6                                          │
-│ 🏷️  Name: web-server                                        │
-│ 🖼️  Image: nginx:1.21                                       │
-│ ⚡ Status: Running (2h 15m)                                 │
-│ 🔄 Restart Policy: unless-stopped                          │
-│                                                              │
-│ Network Configuration:                                       │
-│ 🌐 IP Address: 172.17.0.2                                   │
-│ 🔗 Ports: 80:8080/tcp, 443:8443/tcp                        │
-│ 🌍 Networks: bridge, web-frontend                          │
-│                                                              │
-│ Resource Usage:                                              │
-│ 📊 CPU: 5.2% (Limit: 1.0 CPU)                              │
+┌──────────────── Image Management ─────────────────┐
+│  1. List Images                                   │
+│  2. Import Image                                  │
+│  3. Remove Image                                  │
+│  4. Tag Image                                     │
+│  5. Inspect Image                                 │
+│  6. Build Image                                   │
+│  7. Back to Main Menu                             │
+└───────────────────────────────────────────────────┘
+```
+
+### **Available Operations**
+- **List Images**: Show all available images
+- **Import Image**: Import images from tar files
+- **Remove Image**: Delete unused images
+- **Tag Image**: Add tags to existing images
+- **Inspect Image**: View detailed image information
+- **Build Image**: Build images from Dockerfile
+
+## 🔗 CRI Server Control
+
+### **CRI Server Menu**
+```
+┌────────────────── CRI Server ─────────────────────┐
+│  1. Start CRI Server                             │
+│  2. Check CRI Server Status                      │
+│  3. Test CRI Connection                           │
+│  4. View CRI Endpoints                            │
+│  5. Back to Main Menu                             │
+└───────────────────────────────────────────────────┘
+```
+
+### **Available Operations**
+- **Start CRI Server**: Launch Kubernetes CRI server
+- **Check Status**: Verify CRI server status
+- **Test Connection**: Test CRI connectivity
+- **View Endpoints**: Show available CRI API endpoints
+
+## 💾 Volume Management
+
+### **Volume Operations Menu**
+```
+┌─────────────── Volume Management ─────────────────┐
+│  1. List Volumes                                  │
+│  2. Create Volume                                 │
+│  3. Remove Volume                                 │
+│  4. Inspect Volume                                │
+│  5. Remove All Volumes                            │
+│  6. Back to Main Menu                             │
+└───────────────────────────────────────────────────┘
+```
+
+### **Available Operations**
+- **List Volumes**: Display all created volumes
+- **Create Volume**: Create new storage volumes
+- **Remove Volume**: Delete specific volumes
+- **Inspect Volume**: View volume details
+- **Remove All**: Clean up all volumes
+
+## 📡 Registry Operations
+
+### **Registry Menu**
+```
+┌────────────── Registry Operations ────────────────┐
+│  1. Start Local Registry                          │
+│  2. Stop Local Registry                           │
+│  3. Push Image to Registry                        │
+│  4. Pull Image from Registry                      │
+│  5. List Registries                               │
+│  6. Back to Main Menu                             │
+└───────────────────────────────────────────────────┘
+```
+
+### **Available Operations**
+- **Start Registry**: Launch local registry server
+- **Stop Registry**: Shutdown registry server
+- **Push Image**: Upload images to registry
+- **Pull Image**: Download images from registry
+- **List Registries**: Show configured registries
+
+## 📊 System Information
+
+### **System Overview**
+```
+╔════════════════ System Information ═══════════════╗
+║ Servin Runtime Information:                        ║
+║ Version: 1.0.0                                     ║
+║ Platform: Linux/Windows/macOS                      ║
+║ Time: 2025-09-16 15:04:05                         ║
+║                                                    ║
+║ Container Statistics:                              ║
+║ Running: 5    Stopped: 3    Total: 8              ║
+║                                                    ║
+║ Image Statistics:                                  ║
+║ Local Images: 12    Total Size: 2.4GB             ║
+╚════════════════════════════════════════════════════╝
+```
+
+## 🔧 Usage Examples
+
+### **Starting a Container**
+1. Select **1** (Container Management)
+2. Select **2** (Run New Container)
+3. Enter image name: `nginx`
+4. Enter container name: `web-server`
+5. Enter command: *(optional)*
+
+### **Viewing Logs**
+1. Go to Container Management
+2. Select **6** (View Container Logs)
+3. Enter container ID or name
+4. Logs will be displayed
+
+### **Managing Images**
+1. Select **2** (Image Management)
+2. Select **1** (List Images) to see available images
+3. Use other options to manage images
+
+## ⚙️ Technical Features
+
+### **Simple Navigation**
+- **Menu-driven interface**: Easy number-based selection
+- **Back navigation**: Return to previous menus
+- **Input prompts**: Clear instructions for user input
+- **Error handling**: Helpful error messages
+
+### **Command Integration**
+- **Direct CLI integration**: Uses `servin` CLI commands
+- **Real-time output**: Shows command results immediately
+- **Platform support**: Works on Windows, Linux, and macOS
+
+### **User Experience**
+- **ASCII art headers**: Professional appearance
+- **Consistent formatting**: Clean, readable menus
+- **Interactive prompts**: Clear input requests
+- **Status feedback**: Command execution results
 │ 💾 Memory: 128MB/512MB (25%)                               │
 │ 💽 Disk I/O: 1.2MB read, 850KB write                      │
 │ 🌐 Network I/O: 15MB in, 25MB out                          │

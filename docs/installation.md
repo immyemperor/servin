@@ -39,7 +39,7 @@ Choose your platform and follow the installation instructions:
 
 1. **Download** the latest installer:
    ```
-   ServinSetup-1.0.0.exe
+   servin_1.0.0_windows_amd64_installer.exe
    ```
 
 2. **Run as Administrator**:
@@ -70,20 +70,22 @@ Choose your platform and follow the installation instructions:
 
 ```bash
 # Download installer
-wget https://github.com/immyemperor/servin/releases/latest/download/servin-installer.py
+wget https://github.com/immyemperor/servin/releases/latest/download/servin_1.0.0_linux_amd64.tar.gz
 
-# Run installer
-sudo python3 servin-installer.py
+# Extract and run installer
+tar -xzf servin_1.0.0_linux_amd64.tar.gz
+cd servin-linux-amd64
+sudo ./ServinInstaller.sh
 ```
 
 #### Option 2: Manual Installation
 
 ```bash
 # Download binary package
-wget https://github.com/immyemperor/servin/releases/latest/download/servin-linux-amd64.tar.gz
+wget https://github.com/immyemperor/servin/releases/latest/download/servin_1.0.0_linux_amd64.tar.gz
 
 # Extract package
-tar -xzf servin-linux-amd64.tar.gz
+tar -xzf servin_1.0.0_linux_amd64.tar.gz
 
 # Move binaries to system path
 sudo cp servin* /usr/local/bin/
@@ -107,10 +109,12 @@ sudo systemctl start servin
 
 ```bash
 # Download installer
-curl -O https://github.com/immyemperor/servin/releases/latest/download/servin-installer.py
+curl -O https://github.com/immyemperor/servin/releases/latest/download/servin_1.0.0_macos_universal.tar.gz
 
-# Run installer
-sudo python3 servin-installer.py
+# Extract and run installer
+tar -xzf servin_1.0.0_macos_universal.tar.gz
+cd servin-macos-universal
+sudo ./ServinInstaller.command
 ```
 
 #### Option 2: Using Homebrew
@@ -198,38 +202,45 @@ go build -o servin-gui cmd/servin-gui/         # GUI only
 #### 🎯 Cross-Platform Building
 
 ```bash
-# Build for all platforms
-make build-all
+# Build for all platforms using the new build system
+./build-all.sh                    # All platforms with distribution packages
 
 # Build for specific platforms
-make build-windows
-make build-linux
-make build-darwin
+PLATFORM=windows ./build-all.sh   # Windows with ZIP and NSIS installer
+PLATFORM=linux ./build-all.sh     # Linux with TAR.GZ and wizard installer
+PLATFORM=mac ./build-all.sh       # macOS universal binary with wizard installer
 
-# Using Go directly
+# Clean previous builds
+./build-all.sh --clean-all
+
+# Using Go directly for development
 GOOS=windows GOARCH=amd64 go build -o servin.exe main.go
 GOOS=linux GOARCH=amd64 go build -o servin main.go
 GOOS=darwin GOARCH=amd64 go build -o servin main.go
 ```
 
-#### 📦 Building Installers
+#### 📦 Distribution Packages
+
+The new build system creates professional distribution packages:
 
 ```bash
-# Windows NSIS installer
-.\build-installer.ps1
-# Creates: dist\ServinSetup-1.0.0.exe
+# Build all distributions
+./build-all.sh
 
-# Linux packages
-make package-linux
-# Creates: dist/servin-1.0.0-linux-amd64.tar.gz
-
-# macOS package
-make package-darwin
-# Creates: dist/servin-1.0.0-darwin-amd64.tar.gz
-
-# All packages
-make package-all
+# Outputs:
+# - dist/servin_1.0.0_windows_amd64.zip           (Windows ZIP archive)
+# - dist/servin_1.0.0_windows_amd64_installer.exe (Windows NSIS installer)
+# - dist/servin_1.0.0_linux_amd64.tar.gz         (Linux distribution)
+# - dist/servin_1.0.0_macos_universal.tar.gz     (macOS universal binary)
 ```
+
+**What's included in each package:**
+- ✅ **servin** - CLI container runtime
+- ✅ **servin-desktop** - Terminal User Interface (TUI)
+- ✅ **servin-webview** - Modern WebView GUI interface
+- ✅ **Wizard installers** - Interactive GUI installation wizards
+- ✅ **Professional icons** - Multi-format icon set
+- ✅ **Documentation** - README, LICENSE, and usage guides
 
 ### Development Build
 

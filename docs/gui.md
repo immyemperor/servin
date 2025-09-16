@@ -6,97 +6,135 @@ permalink: /gui/
 
 # 🖱️ Desktop GUI Application
 
-The Servin Desktop GUI provides a professional, visual interface for container management with modern design principles and intuitive workflows. Built with Fyne v2.6, it offers native performance across Windows, Linux, and macOS.
+The Servin Desktop GUI provides a clean, intuitive interface for container management with modern design principles. Built with Fyne v2, it offers native performance across Windows, Linux, and macOS with automatic refresh and real-time status updates.
 
 ## 🚀 Getting Started
 
 ### **Launching the GUI**
-- **Windows**: Start Menu → Servin Container Runtime
-- **Linux**: Applications → Development → Servin Runtime  
-- **macOS**: Applications → Servin Runtime
+- **Windows**: Start Menu → Servin Container Runtime → Servin GUI
+- **Linux**: Applications → Development → Servin GUI  
+- **macOS**: Applications → Servin GUI
 - **Command Line**: `servin gui` or `servin-gui`
 
-### **First Launch Setup**
-1. **Connection Configuration** - Configure runtime connection
-2. **Theme Selection** - Choose light/dark theme
-3. **Layout Preferences** - Customize interface layout
-4. **Notification Settings** - Configure alerts and notifications
-
-## 🎨 Interface Overview
-
-### **Main Window Layout**
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ File  Edit  View  Container  Image  Volume  Network  Help     │
-├─────────────────────────────────────────────────────────────────┤
-│ 🏠 📦 🖼️ 💾 🌐 ⚙️    Search: [nginx________] 🔍 [Filter▼]      │
-├─────────────────────────────────────────────────────────────────┤
-│ ┌─ Sidebar ─┐ ┌────────── Main Content Area ──────────────────┐ │
-│ │           │ │                                              │ │
-│ │ 📦 Containers │ │  Container List / Details View             │ │
-│ │   Running     │ │                                              │ │
-│ │   Stopped     │ │  ┌─────────────────────────────────────┐    │ │
-│ │   Paused      │ │  │ web-server     nginx:latest    🟢   │    │ │
-│ │               │ │  │ Created: 2h ago  CPU: 5%  Mem: 128MB│    │ │
-│ │ 🖼️ Images      │ │  └─────────────────────────────────────┘    │ │
-│ │   Local       │ │                                              │ │
-│ │   Registry    │ │  ┌─────────────────────────────────────┐    │ │
-│ │               │ │  │ api-service    node:16         🟡   │    │ │
-│ │ 💾 Volumes     │ │  │ Created: 1d ago  CPU: 2%  Mem: 256MB│    │ │
-│ │   Mounted     │ │  └─────────────────────────────────────┘    │ │
-│ │   Unused      │ │                                              │ │
-│ │               │ │  Actions: [Start] [Stop] [Restart] [⋮]      │ │
-│ │ 🌐 Networks    │ │                                              │ │
-│ │   Bridge      │ │                                              │ │
-│ │   Custom      │ │                                              │ │
-│ │               │ │                                              │ │
-│ │ 📊 System      │ │                                              │ │
-│ │   Overview    │ │                                              │ │
-│ │   Logs        │ │                                              │ │
-│ │   Events      │ │                                              │ │
-│ └───────────────┘ └──────────────────────────────────────────────┘ │
-├─────────────────────────────────────────────────────────────────┤
-│ Status: Connected | Containers: 12 | Images: 25 | CPU: 15%   │
-└─────────────────────────────────────────────────────────────────┘
-```
+### **Interface Overview**
+The GUI features a tabbed interface with four main sections:
+- **📦 Containers** - Container lifecycle management
+- **🖼️ Images** - Image management and operations
+- **🔗 CRI Server** - Kubernetes CRI server control
+- **📋 Logs** - Real-time application logs
 
 ## 📦 Container Management
 
 ### **Container List View**
-The container view displays all containers with visual status indicators:
+Displays all containers with:
+- **Status Icons**: Visual indicators (▶️ running, ⏸️ stopped)
+- **Container Name**: User-friendly container identifier
+- **Current Status**: Running, stopped, paused, etc.
+- **Base Image**: Container image name and tag
 
-- **🟢 Running** - Container is actively running
-- **🟡 Paused** - Container is paused
-- **🔴 Stopped** - Container is stopped
-- **🟠 Restarting** - Container is restarting
-- **⚫ Unknown** - Status unknown
+### **Container Operations**
+- **▶️ Start** - Start a stopped container
+- **⏸️ Stop** - Stop a running container  
+- **🗑️ Remove** - Delete container (with confirmation)
+- **📋 Logs** - View container logs in popup
+- **🔄 Refresh** - Update container list
 
-### **Container Cards**
-Each container is displayed as a card showing:
-- **Name and Image** - Container identification
-- **Status Badge** - Visual status indicator
-- **Resource Usage** - CPU, memory, network stats
-- **Uptime/Age** - How long container has been running
-- **Port Mappings** - Exposed ports and bindings
-- **Quick Actions** - Start, stop, restart, logs
+### **Container Actions**
+```
+Action Bar: [Start] [Stop] [Remove] [Logs] [Refresh]
+```
 
-### **Container Details Panel**
-Click any container to open the detailed view:
+## 🖼️ Image Management
 
-#### **Overview Tab**
-- **Basic Information**
-  - Container ID and name
-  - Image name and tag
-  - Creation time and uptime
-  - Current status and exit code
-  - Restart policy and count
+### **Image List View**
+Shows available images with:
+- **📦 Storage Icon** - Image type indicator
+- **Image Name** - Repository name
+- **Tag** - Version or tag
+- **Size** - Formatted file size (MB/GB)
+- **Created Date** - When image was built
 
-- **Resource Usage**
-  - Real-time CPU usage graph
-  - Memory usage with limits
-  - Network I/O statistics
-  - Disk I/O metrics
-  - Process count
+### **Image Operations**
+- **📁 Import** - Import image from file
+- **🗑️ Remove** - Delete unused images
+- **🏷️ Tag** - Add tags to images
+- **ℹ️ Inspect** - View image details
+- **🔄 Refresh** - Update image list
+
+## 🔗 CRI Server Management
+
+### **Server Control Panel**
+The CRI (Container Runtime Interface) tab provides:
+
+#### **Status Display**
+- **Server Status**: Running/Stopped indicator
+- **Port Information**: CRI server listening port
+- **Health Status**: Connection health check
+
+#### **Control Actions**
+- **▶️ Start CRI Server** - Launch Kubernetes CRI server
+- **⏸️ Stop CRI Server** - Shutdown CRI server
+- **🔄 Restart** - Restart CRI server
+- **📊 Status Check** - Verify server health
+
+#### **API Endpoints Reference**
+Complete list of supported CRI endpoints:
+- **Runtime Service**: Sandbox and container operations
+- **Image Service**: Image management operations
+- **Health Check**: Service status verification
+
+## 📋 Application Logs
+
+### **Real-time Log Viewer**
+- **Live Updates**: Automatic log streaming
+- **Timestamps**: Each log entry with time information
+- **Action Tracking**: GUI operations and status updates
+- **Clear Function**: Clear log history
+
+### **Log Features**
+- **Scrollable View**: Navigate through log history
+- **Rich Text**: Formatted log output
+- **Status Integration**: Log messages update status bar
+- **Auto-refresh**: Continuous log updates
+
+## ⚙️ Technical Features
+
+### **Auto-refresh System**
+- **2-second intervals**: Automatic data updates
+- **Background threading**: Non-blocking UI operations
+- **Smart updates**: Only refresh when data changes
+
+### **Error Handling**
+- **User-friendly dialogs**: Clear error messages
+- **Confirmation prompts**: Safety for destructive operations
+- **Status feedback**: Real-time operation status
+
+### **Cross-platform Support**
+- **Native Look**: Platform-appropriate styling
+- **Keyboard Shortcuts**: Standard platform shortcuts
+- **File Dialogs**: Native file selection
+
+## 🎨 User Interface Design
+
+### **Layout Structure**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ┌─ Containers ─┐ ┌─ Images ─┐ ┌─ CRI Server ─┐ ┌─ Logs ─┐     │
+│ │ Container     │ │ Image    │ │ Server       │ │ Log     │     │
+│ │ List          │ │ List     │ │ Controls     │ │ Viewer  │     │
+│ │               │ │          │ │              │ │         │     │
+│ │ [Actions...]  │ │ [Actions]│ │ [Start/Stop] │ │ [Clear] │     │
+│ └───────────────┘ └──────────┘ └──────────────┘ └─────────┘     │
+├─────────────────────────────────────────────────────────────────┤
+│ Status: Ready | Last Update: 15:04:05                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### **Window Properties**
+- **Size**: 1200x800 pixels (resizable)
+- **Position**: Centered on screen
+- **Theme**: System-appropriate (light/dark)
+- **Icons**: Fyne theme icons for consistency
 
 - **Configuration**
   - Environment variables

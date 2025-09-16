@@ -69,6 +69,33 @@ permalink: /
 
 ## Quick Start
 
+### 📦 Download & Install
+
+Choose your platform and download the appropriate package:
+
+<div class="feature-grid">
+  <div class="feature-box">
+    <div class="feature-icon">🪟</div>
+    <h4>Windows</h4>
+    <p><code>servin_1.0.0_windows_amd64_installer.exe</code></p>
+    <span class="badge badge-primary">NSIS Installer</span>
+  </div>
+  <div class="feature-box">
+    <div class="feature-icon">🐧</div>
+    <h4>Linux</h4>
+    <p><code>servin_1.0.0_linux_amd64.tar.gz</code></p>
+    <span class="badge badge-primary">TAR.GZ + Installer</span>
+  </div>
+  <div class="feature-box">
+    <div class="feature-icon">🍎</div>
+    <h4>macOS</h4>
+    <p><code>servin_1.0.0_macos_universal.tar.gz</code></p>
+    <span class="badge badge-primary">Universal Binary</span>
+  </div>
+</div>
+
+### 🚀 Get Started
+
 1. **Install Servin** following our [Installation Guide]({{ '/installation' | relative_url }})
 2. **Start the daemon:**
    ```bash
@@ -78,6 +105,13 @@ permalink: /
    ```bash
    servin run hello-world
    ```
+
+### 🎯 Interface Options
+
+- **CLI**: `servin` - Full command-line interface
+- **TUI**: `servin-desktop` - Terminal user interface  
+- **GUI**: `servin-gui` - Desktop application with Fyne
+- **WebView**: `servin-webview` - Modern web interface
 
 [Get Started →]({{ '/installation' | relative_url }}){: .btn .btn-primary}
 [View on GitHub →]({{ site.github.repository_url }}){: .btn .btn-outline}
