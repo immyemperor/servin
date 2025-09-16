@@ -710,12 +710,26 @@ else
     # For other platforms, organize build directory
     echo -e "${YELLOW}📁 Organizing build directory${NC}"
     
-    # For single-architecture platforms, binaries are already in the right place
-    # Just clean up any duplicate files if they exist
+    # For single-architecture platforms, copy binaries from arch-specific directories
     if [[ "$PLATFORM" == "windows" ]]; then
+        # Copy Windows binaries from arch-specific directory to main build directory
+        echo -e "${YELLOW}  📁 Copying Windows binaries${NC}"
+        cp "${BUILD_DIR}-amd64/servin.exe" "${BUILD_DIR}/"
+        if [[ -f "${BUILD_DIR}-amd64/servin-desktop.exe" ]]; then
+            cp "${BUILD_DIR}-amd64/servin-desktop.exe" "${BUILD_DIR}/"
+        fi
         # Remove Unix-style binaries if they exist (keep only .exe)
         rm -f "${BUILD_DIR}/servin" "${BUILD_DIR}/servin-desktop" 2>/dev/null || true
     else
+        # Copy Linux binaries from arch-specific directory to main build directory  
+        echo -e "${YELLOW}  📁 Copying Linux binaries${NC}"
+        arch_dir="${BUILD_DIR}-${ARCHITECTURES[0]}"
+        if [[ -d "$arch_dir" ]]; then
+            cp "${arch_dir}/servin" "${BUILD_DIR}/"
+            if [[ -f "${arch_dir}/servin-desktop" ]]; then
+                cp "${arch_dir}/servin-desktop" "${BUILD_DIR}/"
+            fi
+        fi
         # Remove Windows-style binaries if they exist (keep only Unix)
         rm -f "${BUILD_DIR}/servin.exe" "${BUILD_DIR}/servin-desktop.exe" 2>/dev/null || true
     fi

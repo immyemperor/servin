@@ -9,7 +9,9 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func setupContainerEnvironment() error {
+// setupBasicContainerEnvironment provides basic container setup functionality
+// This is a simpler alternative to the full setupContainerEnvironment in init_linux.go
+func setupBasicContainerEnvironment() error {
 	// Set hostname
 	hostname := "container"
 	if err := unix.Sethostname([]byte(hostname)); err != nil {
