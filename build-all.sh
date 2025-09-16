@@ -716,9 +716,28 @@ else
     if [[ "$PLATFORM" == "windows" ]]; then
         # Copy Windows binaries from arch-specific directory to main build directory
         echo -e "${YELLOW}  📁 Copying Windows binaries${NC}"
-        cp "${BUILD_DIR}-amd64/servin.exe" "${BUILD_DIR}/"
+        echo "    Source: ${BUILD_DIR}-amd64/servin.exe"
+        echo "    Target: ${BUILD_DIR}/servin.exe"
+        
+        if [[ ! -f "${BUILD_DIR}-amd64/servin.exe" ]]; then
+            echo "    ❌ ERROR: Source file does not exist: ${BUILD_DIR}-amd64/servin.exe"
+            echo "    Directory contents of ${BUILD_DIR}-amd64/:"
+            ls -la "${BUILD_DIR}-amd64/" 2>/dev/null || echo "    Directory does not exist"
+            return 1
+        fi
+        
+        cp "${BUILD_DIR}-amd64/servin.exe" "${BUILD_DIR}/" || {
+            echo "    ❌ ERROR: Failed to copy servin.exe"
+            return 1
+        }
+        echo "    ✅ servin.exe copied successfully"
+        
         if [[ -f "${BUILD_DIR}-amd64/servin-desktop.exe" ]]; then
-            cp "${BUILD_DIR}-amd64/servin-desktop.exe" "${BUILD_DIR}/"
+            cp "${BUILD_DIR}-amd64/servin-desktop.exe" "${BUILD_DIR}/" || {
+                echo "    ❌ ERROR: Failed to copy servin-desktop.exe"
+                return 1
+            }
+            echo "    ✅ servin-desktop.exe copied successfully"
         fi
         # Remove Unix-style binaries if they exist (keep only .exe)
         rm -f "${BUILD_DIR}/servin" "${BUILD_DIR}/servin-desktop" 2>/dev/null || true
@@ -745,9 +764,23 @@ echo -e "${YELLOW}📦 Copying binaries to distribution${NC}"
 
 # Set file extensions based on platform
 if [[ "$PLATFORM" == "windows" ]]; then
+    echo "  Checking for Windows binaries in: $BUILD_DIR"
+    
+    if [[ ! -f "$BUILD_DIR/servin.exe" ]]; then
+        echo "  ❌ ERROR: servin.exe not found in $BUILD_DIR"
+        echo "  Directory contents:"
+        ls -la "$BUILD_DIR/" 2>/dev/null || echo "  Build directory does not exist"
+        echo "  Checking architecture-specific directory:"
+        ls -la "${BUILD_DIR}-amd64/" 2>/dev/null || echo "  Architecture directory does not exist"
+        exit 1
+    fi
+    
     cp "$BUILD_DIR/servin.exe" "$DIST_DIR/"
+    echo "  ✅ servin.exe copied to distribution"
+    
     if [[ -f "$BUILD_DIR/servin-desktop.exe" ]]; then
         cp "$BUILD_DIR/servin-desktop.exe" "$DIST_DIR/"
+        echo "  ✅ servin-desktop.exe copied to distribution"
     fi
     cp "$BUILD_DIR/servin-webview.bat" "$DIST_DIR/"
 else
