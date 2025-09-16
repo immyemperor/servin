@@ -690,6 +690,9 @@ for arch in "${ARCHITECTURES[@]}"; do
 done
 
 # For macOS, create universal binaries
+echo "DEBUG: About to check platform for binary organization"
+echo "DEBUG: PLATFORM = '$PLATFORM'"
+
 if [[ "$PLATFORM" == "mac" ]]; then
     echo -e "${YELLOW}🔗 Creating universal binaries${NC}"
     
@@ -711,6 +714,7 @@ if [[ "$PLATFORM" == "mac" ]]; then
 else
     # For other platforms, organize build directory
     echo -e "${YELLOW}📁 Organizing build directory${NC}"
+    echo "DEBUG: In else block, PLATFORM = '$PLATFORM'"
     
     # For single-architecture platforms, copy binaries from arch-specific directories
     if [[ "$PLATFORM" == "windows" ]]; then
@@ -718,6 +722,7 @@ else
         echo -e "${YELLOW}  📁 Copying Windows binaries${NC}"
         echo "    Source: ${BUILD_DIR}-amd64/servin.exe"
         echo "    Target: ${BUILD_DIR}/servin.exe"
+        echo "DEBUG: About to check if source file exists"
         
         if [[ ! -f "${BUILD_DIR}-amd64/servin.exe" ]]; then
             echo "    ❌ ERROR: Source file does not exist: ${BUILD_DIR}-amd64/servin.exe"
@@ -726,6 +731,7 @@ else
             return 1
         fi
         
+        echo "DEBUG: Source file exists, about to copy"
         cp "${BUILD_DIR}-amd64/servin.exe" "${BUILD_DIR}/" || {
             echo "    ❌ ERROR: Failed to copy servin.exe"
             return 1
@@ -766,22 +772,34 @@ echo -e "${YELLOW}📦 Copying binaries to distribution${NC}"
 if [[ "$PLATFORM" == "windows" ]]; then
     echo "  Checking for Windows binaries in: $BUILD_DIR"
     
-    if [[ ! -f "$BUILD_DIR/servin.exe" ]]; then
-        echo "  ❌ ERROR: servin.exe not found in $BUILD_DIR"
-        echo "  Directory contents:"
-        ls -la "$BUILD_DIR/" 2>/dev/null || echo "  Build directory does not exist"
-        echo "  Checking architecture-specific directory:"
+    # Check main build directory first
+    if [[ -f "$BUILD_DIR/servin.exe" ]]; then
+        echo "  ✅ Found servin.exe in main build directory"
+        cp "$BUILD_DIR/servin.exe" "$DIST_DIR/"
+        echo "  ✅ servin.exe copied to distribution"
+    elif [[ -f "${BUILD_DIR}-amd64/servin.exe" ]]; then
+        echo "  ⚠️ servin.exe not in main directory, copying from architecture-specific directory"
+        cp "${BUILD_DIR}-amd64/servin.exe" "$DIST_DIR/"
+        echo "  ✅ servin.exe copied to distribution from ${BUILD_DIR}-amd64/"
+    else
+        echo "  ❌ ERROR: servin.exe not found in either location"
+        echo "  Main directory contents:"
+        ls -la "$BUILD_DIR/" 2>/dev/null || echo "  Main build directory does not exist"
+        echo "  Architecture directory contents:"
         ls -la "${BUILD_DIR}-amd64/" 2>/dev/null || echo "  Architecture directory does not exist"
         exit 1
     fi
     
-    cp "$BUILD_DIR/servin.exe" "$DIST_DIR/"
-    echo "  ✅ servin.exe copied to distribution"
-    
+    # Check for desktop binary
     if [[ -f "$BUILD_DIR/servin-desktop.exe" ]]; then
         cp "$BUILD_DIR/servin-desktop.exe" "$DIST_DIR/"
         echo "  ✅ servin-desktop.exe copied to distribution"
+    elif [[ -f "${BUILD_DIR}-amd64/servin-desktop.exe" ]]; then
+        echo "  ⚠️ servin-desktop.exe not in main directory, copying from architecture-specific directory"
+        cp "${BUILD_DIR}-amd64/servin-desktop.exe" "$DIST_DIR/"
+        echo "  ✅ servin-desktop.exe copied to distribution from ${BUILD_DIR}-amd64/"
     fi
+    
     cp "$BUILD_DIR/servin-webview.bat" "$DIST_DIR/"
 else
     cp "$BUILD_DIR/servin" "$DIST_DIR/"
