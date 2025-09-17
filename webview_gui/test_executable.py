@@ -11,22 +11,22 @@ import time
 
 def test_executable(executable_path):
     """Test the executable by running it briefly"""
-    print(f"🧪 Testing executable: {executable_path}")
+    print(f"[TEST] Testing executable: {executable_path}")
     
     if not os.path.exists(executable_path):
-        print(f"❌ Executable not found: {executable_path}")
+        print(f"[ERROR] Executable not found: {executable_path}")
         return False
     
     if not os.access(executable_path, os.X_OK):
-        print(f"❌ Executable is not executable: {executable_path}")
+        print(f"[ERROR] Executable is not executable: {executable_path}")
         return False
     
-    print(f"✅ Executable exists and is executable")
-    print(f"📊 Size: {os.path.getsize(executable_path) / (1024*1024):.1f} MB")
+    print(f"[OK] Executable exists and is executable")
+    print(f"[INFO] Size: {os.path.getsize(executable_path) / (1024*1024):.1f} MB")
     
     # Try to run the executable for a short time
     try:
-        print("🚀 Starting executable test (5 second timeout)...")
+        print("[TEST] Starting executable test (5 second timeout)...")
         process = subprocess.Popen(
             [executable_path],
             stdout=subprocess.PIPE,
@@ -37,19 +37,19 @@ def test_executable(executable_path):
         # Wait a few seconds for it to start
         try:
             stdout, stderr = process.communicate(timeout=5)
-            print(f"🔍 Process exited with code: {process.returncode}")
+            print(f"[INFO] Process exited with code: {process.returncode}")
             if stdout:
-                print(f"📤 stdout: {stdout[:200]}...")
+                print(f"[OUT] stdout: {stdout[:200]}...")
             if stderr:
-                print(f"📤 stderr: {stderr[:200]}...")
+                print(f"[ERR] stderr: {stderr[:200]}...")
         except subprocess.TimeoutExpired:
-            print("⏰ Executable started successfully (timeout as expected)")
+            print("[OK] Executable started successfully (timeout as expected)")
             process.terminate()
             process.wait()
             return True
             
     except Exception as e:
-        print(f"❌ Failed to run executable: {e}")
+        print(f"[ERROR] Failed to run executable: {e}")
         return False
     
     return True

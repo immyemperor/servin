@@ -113,12 +113,21 @@ jobs:
         echo "Verifying build outputs for ${{ matrix.platform }}..."
         ls -la build/${{ matrix.platform }}/
         
-        # Test GUI executable if it exists
-        if [ -f "build/${{ matrix.platform }}/servin-gui" ] || [ -f "build/${{ matrix.platform }}/servin-gui.exe" ]; then
-          echo "Testing GUI executable..."
-          python3 webview_gui/test_executable.py build/${{ matrix.platform }}/servin-gui*
+        # Test GUI executable if it exists (platform-specific)
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          if [ -f "build/${{ matrix.platform }}/servin-gui.exe" ]; then
+            echo "Testing Windows GUI executable..."
+            python webview_gui/test_executable.py build/${{ matrix.platform }}/servin-gui.exe
+          else
+            echo "Windows GUI executable not found"
+          fi
         else
-          echo "GUI executable not found, checking if build failed..."
+          if [ -f "build/${{ matrix.platform }}/servin-gui" ]; then
+            echo "Testing GUI executable..."
+            python3 webview_gui/test_executable.py build/${{ matrix.platform }}/servin-gui
+          else
+            echo "GUI executable not found"
+          fi
         fi
         
     - name: Build Windows installer
