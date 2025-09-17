@@ -925,6 +925,15 @@ class DockerGUI {
                 case 'exec':
                     console.log('Setting up exec...');
                     this.setupContainerExec();
+                    // Auto-launch terminal session
+                    setTimeout(() => {
+                        if (!this.isExecConnected) {
+                            console.log('Auto-launching terminal session...');
+                            const execShell = document.getElementById('execShell');
+                            const shell = execShell ? execShell.value : '/bin/sh';
+                            this.startExecSession(shell);
+                        }
+                    }, 100); // Small delay to ensure UI is ready
                     break;
                 case 'volumes':
                     console.log('Loading volumes...');
@@ -977,26 +986,15 @@ class DockerGUI {
     }
     
     setupLogsControls() {
-        const clearLogsBtn = document.getElementById('clearLogsBtn');
         const downloadLogsBtn = document.getElementById('downloadLogsBtn');
-        const autoRefreshLogs = document.getElementById('autoRefreshLogs');
-        
-        if (clearLogsBtn) {
-            clearLogsBtn.onclick = () => this.clearLogs();
-        }
         
         if (downloadLogsBtn) {
             downloadLogsBtn.onclick = () => this.downloadLogs();
         }
         
-        if (autoRefreshLogs) {
-            autoRefreshLogs.onchange = (e) => {
-                if (e.target.checked && !this.isLogsStreaming) {
-                    this.startLogStreaming();
-                } else if (!e.target.checked && this.isLogsStreaming) {
-                    this.stopLogStreaming();
-                }
-            };
+        // Auto-start log streaming - no manual control needed
+        if (!this.isLogsStreaming) {
+            this.startLogStreaming();
         }
     }
     
@@ -1053,13 +1051,6 @@ class DockerGUI {
         const autoRefreshLogs = document.getElementById('autoRefreshLogs');
         if (autoRefreshLogs) {
             autoRefreshLogs.checked = this.isLogsStreaming;
-        }
-    }
-    
-    clearLogs() {
-        const logsText = document.getElementById('logsText');
-        if (logsText) {
-            logsText.textContent = '';
         }
     }
     
@@ -1123,32 +1114,55 @@ class DockerGUI {
     renderFiles(files, currentPath) {
         const filesContent = document.getElementById('filesContent');
         
-        if (!files || files.length === 0) {
-            filesContent.innerHTML = '<div class="empty">No files found</div>';
-            return;
-        }
-        
         let html = '<div class="files-list">';
         
-        // Add parent directory link if not root
+        // Add parent directory link if not root (always show for navigation)
         if (currentPath !== '/') {
             const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
-            html += `<div class="file-item directory" onclick="dockerGUI.loadContainerFiles('${parentPath}')">
+            html += `<div class="file-item directory parent-dir" onclick="dockerGUI.loadContainerFiles('${parentPath}')">
                 <i class="fas fa-level-up-alt"></i>
                 <span>..</span>
+                <span class="file-size">Parent Directory</span>
             </div>`;
         }
         
-        files.forEach(file => {
+        if (!files || files.length === 0) {
+            html += '</div><div class="empty">No files found in this directory</div>';
+            filesContent.innerHTML = html;
+            return;
+        }
+        
+        // Sort files: directories first, then files
+        const sortedFiles = [...files].sort((a, b) => {
+            if (a.is_directory && !b.is_directory) return -1;
+            if (!a.is_directory && b.is_directory) return 1;
+            return a.name.localeCompare(b.name);
+        });
+        
+        sortedFiles.forEach(file => {
             const icon = file.is_directory ? 'fa-folder' : 'fa-file';
             const fileClass = file.is_directory ? 'directory' : 'file';
-            const filePath = file.path || `${currentPath.endsWith('/') ? currentPath : currentPath + '/'}${file.name}`;
-            const onclick = file.is_directory ? `dockerGUI.loadContainerFiles('${filePath}')` : '';
             
-            html += `<div class="file-item ${fileClass}" ${onclick ? `onclick="${onclick}"` : ''}>
+            // Construct proper file path
+            let filePath;
+            if (file.path) {
+                filePath = file.path;
+            } else {
+                // Ensure proper path construction - fix the logic
+                if (currentPath === '/') {
+                    filePath = `/${file.name}`;
+                } else {
+                    filePath = `${currentPath}/${file.name}`;
+                }
+            }
+            
+            const onclick = file.is_directory ? `dockerGUI.loadContainerFiles('${filePath}')` : '';
+            const cursor = file.is_directory ? 'pointer' : 'default';
+            
+            html += `<div class="file-item ${fileClass}" ${onclick ? `onclick="${onclick}"` : ''} style="cursor: ${cursor}">
                 <i class="fas ${icon}"></i>
                 <span>${file.name}</span>
-                <span class="file-size">${file.is_directory ? '' : this.formatFileSize(file.size)}</span>
+                <span class="file-size">${file.is_directory ? 'Directory' : this.formatFileSize(file.size || 0)}</span>
             </div>`;
         });
         

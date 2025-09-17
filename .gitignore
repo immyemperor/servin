@@ -99,3 +99,5 @@ _cgo_export.*
 # Go workspace file
 go.work
 go.work.sum
+
+servin*

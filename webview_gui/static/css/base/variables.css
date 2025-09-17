@@ -1,0 +1,65 @@
+/* CSS Variables and Design Tokens */
+:root {
+    /* Color Palette */
+    --primary-bg: #1e1e1e;
+    --secondary-bg: #252526;
+    --tertiary-bg: #2d2d30;
+    --border-color: #3e3e42;
+    --text-primary: #cccccc;
+    --text-secondary: #969696;
+    --accent-blue: #0078d4;
+    --accent-blue-hover: #106ebe;
+    --success-color: #16c60c;
+    --warning-color: #ff8c00;
+    --danger-color: #f85149;
+    --info-color: #58a6ff;
+    
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    
+    /* Border Radius */
+    --border-radius-sm: 4px;
+    --border-radius-md: 6px;
+    --border-radius-lg: 8px;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+    
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    --font-size-sm: 12px;
+    --font-size-base: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 18px;
+    --font-size-2xl: 20px;
+    
+    /* Z-index layers */
+    --z-index-base: 1;
+    --z-index-overlay: 10;
+    --z-index-modal: 1000;
+    --z-index-toast: 2000;
+    --z-index-loading: 3000;
+    
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --transition-medium: 0.3s ease;
+    --transition-slow: 0.5s ease;
+    
+    /* Layout dimensions */
+    --sidebar-width: 200px;
+    --header-height: 48px;
+    --border-width: 1px;
+}
+
+/* Dark theme overrides (if needed for future themes) */
+[data-theme="dark"] {
+    --primary-bg: #1e1e1e;
+    --secondary-bg: #252526;
+    --tertiary-bg: #2d2d30;
+}

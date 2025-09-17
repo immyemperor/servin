@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Servin Desktop GUI</title>
-    <link rel="stylesheet" href="/static/style.css?v={{ timestamp }}">
+    <link rel="stylesheet" href="/static/css/main.css?v={{ timestamp }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -165,18 +165,14 @@
                                     <div class="tab-pane active" id="logsTab">
                                         <div class="logs-container">
                                             <div class="logs-toolbar">
-                                                <button class="action-btn secondary" id="clearLogsBtn">
-                                                    <i class="fas fa-trash"></i>
-                                                    Clear
-                                                </button>
                                                 <button class="action-btn secondary" id="downloadLogsBtn">
                                                     <i class="fas fa-download"></i>
                                                     Download
                                                 </button>
-                                                <label>
-                                                    <input type="checkbox" id="autoRefreshLogs" checked>
-                                                    Auto-refresh
-                                                </label>
+                                                <button class="action-btn secondary active" id="toggleAutoScrollBtn">
+                                                    <i class="fas fa-arrows-alt-v"></i>
+                                                    Auto-scroll
+                                                </button>
                                             </div>
                                             <div class="logs-content" id="logsContent">
                                                 <div class="loading">Loading logs...</div>
@@ -206,20 +202,17 @@
                                     <!-- Exec Tab -->
                                     <div class="tab-pane" id="execTab">
                                         <div class="exec-container">
-                                            <div class="exec-toolbar">
-                                                <select id="execShell" class="exec-shell-select">
-                                                    <option value="/bin/bash">bash</option>
-                                                    <option value="/bin/sh">sh</option>
-                                                    <option value="/bin/zsh">zsh</option>
-                                                </select>
-                                                <button class="action-btn primary" id="connectExecBtn">
-                                                    <i class="fas fa-plug"></i>
-                                                    Connect
-                                                </button>
-                                            </div>
                                             <div class="exec-terminal" id="execTerminal">
-                                                <div class="terminal-placeholder">
-                                                    Click "Connect" to open a terminal session in the container
+                                                <div class="terminal-placeholder" id="terminalPlaceholder">
+                                                    <i class="fas fa-terminal"></i>
+                                                    <p>Connecting to terminal session...</p>
+                                                </div>
+                                                <div class="terminal-output" id="terminalOutput" style="display: none;">
+                                                    <div class="terminal-content" id="terminalContent"></div>
+                                                    <div class="terminal-input-line">
+                                                        <span class="terminal-prompt" id="terminalPrompt">root@container:/# </span>
+                                                        <input type="text" class="terminal-input" id="terminalInput" placeholder="Enter command..." disabled>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -370,8 +363,31 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Loading...</span>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
-    <script src="/static/script.js?v={{ timestamp }}"></script>
+    
+    <!-- Load utility modules first -->
+    <script src="/static/js/utils/helpers.js?v={{ timestamp }}"></script>
+    <script src="/static/js/api/client.js?v={{ timestamp }}"></script>
+    
+    <!-- Load component modules -->
+    <script src="/static/js/components/Logs.js?v={{ timestamp }}"></script>
+    <script src="/static/js/components/FileExplorer.js?v={{ timestamp }}"></script>
+    <script src="/static/js/components/Terminal.js?v={{ timestamp }}"></script>
+    <script src="/static/js/components/ContainerDetails.js?v={{ timestamp }}"></script>
+    
+    <!-- Load core application last -->
+    <script src="/static/js/core/ServinGUI.js?v={{ timestamp }}"></script>
 </body>
 </html>

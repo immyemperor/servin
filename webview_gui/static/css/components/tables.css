@@ -1,0 +1,248 @@
+/* Table Component Styles */
+
+/* Table Container */
+.table-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: var(--spacing-md);
+    max-height: calc(100vh - 200px); /* Ensure it doesn't exceed viewport */
+    border-radius: var(--border-radius-md);
+    position: relative;
+}
+
+/* Add scroll shadows to indicate scrollable content */
+.table-container::before,
+.table-container::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 10px;
+    pointer-events: none;
+    z-index: var(--z-index-overlay);
+}
+
+.table-container::before {
+    top: var(--spacing-md);
+    background: linear-gradient(to bottom, var(--primary-bg), transparent);
+}
+
+.table-container::after {
+    bottom: var(--spacing-md);
+    background: linear-gradient(to top, var(--primary-bg), transparent);
+}
+
+/* Custom Scrollbar for Table Container */
+.table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+    border-radius: var(--border-radius-sm);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--border-radius-sm);
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* Smooth scrolling for table container */
+.table-container {
+    scroll-behavior: smooth;
+}
+
+/* Data Table */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--secondary-bg);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    min-width: 800px; /* Ensure table doesn't get too narrow */
+}
+
+.data-table thead {
+    position: sticky;
+    top: 0;
+    background-color: var(--secondary-bg);
+    z-index: var(--z-index-overlay);
+}
+
+.data-table th,
+.data-table td {
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: var(--border-width) solid var(--border-color);
+    white-space: nowrap; /* Prevent text wrapping in cells */
+}
+
+.data-table th {
+    background-color: var(--tertiary-bg);
+    font-weight: 600;
+    color: var(--text-primary);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-index-overlay);
+}
+
+.data-table tr:hover {
+    background-color: var(--tertiary-bg);
+}
+
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Column sizing for containers table */
+.data-table th:nth-child(1), /* Container Name */
+.data-table td:nth-child(1) {
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.data-table th:nth-child(2), /* Image */
+.data-table td:nth-child(2) {
+    min-width: 150px;
+    max-width: 200px;
+}
+
+.data-table th:nth-child(3), /* Status */
+.data-table td:nth-child(3) {
+    min-width: 100px;
+    width: 120px;
+}
+
+.data-table th:nth-child(4), /* Created */
+.data-table td:nth-child(4) {
+    min-width: 120px;
+    width: 140px;
+}
+
+.data-table th:nth-child(5), /* Ports */
+.data-table td:nth-child(5) {
+    min-width: 150px;
+    max-width: 250px;
+}
+
+.data-table th:nth-child(6), /* Actions */
+.data-table td:nth-child(6) {
+    min-width: 180px;
+    width: 200px;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-running {
+    background-color: rgba(22, 198, 12, 0.2);
+    color: var(--success-color);
+}
+
+.status-stopped,
+.status-exited {
+    background-color: rgba(248, 81, 73, 0.2);
+    color: var(--danger-color);
+}
+
+.status-paused {
+    background-color: rgba(255, 140, 0, 0.2);
+    color: var(--warning-color);
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.action-btn {
+    background: none;
+    border: var(--border-width) solid var(--border-color);
+    color: var(--text-secondary);
+    padding: var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: var(--font-size-sm);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background-color: var(--tertiary-bg);
+    color: var(--text-primary);
+}
+
+.action-btn.start:hover {
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.action-btn.stop:hover {
+    color: var(--warning-color);
+    border-color: var(--warning-color);
+}
+
+.action-btn.remove:hover {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.action-btn.details {
+    background: var(--info-color);
+    color: white;
+    border-color: var(--info-color);
+}
+
+.action-btn.details:hover {
+    background: #4a90e2;
+}
+
+/* Clickable container rows */
+.container-row.clickable {
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.container-row.clickable:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-primary);
+}

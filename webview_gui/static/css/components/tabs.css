@@ -1,0 +1,367 @@
+/* Logs, Files, and Terminal Component Styles */
+
+/* Tab Content Containers */
+.logs-container,
+.files-container,
+.exec-container,
+.env-container,
+.volumes-container,
+.network-container,
+.stats-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Toolbar Styles */
+.logs-toolbar,
+.files-toolbar,
+.exec-toolbar,
+.env-toolbar,
+.volumes-toolbar,
+.network-toolbar,
+.stats-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background-color: var(--secondary-bg);
+    border-bottom: var(--border-width) solid var(--border-color);
+}
+
+/* Content Areas */
+.logs-content,
+.files-content,
+.exec-terminal,
+.env-content,
+.volumes-content,
+.network-content,
+.stats-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: var(--spacing-md);
+    background-color: var(--primary-bg);
+}
+
+/* Logs Specific Styles */
+.logs-text {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+.logs-stream {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.logs-stream .logs-text {
+    flex: 1;
+    overflow-y: auto;
+    background-color: var(--tertiary-bg);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+}
+
+.logs-stream .logs-text::-webkit-scrollbar {
+    width: 8px;
+}
+
+.logs-stream .logs-text::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+}
+
+.logs-stream .logs-text::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--border-radius-sm);
+}
+
+.logs-stream .logs-text::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+.logs-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.logs-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.logs-status .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--danger-color);
+}
+
+.logs-status .status-indicator.streaming {
+    background-color: var(--success-color);
+    animation: pulse 2s infinite;
+}
+
+/* Terminal Specific Styles */
+.terminal-output {
+    flex: 1;
+    background-color: var(--tertiary-bg);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.terminal-content {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.terminal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.terminal-content::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+}
+
+.terminal-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--border-radius-sm);
+}
+
+.terminal-line {
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    margin: 0;
+}
+
+.terminal-system {
+    color: var(--info-color);
+}
+
+.terminal-error {
+    color: var(--danger-color);
+}
+
+.terminal-input {
+    color: var(--text-primary);
+}
+
+.terminal-output {
+    color: var(--text-primary);
+}
+
+.terminal-input-line {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: var(--border-width) solid var(--border-color);
+}
+
+.terminal-prompt {
+    color: var(--accent-blue);
+    font-weight: bold;
+}
+
+.terminal-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+}
+
+.terminal-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.exec-shell-select {
+    background-color: var(--tertiary-bg);
+    border: var(--border-width) solid var(--border-color);
+    color: var(--text-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+}
+
+.exec-shell-select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.terminal-controls {
+    padding: var(--spacing-md);
+    background-color: var(--secondary-bg);
+    border-bottom: var(--border-width) solid var(--border-color);
+}
+
+.terminal-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.files-path {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-family: monospace;
+    color: var(--text-secondary);
+}
+
+/* File browser styling */
+.files-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.file-item:hover {
+    background-color: var(--tertiary-bg);
+}
+
+.file-item.directory {
+    color: var(--info-color);
+}
+
+.file-item.file {
+    color: var(--text-primary);
+}
+
+.file-item i {
+    width: 16px;
+    text-align: center;
+}
+
+.file-item .fas.fa-folder {
+    color: var(--info-color);
+}
+
+.file-item .fas.fa-file {
+    color: var(--text-secondary);
+}
+
+.file-item .fas.fa-level-up-alt {
+    color: var(--warning-color);
+}
+
+.file-item.parent-dir {
+    border-bottom: var(--border-width) solid var(--border-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.file-item.parent-dir:hover {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+.file-item span:first-of-type {
+    flex: 1;
+    margin-right: auto;
+}
+
+.file-size {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    margin-left: auto;
+}
+
+.terminal-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text-secondary);
+    text-align: center;
+    gap: var(--spacing-md);
+}
+
+/* Environment Variables List */
+.env-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.env-item {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background-color: var(--secondary-bg);
+    border-radius: var(--border-radius-sm);
+}
+
+.env-key {
+    font-weight: 500;
+    color: var(--accent-blue);
+    min-width: 150px;
+}
+
+.env-value {
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+/* Loading and Error States */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+}
+
+.error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    color: var(--danger-color);
+}
+
+.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

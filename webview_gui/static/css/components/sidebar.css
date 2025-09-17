@@ -1,0 +1,58 @@
+/* Sidebar Navigation Component Styles */
+
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--secondary-bg);
+    border-right: var(--border-width) solid var(--border-color);
+    padding: var(--spacing-md) 0;
+}
+
+.nav-list {
+    list-style: none;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    gap: var(--spacing-md);
+    position: relative;
+}
+
+.nav-item:hover {
+    background-color: var(--tertiary-bg);
+}
+
+.nav-item.active {
+    background-color: var(--tertiary-bg);
+    border-right: 2px solid var(--accent-blue);
+}
+
+.nav-item i {
+    width: 16px;
+    text-align: center;
+}
+
+.nav-item .count {
+    margin-left: auto;
+    background-color: var(--accent-blue);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: var(--font-size-sm);
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Responsive Design for Sidebar */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 60px;
+    }
+    
+    .nav-item span:not(.count) {
+        display: none;
+    }
+}

@@ -2029,6 +2029,15 @@ body {
     color: var(--accent-blue);
 }
 
+.file-item.parent-dir {
+    border-left: 3px solid var(--accent-blue);
+    background-color: rgba(0, 120, 212, 0.1);
+}
+
+.file-item.parent-dir:hover {
+    background-color: rgba(0, 120, 212, 0.2);
+}
+
 .file-item span:first-of-type {
     flex: 1;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;

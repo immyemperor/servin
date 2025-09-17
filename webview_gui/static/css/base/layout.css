@@ -1,0 +1,149 @@
+/* Base Layout and Reset Styles */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--primary-bg);
+    color: var(--text-primary);
+    line-height: 1.5;
+    overflow: hidden;
+    font-size: var(--font-size-base);
+}
+
+.app-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main Content Layout */
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Content Area */
+.content-area {
+    flex: 1;
+    background-color: var(--primary-bg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.section {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.section.active {
+    display: flex;
+}
+
+/* Content Sections */
+.content-section {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.content-section.active {
+    display: flex;
+}
+
+/* Make container sections scrollable when they contain tables */
+.content-section.active:has(.table-container) {
+    overflow: hidden; /* Keep this for the section itself */
+}
+
+.content-section.active .table-container {
+    flex: 1;
+    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: auto; /* Enable horizontal scrolling if needed */
+    max-height: calc(100vh - 200px); /* Limit height to viewport minus header/sidebar space */
+}
+
+.section-header {
+    padding: var(--spacing-lg);
+    border-bottom: var(--border-width) solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--secondary-bg);
+}
+
+.section-header h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-2xl);
+    font-weight: 600;
+}
+
+.section-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+/* Container Details View */
+.container-details-view {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+}
+
+.details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background-color: var(--secondary-bg);
+    border-bottom: var(--border-width) solid var(--border-color);
+}
+
+.details-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.details-header .header-right {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.container-overview-inline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.container-overview-inline h2 {
+    font-size: var(--font-size-xl);
+    margin: 0;
+}
+
+.container-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.details-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}

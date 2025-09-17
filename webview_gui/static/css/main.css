@@ -1,0 +1,78 @@
+/* 
+ * Main CSS file for Servin Desktop GUI
+ * This file imports all modular CSS components in the correct order
+ */
+
+/* Base styles - must come first */
+@import url('./base/variables.css');
+@import url('./base/layout.css');
+
+/* Component styles */
+@import url('./components/header.css');
+@import url('./components/sidebar.css');
+@import url('./components/tables.css');
+@import url('./components/modals.css');
+@import url('./components/container-details.css');
+@import url('./components/tabs.css');
+
+/* Utility styles - must come last for proper cascade */
+@import url('./utils/utilities.css');
+
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* Print styles */
+@media print {
+    .header,
+    .sidebar,
+    .modal,
+    .toast-container,
+    .loading-overlay {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .content-area {
+        overflow: visible;
+    }
+}
+
+/* High contrast accessibility mode */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #ffffff;
+        --text-secondary: #ffffff;
+        --accent-blue: #00ffff;
+    }
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
