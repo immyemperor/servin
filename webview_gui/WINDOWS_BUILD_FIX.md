@@ -2,17 +2,40 @@
 
 ## Issue: ModuleNotFoundError: No module named 'app'
 
-This error occurs when PyInstaller doesn't properly include the `app.py` module in the Windows executable.
+This error occurs when PyInstaller doesn't properly include the `app.py` module in the Windows executable, specifically when building from the `webview_build_temp` directory.
 
-## Solutions
+## Root Cause
 
-### 1. Use the Updated Spec File
+The build script creates a temporary directory `webview_build_temp` and copies source files there, but PyInstaller may not correctly resolve module paths from this temporary location.
 
-The issue has been fixed by creating a proper `servin-gui.spec` file that explicitly includes all required modules. Make sure you're using the latest build script.
+## Solutions Applied
 
-### 2. Manual Build for Testing
+### 1. Enhanced PyInstaller Spec File
 
-If the automated build fails, you can manually build on Windows:
+**File: `webview_gui/servin-gui.spec`**
+- Added explicit `pathex=[current_dir]` to ensure current directory is in Python path
+- Added Python files as data files: `('app.py', '.')`, `('servin_client.py', '.')`, etc.
+- Added debug output to show build directory
+- Added hooks directory for custom module detection
+
+### 2. Robust Import Handling
+
+**File: `webview_gui/main.py`**
+- Enhanced PyInstaller bundle detection with `sys._MEIPASS`
+- Multiple import strategies: direct import and `importlib.util`
+- Comprehensive debugging output showing available files and paths
+- Better error messages for troubleshooting
+
+### 3. Enhanced Build Process
+
+**File: `build-all.sh`**
+- Added verbose PyInstaller output with `--log-level=INFO`
+- Added debug output showing build directory and available files
+- Better error handling and reporting
+
+## Manual Build for Testing
+
+If the automated build fails, you can manually build and debug on Windows:
 
 ```bash
 # Navigate to webview_gui directory
@@ -28,63 +51,62 @@ pip install -r requirements.txt
 # Test imports first
 python test_imports.py
 
-# Build with explicit spec file
-pyinstaller --clean --distpath=dist --workpath=build servin-gui.spec
+# Build with verbose output for debugging
+pyinstaller --clean --distpath=dist --workpath=build --log-level=DEBUG servin-gui.spec
 
 # Test the built executable
 python test_executable.py dist\servin-gui.exe
 ```
 
-### 3. Debug Build
+## Debug Build for Troubleshooting
 
-For debugging, you can create a console version to see error messages:
+To see detailed error messages, temporarily modify the spec file:
 
+```python
+# In servin-gui.spec, change:
+debug=True,     # Enable debug mode
+console=True,   # Show console for error messages
+windowed=False, # Disable windowed mode for debugging
+```
+
+Then rebuild:
 ```bash
-# Modify the spec file temporarily for debugging
-# Change: console=False to console=True
-# Change: windowed=True to windowed=False
-
 pyinstaller --clean servin-gui.spec
+dist\servin-gui.exe  # Run and check console output
 ```
 
-### 4. Verify Module Inclusion
+## Verification Steps
 
-Check if modules are properly included:
+1. **Check module inclusion**: Verify `app.py` is bundled
+   ```bash
+   pyi-archive_viewer dist\servin-gui.exe
+   # Look for 'app' in the archive contents
+   ```
 
-```bash
-# List contents of the built executable
-pyi-archive_viewer dist\servin-gui.exe
-```
+2. **Test import resolution**: The executable should show:
+   ```
+   [INFO] Running from PyInstaller bundle: C:\...\servin-gui\_internal
+   [DEBUG] Available files: ['app.py', 'servin_client.py', ...]
+   [SUCCESS] Successfully imported Flask app via direct import
+   ```
+
+3. **Check data files**: Verify templates and static files are included
+
+## Enhanced Features
+
+- **Multiple import methods**: Falls back to `importlib.util` if direct import fails
+- **Explicit file inclusion**: Python modules added as data files
+- **Better path handling**: Explicit `pathex` configuration
+- **Comprehensive debugging**: Shows all paths and available files
+- **Hook system**: Custom PyInstaller hooks for module detection
 
 ## Updated Files
 
-The following files have been updated to fix this issue:
+1. **webview_gui/servin-gui.spec** - Enhanced spec with explicit paths and data files
+2. **webview_gui/main.py** - Robust import handling with fallbacks
+3. **webview_gui/hook-app.py** - Custom PyInstaller hook
+4. **build-all.sh** - Verbose build output and debugging
+5. **webview_gui/test_imports.py** - Windows-compatible testing
+6. **webview_gui/test_executable.py** - Windows-compatible executable testing
 
-1. **webview_gui/servin-gui.spec** - Explicit module inclusion
-2. **build-all.sh** - Updated PyInstaller command to use spec file
-3. **webview_gui/main.py** - Better error handling and path detection
-4. **webview_gui/test_imports.py** - Test script to verify modules
-5. **webview_gui/test_executable.py** - Test script to verify built executable
-
-## Verification
-
-After building, run:
-
-```bash
-# Test the executable
-dist\servin-gui.exe
-
-# Should see debug output like:
-# 🚀 Running from PyInstaller bundle: C:\Users\...\servin-gui\_internal
-# 🐍 Python executable: C:\Users\...\servin-gui\servin-gui.exe
-# ✅ Successfully imported Flask app
-```
-
-## Cross-Platform Build Limitation
-
-Note: PyInstaller cannot cross-compile from macOS/Linux to Windows. Windows executables must be built on Windows.
-
-If you need Windows builds and don't have access to Windows:
-- Use GitHub Actions Windows runner
-- Use Windows VM or container
-- Use cross-compilation tools like Wine (limited support)
+The enhanced build process should now properly handle the `webview_build_temp` directory and ensure all modules are correctly bundled in the Windows executable.

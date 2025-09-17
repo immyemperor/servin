@@ -24,30 +24,55 @@ else:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     print(f"[INFO] Running from source: {current_dir}")
 
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+# Ensure the current directory is first in Python path
+if current_dir in sys.path:
+    sys.path.remove(current_dir)
+sys.path.insert(0, current_dir)
 
 # Debug: Print Python path and current directory for troubleshooting
 print(f"[DEBUG] Python executable: {sys.executable}")
 print(f"[DEBUG] Current directory: {current_dir}")
 print(f"[DEBUG] Python path: {sys.path[:3]}...")  # Show first 3 entries
 
+# List available files for debugging
+try:
+    files = os.listdir(current_dir)
+    print(f"[DEBUG] Available files: {[f for f in files if f.endswith('.py')]}")
+except Exception as e:
+    print(f"[DEBUG] Could not list directory: {e}")
+
 # Import Flask app with error handling
 try:
-    from app import app
-    print("[SUCCESS] Successfully imported Flask app")
-except ImportError as e:
-    print(f"[ERROR] Failed to import app module: {e}")
-    print(f"[DEBUG] Looking for app.py in: {current_dir}")
-    print(f"[DEBUG] Directory contents: {os.listdir(current_dir)}")
-    # Try to help with debugging
-    if hasattr(sys, '_MEIPASS'):
-        print(f"[DEBUG] PyInstaller temp dir: {sys._MEIPASS}")
-        try:
-            print(f"[DEBUG] PyInstaller temp contents: {os.listdir(sys._MEIPASS)}")
-        except:
-            print("[DEBUG] Could not list PyInstaller temp contents")
-    raise
+    # Try direct import first
+    import app as app_module
+    app = app_module.app
+    print("[SUCCESS] Successfully imported Flask app via direct import")
+except ImportError as e1:
+    print(f"[WARN] Direct import failed: {e1}")
+    try:
+        # Try using importlib for more robust importing
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("app", os.path.join(current_dir, "app.py"))
+        if spec and spec.loader:
+            app_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(app_module)
+            app = app_module.app
+            print("[SUCCESS] Successfully imported Flask app via importlib")
+        else:
+            raise ImportError("Could not create module spec for app.py")
+    except Exception as e2:
+        print(f"[ERROR] All import methods failed:")
+        print(f"[ERROR] - Direct import: {e1}")
+        print(f"[ERROR] - Importlib import: {e2}")
+        print(f"[DEBUG] Looking for app.py in: {current_dir}")
+        print(f"[DEBUG] app.py exists: {os.path.exists(os.path.join(current_dir, 'app.py'))}")
+        if hasattr(sys, '_MEIPASS'):
+            print(f"[DEBUG] PyInstaller temp dir: {sys._MEIPASS}")
+            try:
+                print(f"[DEBUG] PyInstaller temp contents: {os.listdir(sys._MEIPASS)}")
+            except:
+                print("[DEBUG] Could not list PyInstaller temp contents")
+        raise
 
 class ServinDesktopGUI:
     def __init__(self):

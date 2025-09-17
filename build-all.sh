@@ -201,7 +201,11 @@ build_webview_gui() {
     
     # Build with PyInstaller using spec file
     echo -e "${YELLOW}  🔨 Building executable with PyInstaller...${NC}"
-    if pyinstaller --clean --distpath=dist --workpath=build servin-gui.spec >/dev/null 2>&1; then
+    echo -e "${YELLOW}  📂 Building from directory: $(pwd)${NC}"
+    echo -e "${YELLOW}  📋 Available files: $(ls -la)${NC}"
+    
+    # Enable verbose output for debugging
+    if pyinstaller --clean --distpath=dist --workpath=build --log-level=INFO servin-gui.spec; then
         
         # Copy the built executable to the build directory
         if [[ -f "dist/$gui_name" ]]; then
