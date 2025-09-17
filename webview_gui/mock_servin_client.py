@@ -297,28 +297,42 @@ class MockServinClient:
 
     def list_files(self, container_id: str, path: str = '/') -> List[Dict[str, Any]]:
         """List files in container filesystem"""
-        # Mock filesystem structure
+        # Mock filesystem structure with proper path handling
         if path == '/':
             return [
-                {'name': 'bin', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_directory': True},
-                {'name': 'etc', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_directory': True},
-                {'name': 'home', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_directory': True},
-                {'name': 'opt', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_directory': True},
-                {'name': 'tmp', 'type': 'directory', 'size': 4096, 'permissions': 'drwxrwxrwx', 'is_directory': True},
-                {'name': 'usr', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_directory': True},
-                {'name': 'var', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_directory': True},
-                {'name': 'app.log', 'type': 'file', 'size': 1024, 'permissions': '-rw-r--r--', 'is_directory': False}
+                {'name': 'bin', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/bin'},
+                {'name': 'etc', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/etc'},
+                {'name': 'home', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/home'},
+                {'name': 'opt', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/opt'},
+                {'name': 'tmp', 'type': 'directory', 'size': 4096, 'permissions': 'drwxrwxrwx', 'is_dir': True, 'path': '/tmp'},
+                {'name': 'usr', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/usr'},
+                {'name': 'var', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/var'},
+                {'name': 'app.log', 'type': 'file', 'size': 1024, 'permissions': '-rw-r--r--', 'is_dir': False, 'path': '/app.log'}
             ]
         elif path == '/etc':
             return [
-                {'name': 'passwd', 'type': 'file', 'size': 2048, 'permissions': '-rw-r--r--', 'is_directory': False},
-                {'name': 'hosts', 'type': 'file', 'size': 256, 'permissions': '-rw-r--r--', 'is_directory': False},
-                {'name': 'hostname', 'type': 'file', 'size': 12, 'permissions': '-rw-r--r--', 'is_directory': False}
+                {'name': 'passwd', 'type': 'file', 'size': 2048, 'permissions': '-rw-r--r--', 'is_dir': False, 'path': '/etc/passwd'},
+                {'name': 'hosts', 'type': 'file', 'size': 256, 'permissions': '-rw-r--r--', 'is_dir': False, 'path': '/etc/hosts'},
+                {'name': 'hostname', 'type': 'file', 'size': 12, 'permissions': '-rw-r--r--', 'is_dir': False, 'path': '/etc/hostname'},
+                {'name': 'ssl', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/etc/ssl'}
+            ]
+        elif path == '/home':
+            return [
+                {'name': 'user', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/home/user'},
+                {'name': 'admin', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/home/admin'}
+            ]
+        elif path == '/var':
+            return [
+                {'name': 'log', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/var/log'},
+                {'name': 'www', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/var/www'},
+                {'name': 'lib', 'type': 'directory', 'size': 4096, 'permissions': 'drwxr-xr-x', 'is_dir': True, 'path': '/var/lib'}
             ]
         else:
+            # For any other path, return some sample files
             return [
-                {'name': 'file1.txt', 'type': 'file', 'size': 512, 'permissions': '-rw-r--r--', 'is_directory': False},
-                {'name': 'file2.txt', 'type': 'file', 'size': 1024, 'permissions': '-rw-r--r--', 'is_directory': False}
+                {'name': 'file1.txt', 'type': 'file', 'size': 512, 'permissions': '-rw-r--r--', 'is_dir': False, 'path': f'{path}/file1.txt'},
+                {'name': 'file2.txt', 'type': 'file', 'size': 1024, 'permissions': '-rw-r--r--', 'is_dir': False, 'path': f'{path}/file2.txt'},
+                {'name': 'config.conf', 'type': 'file', 'size': 2048, 'permissions': '-rw-r--r--', 'is_dir': False, 'path': f'{path}/config.conf'}
             ]
 
     def exec_command(self, container_id: str, command: str) -> str:

@@ -214,6 +214,18 @@ body {
     display: flex;
 }
 
+/* Make container sections scrollable when they contain tables */
+.content-section.active:has(.table-container) {
+    overflow: hidden; /* Keep this for the section itself */
+}
+
+.content-section.active .table-container {
+    flex: 1;
+    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: auto; /* Enable horizontal scrolling if needed */
+    max-height: calc(100vh - 200px); /* Limit height to viewport minus header/sidebar space */
+}
+
 .section-header {
     padding: var(--spacing-lg);
     border-bottom: 1px solid var(--border-color);
@@ -325,8 +337,96 @@ body {
 /* Table Styles */
 .table-container {
     flex: 1;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: auto;
     padding: var(--spacing-md);
+    max-height: calc(100vh - 200px); /* Ensure it doesn't exceed viewport */
+    border-radius: var(--border-radius-md);
+    position: relative;
+}
+
+/* Add scroll shadows to indicate scrollable content */
+.table-container::before,
+.table-container::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 10px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.table-container::before {
+    top: var(--spacing-md);
+    background: linear-gradient(to bottom, var(--primary-bg), transparent);
+}
+
+.table-container::after {
+    bottom: var(--spacing-md);
+    background: linear-gradient(to top, var(--primary-bg), transparent);
+}
+
+/* Custom Scrollbar for Table Container */
+.table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+    border-radius: var(--border-radius-sm);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--border-radius-sm);
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* Smooth scrolling for table container */
+.table-container {
+    scroll-behavior: smooth;
+}
+
+/* Ensure table columns have reasonable widths for scrolling */
+.data-table th:nth-child(1), /* Container Name */
+.data-table td:nth-child(1) {
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.data-table th:nth-child(2), /* Image */
+.data-table td:nth-child(2) {
+    min-width: 150px;
+    max-width: 200px;
+}
+
+.data-table th:nth-child(3), /* Status */
+.data-table td:nth-child(3) {
+    min-width: 100px;
+    width: 120px;
+}
+
+.data-table th:nth-child(4), /* Created */
+.data-table td:nth-child(4) {
+    min-width: 120px;
+    width: 140px;
+}
+
+.data-table th:nth-child(5), /* Ports */
+.data-table td:nth-child(5) {
+    min-width: 150px;
+    max-width: 250px;
+}
+
+.data-table th:nth-child(6), /* Actions */
+.data-table td:nth-child(6) {
+    min-width: 180px;
+    width: 200px;
 }
 
 .data-table {
@@ -336,6 +436,14 @@ body {
     border-radius: var(--border-radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
+    min-width: 800px; /* Ensure table doesn't get too narrow */
+}
+
+.data-table thead {
+    position: sticky;
+    top: 0;
+    background-color: var(--secondary-bg);
+    z-index: 10;
 }
 
 .data-table th,
@@ -343,6 +451,7 @@ body {
     padding: var(--spacing-md);
     text-align: left;
     border-bottom: 1px solid var(--border-color);
+    white-space: nowrap; /* Prevent text wrapping in cells */
 }
 
 .data-table th {
@@ -827,13 +936,9 @@ body {
 }
 
 .tab-content {
-    display: none;
+    display: flex;
     flex: 1;
     overflow: hidden;
-}
-
-.tab-content.active {
-    display: flex;
     flex-direction: column;
 }
 
@@ -1395,6 +1500,11 @@ body {
     animation: fadeIn 0.3s ease;
 }
 
+.details-tabs .tab-content {
+    display: block !important;
+    animation: fadeIn 0.3s ease;
+}
+
 .tab-content.active {
     display: block;
 }
@@ -1654,16 +1764,27 @@ body {
     position: relative;
 }
 
-.tab-pane {
-    display: none;
+/* Container Details Tab System */
+.container-details-view .tab-pane {
+    display: none !important;
     height: 100%;
     padding: var(--spacing-lg);
     overflow: auto;
     animation: fadeIn 0.3s ease;
 }
 
-.tab-pane.active {
-    display: block;
+.container-details-view .tab-pane.active {
+    display: block !important;
+}
+
+/* Individual tab pane overrides for extra specificity */
+#logsTab, #filesTab, #execTab, #envTab, #volumesTab, #networkTab, #statsTab {
+    display: none !important;
+}
+
+#logsTab.active, #filesTab.active, #execTab.active, #envTab.active, 
+#volumesTab.active, #networkTab.active, #statsTab.active {
+    display: block !important;
 }
 
 /* Tab Content Containers */
@@ -1721,12 +1842,204 @@ body {
     color: var(--text-primary);
 }
 
+.logs-stream {
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.logs-stream .logs-text {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.logs-stream .logs-text::-webkit-scrollbar {
+    width: 6px;
+}
+
+.logs-stream .logs-text::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.logs-stream .logs-text::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 3px;
+}
+
+.logs-stream .logs-text::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-secondary);
+}
+
+/* Terminal styling for exec tab */
+.terminal-output {
+    height: 100%;
+    background-color: #0f0f0f;
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.terminal-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: var(--spacing-sm);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.terminal-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.terminal-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.terminal-content::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 3px;
+}
+
+.terminal-line {
+    margin: 2px 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.terminal-system {
+    color: var(--info-color);
+}
+
+.terminal-error {
+    color: var(--danger-color);
+}
+
+.terminal-input {
+    color: var(--success-color);
+}
+
+.terminal-output {
+    color: var(--text-primary);
+}
+
+.terminal-input-line {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.terminal-prompt {
+    color: var(--success-color);
+    font-weight: bold;
+    min-width: 20px;
+}
+
+.terminal-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+}
+
+.terminal-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.exec-shell-select {
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    margin-right: var(--spacing-md);
+}
+
+.exec-shell-select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
 .files-path {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     color: var(--text-secondary);
+}
+
+/* File browser styling */
+.files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.file-item:hover {
+    background-color: var(--tertiary-bg);
+}
+
+.file-item.directory {
+    color: var(--info-color);
+}
+
+.file-item.file {
+    color: var(--text-primary);
+}
+
+.file-item i {
+    width: 16px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.file-item .fas.fa-folder {
+    color: var(--warning-color);
+}
+
+.file-item .fas.fa-file {
+    color: var(--text-secondary);
+}
+
+.file-item .fas.fa-level-up-alt {
+    color: var(--accent-blue);
+}
+
+.file-item span:first-of-type {
+    flex: 1;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+.file-size {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: right;
+    min-width: 60px;
 }
 
 .exec-shell-select {

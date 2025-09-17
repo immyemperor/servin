@@ -9,6 +9,9 @@ class DockerGUI {
         this.refreshInterval = null;
         this.currentSection = 'containers';
         this.currentContainerId = null;
+        this.socket = null;
+        this.isLogsStreaming = false;
+        this.isExecConnected = false;
         this.data = {
             containers: [],
             images: [],
@@ -20,9 +23,60 @@ class DockerGUI {
     
     init() {
         this.setupEventListeners();
+        this.initializeSocket();
         this.checkDockerConnection();
         this.startAutoRefresh();
         this.loadData();
+    }
+    
+    initializeSocket() {
+        // Initialize Socket.IO connection
+        this.socket = io();
+        
+        this.socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        
+        this.socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            this.isLogsStreaming = false;
+            this.isExecConnected = false;
+        });
+        
+        // Log streaming events
+        this.socket.on('log_data', (data) => {
+            this.handleLogData(data);
+        });
+        
+        this.socket.on('logs_started', (data) => {
+            console.log('Log streaming started for container:', data.container_id);
+            this.isLogsStreaming = true;
+            this.updateLogsUI();
+        });
+        
+        this.socket.on('logs_stopped', (data) => {
+            console.log('Log streaming stopped for container:', data.container_id);
+            this.isLogsStreaming = false;
+            this.updateLogsUI();
+        });
+        
+        // Exec session events
+        this.socket.on('exec_started', (data) => {
+            this.handleExecStarted(data);
+        });
+        
+        this.socket.on('exec_stopped', (data) => {
+            this.handleExecStopped(data);
+        });
+        
+        this.socket.on('exec_output', (data) => {
+            this.handleExecOutput(data);
+        });
+        
+        this.socket.on('error', (data) => {
+            console.error('Socket error:', data.message);
+            this.showError(data.message);
+        });
     }
     
     setupEventListeners() {
@@ -325,7 +379,8 @@ class DockerGUI {
             const isRunning = (container.state === 'running' || container.status === 'running');
             const status = container.status || container.state || 'unknown';
             
-            console.log(`Container ${container.name}: isRunning=${isRunning}, status=${status}, state=${container.state}`);
+            console.log(`Container ${container.name}: isRunning=${isRunning}, status=${status}, state=${container.state}, created=${container.created}`);
+            console.log(`Formatted date for ${container.created}:`, this.formatDate(container.created));
             
             return `
             <tr data-id="${container.id}" class="container-row clickable" 
@@ -341,12 +396,14 @@ class DockerGUI {
                         ${status}
                     </span>
                 </td>
-                <td>${container.ports && container.ports.length > 0 ? container.ports.join(', ') : '-'}</td>
                 <td>
                     <small class="text-muted">
                         ${this.formatDate(container.created)}
                     </small>
                 </td>
+                <td>${container.ports && container.ports.length > 0 ? 
+                    container.ports.map(p => `${p.host_port || p.container_port}:${p.container_port}/${p.protocol || 'tcp'}`).join(', ') 
+                    : '<span class="text-muted">No ports</span>'}</td>
                 <td>
                     <div class="action-buttons" onclick="event.stopPropagation()">
                         ${isRunning
@@ -675,8 +732,26 @@ class DockerGUI {
     }
     
     formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        // Handle relative time strings like "2 days ago", "14 hours ago"
+        if (!dateString || dateString === '-' || dateString === 'unknown') {
+            return '-';
+        }
+        
+        // If it's already a relative time string (contains "ago"), return as-is
+        if (typeof dateString === 'string' && dateString.includes('ago')) {
+            return dateString;
+        }
+        
+        // Try to parse as a regular date
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return dateString; // Return original string if not a valid date
+            }
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        } catch (error) {
+            return dateString; // Return original string if parsing fails
+        }
     }
     
     formatBytes(bytes) {
@@ -702,516 +777,7 @@ class DockerGUI {
         }
     }
 
-    // Container Details View
-    showContainerDetails(containerId) {
-        console.log('=== showContainerDetails called ===');
-        console.log('Container ID:', containerId);
-        
-        // Find the container in our data
-        const container = this.data.containers.find(c => c.id === containerId);
-        console.log('Container data found:', !!container);
-        console.log('Container details:', container);
-        
-        if (!container) {
-            console.error('Container not found:', containerId);
-            return;
-        }
-        
-        // Check if container is running (for some functionality)
-        const isRunning = (container.state === 'running' || container.status === 'running');
-        console.log('Container is running:', isRunning);
-        
-        // Hide the containers list view
-        document.getElementById('containersView').style.display = 'none';
-        
-        // Show the details view
-        const detailsView = document.getElementById('containerDetailsView');
-        detailsView.style.display = 'block';
-        
-        // Set the title
-        document.getElementById('detailsContainerTitle').textContent = `${container.name} Details`;
-        
-        // Populate overview data
-        document.getElementById('detailsContainerName').textContent = container.name;
-        document.getElementById('detailsContainerId').textContent = container.id;
-        document.getElementById('detailsContainerImage').textContent = container.image;
-        document.getElementById('detailsContainerCreated').textContent = this.formatDate(container.created);
-        
-        const statusElement = document.getElementById('detailsContainerStatus');
-        const status = container.status || container.state || 'unknown';
-        statusElement.textContent = status;
-        statusElement.className = `container-status status-${status.toLowerCase()}`;
-        
-        const portsElement = document.getElementById('detailsContainerPorts');
-        if (container.ports && container.ports.length > 0) {
-            portsElement.textContent = container.ports.join(', ');
-        } else {
-            portsElement.textContent = 'No ports exposed';
-        }
-        
-        // Store current container ID for tab operations
-        this.currentContainerId = containerId;
-        
-        // Set up action buttons
-        this.setupContainerDetailsActions(containerId, isRunning);
-        
-        // Set up tab functionality
-        this.setupContainerDetailsTabs(containerId);
-        
-        // Set up back button
-        document.getElementById('backToContainers').onclick = () => this.hideContainerDetails();
-        
-        // Show overview tab by default
-        this.showContainerTab('overview');
-        
-        console.log('Container details view displayed');
-    }
-    
-    hideContainerDetails() {
-        // Hide the details view
-        document.getElementById('containerDetailsView').style.display = 'none';
-        
-        // Show the containers list view
-        document.getElementById('containersView').style.display = 'block';
-        
-        // Clear current container ID
-        this.currentContainerId = null;
-        
-        console.log('Returned to containers list');
-    }
-
-    setupContainerDetailsActions(containerId, isRunning) {
-        const startBtn = document.getElementById('detailsStartBtn');
-        const stopBtn = document.getElementById('detailsStopBtn');
-        const restartBtn = document.getElementById('detailsRestartBtn');
-        const removeBtn = document.getElementById('detailsRemoveBtn');
-
-        // Show/hide buttons based on container state
-        startBtn.style.display = isRunning ? 'none' : 'inline-block';
-        stopBtn.style.display = isRunning ? 'inline-block' : 'none';
-
-        startBtn.onclick = () => {
-            this.startContainer(containerId);
-            setTimeout(() => this.showContainerDetails(containerId), 1000); // Refresh details
-        };
-        stopBtn.onclick = () => {
-            this.stopContainer(containerId);
-            setTimeout(() => this.showContainerDetails(containerId), 1000); // Refresh details
-        };
-        restartBtn.onclick = () => {
-            this.restartContainer(containerId);
-            setTimeout(() => this.showContainerDetails(containerId), 1000); // Refresh details
-        };
-        removeBtn.onclick = () => {
-            if (confirm('Are you sure you want to remove this container?')) {
-                this.removeContainer(containerId);
-                this.hideContainerDetails(); // Go back to list
-            }
-        };
-    }
-
-    setupContainerDetailsTabs(containerId) {
-        // Tab navigation
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const tabName = e.currentTarget.dataset.tab;
-                this.showContainerTab(tabName);
-            });
-        });
-    }
-    
-    showContainerTab(tabName) {
-        // Remove active class from all tabs and content
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        
-        // Add active class to selected tab and content
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-        document.getElementById(`${tabName}-tab`).classList.add('active');
-        
-        // Load tab-specific content
-        if (this.currentContainerId) {
-            this.loadTabContent(tabName, this.currentContainerId);
-        }
-    }
-    
-    async loadTabContent(tabName, containerId) {
-        try {
-            switch (tabName) {
-                case 'logs':
-                    const logsResponse = await fetch(`${this.apiBase}/api/containers/${containerId}/logs`);
-                    const logs = await logsResponse.text();
-                    document.getElementById('containerLogs').textContent = logs || 'No logs available';
-                    break;
-                    
-                case 'files':
-                    const filesResponse = await fetch(`${this.apiBase}/api/containers/${containerId}/files`);
-                    const files = await filesResponse.json();
-                    this.renderContainerFiles(files);
-                    break;
-                    
-                case 'env':
-                    const envResponse = await fetch(`${this.apiBase}/api/containers/${containerId}/env`);
-                    const env = await envResponse.json();
-                    this.renderContainerEnv(env);
-                    break;
-                    
-                case 'volumes':
-                    this.renderContainerVolumes(containerId);
-                    break;
-                    
-                case 'network':
-                    this.renderContainerNetwork(containerId);
-                    break;
-            }
-        } catch (error) {
-            console.error(`Error loading ${tabName} content:`, error);
-            const contentElement = document.getElementById(`container${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
-            if (contentElement) {
-                contentElement.textContent = `Error loading ${tabName} information`;
-            }
-        }
-    }
-    
-    renderContainerFiles(files) {
-        const filesContainer = document.getElementById('containerFiles');
-        if (!files || files.length === 0) {
-            filesContainer.innerHTML = '<p>No files found or unable to access container filesystem</p>';
-            return;
-        }
-        
-        filesContainer.innerHTML = files.map(file => `
-            <div class="file-item">
-                <i class="fas fa-${file.type === 'directory' ? 'folder' : 'file'}"></i>
-                <span class="file-name">${file.name}</span>
-                <span class="file-size">${file.size || '-'}</span>
-            </div>
-        `).join('');
-    }
-    
-    renderContainerEnv(env) {
-        const envContainer = document.getElementById('containerEnv');
-        if (!env || Object.keys(env).length === 0) {
-            envContainer.innerHTML = '<p>No environment variables found</p>';
-            return;
-        }
-        
-        envContainer.innerHTML = Object.entries(env).map(([key, value]) => `
-            <div class="env-item">
-                <strong>${key}:</strong> <span>${value}</span>
-            </div>
-        `).join('');
-    }
-    
-    renderContainerVolumes(containerId) {
-        const volumesContainer = document.getElementById('containerVolumes');
-        const container = this.data.containers.find(c => c.id === containerId);
-        
-        if (!container || !container.volumes || container.volumes.length === 0) {
-            volumesContainer.innerHTML = '<p>No volumes mounted</p>';
-            return;
-        }
-        
-        volumesContainer.innerHTML = container.volumes.map(volume => `
-            <div class="volume-item">
-                <strong>Host:</strong> ${volume.host}<br>
-                <strong>Container:</strong> ${volume.container}<br>
-                <strong>Mode:</strong> ${volume.mode || 'rw'}
-            </div>
-        `).join('');
-    }
-    
-    renderContainerNetwork(containerId) {
-        const networkContainer = document.getElementById('containerNetwork');
-        const container = this.data.containers.find(c => c.id === containerId);
-        
-        if (!container || !container.networks) {
-            networkContainer.innerHTML = '<p>No network information available</p>';
-            return;
-        }
-        
-        networkContainer.innerHTML = `
-            <div class="network-info">
-                <strong>Networks:</strong> ${container.networks.join(', ')}<br>
-                <strong>Ports:</strong> ${container.ports && container.ports.length > 0 ? container.ports.join(', ') : 'None'}
-            </div>
-        `;
-    }
-
-    async loadContainerLogs(containerId) {
-        try {
-            const response = await fetch(`${this.apiBase}/api/containers/${containerId}/logs`);
-            const data = await response.json();
-            
-            if (response.ok) {
-                document.getElementById('logsContent').textContent = data.logs || 'No logs available';
-            } else {
-                document.getElementById('logsContent').textContent = `Error: ${data.error}`;
-            }
-        } catch (error) {
-            document.getElementById('logsContent').textContent = `Error loading logs: ${error.message}`;
-        }
-
-        // Set up logs controls
-        document.getElementById('refreshLogsBtn').onclick = () => this.loadContainerLogs(containerId);
-        document.getElementById('clearLogsBtn').onclick = () => {
-            document.getElementById('logsContent').textContent = '';
-        };
-    }
-
-    async loadContainerFiles(containerId, path = '/') {
-        try {
-            const response = await fetch(`${this.apiBase}/api/containers/${containerId}/files?path=${encodeURIComponent(path)}`);
-            const data = await response.json();
-            
-            if (response.ok) {
-                this.renderFilesList(data.files || [], path, containerId);
-                this.updateFilesBreadcrumb(path, containerId);
-            } else {
-                document.getElementById('filesList').innerHTML = `<div class="error">Error: ${data.error}</div>`;
-            }
-        } catch (error) {
-            document.getElementById('filesList').innerHTML = `<div class="error">Error loading files: ${error.message}</div>`;
-        }
-
-        // Set up files controls
-        document.getElementById('refreshFilesBtn').onclick = () => this.loadContainerFiles(containerId, path);
-    }
-
-    renderFilesList(files, currentPath, containerId) {
-        const filesList = document.getElementById('filesList');
-        
-        if (files.length === 0) {
-            filesList.innerHTML = '<div class="empty">No files found</div>';
-            return;
-        }
-
-        const html = files.map(file => `
-            <div class="file-item" onclick="dockerGUI.handleFileClick('${file.name}', ${file.is_directory}, '${currentPath}', '${containerId}')">
-                <i class="file-icon fas ${file.is_directory ? 'fa-folder' : 'fa-file'}"></i>
-                <span class="file-name">${file.name}</span>
-                <span class="file-size">${file.is_directory ? '' : this.formatFileSize(file.size)}</span>
-            </div>
-        `).join('');
-
-        filesList.innerHTML = html;
-    }
-
-    handleFileClick(fileName, isDirectory, currentPath, containerId) {
-        if (isDirectory) {
-            const newPath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`;
-            this.loadContainerFiles(containerId, newPath);
-        }
-    }
-
-    updateFilesBreadcrumb(path, containerId) {
-        const breadcrumb = document.getElementById('filesBreadcrumb');
-        const parts = path.split('/').filter(p => p);
-        
-        let html = '<span class="breadcrumb-item" onclick="dockerGUI.loadContainerFiles(\'' + containerId + '\', \'/\')">/</span>';
-        
-        let currentPath = '';
-        parts.forEach(part => {
-            currentPath += '/' + part;
-            html += ` <span class="breadcrumb-item" onclick="dockerGUI.loadContainerFiles('${containerId}', '${currentPath}')">${part}</span>`;
-        });
-        
-        breadcrumb.innerHTML = html;
-    }
-
-    setupContainerTerminal(containerId) {
-        const connectBtn = document.getElementById('connectTerminalBtn');
-        const disconnectBtn = document.getElementById('disconnectTerminalBtn');
-        const terminalInput = document.getElementById('terminalInput');
-        const sendBtn = document.getElementById('sendCommandBtn');
-        const output = document.getElementById('terminalOutput');
-
-        connectBtn.onclick = () => {
-            // Simulate terminal connection
-            output.innerHTML = `<div class="terminal-line">Connected to container ${containerId}</div>
-                               <div class="terminal-line">Type commands and press Enter or click Send</div>
-                               <div class="terminal-prompt">root@${containerId.substring(0, 12)}:/#</div>`;
-            
-            connectBtn.disabled = true;
-            disconnectBtn.disabled = false;
-            terminalInput.disabled = false;
-            sendBtn.disabled = false;
-            terminalInput.focus();
-        };
-
-        disconnectBtn.onclick = () => {
-            output.innerHTML = '<div class="terminal-welcome">Click "Connect" to start a terminal session in the container.</div>';
-            connectBtn.disabled = false;
-            disconnectBtn.disabled = true;
-            terminalInput.disabled = true;
-            sendBtn.disabled = true;
-        };
-
-        const sendCommand = async () => {
-            const command = terminalInput.value.trim();
-            if (!command) return;
-
-            try {
-                const response = await fetch(`${this.apiBase}/api/containers/${containerId}/exec`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command })
-                });
-                
-                const data = await response.json();
-                
-                output.innerHTML += `<div class="terminal-line">$ ${command}</div>`;
-                if (response.ok) {
-                    output.innerHTML += `<div class="terminal-output">${data.output}</div>`;
-                } else {
-                    output.innerHTML += `<div class="terminal-error">Error: ${data.error}</div>`;
-                }
-                output.innerHTML += `<div class="terminal-prompt">root@${containerId.substring(0, 12)}:/#</div>`;
-                
-                terminalInput.value = '';
-                output.scrollTop = output.scrollHeight;
-            } catch (error) {
-                output.innerHTML += `<div class="terminal-error">Error: ${error.message}</div>`;
-            }
-        };
-
-        sendBtn.onclick = sendCommand;
-        terminalInput.onkeypress = (e) => {
-            if (e.key === 'Enter') {
-                sendCommand();
-            }
-        };
-    }
-
-    async loadContainerEnvironment(containerId) {
-        try {
-            const response = await fetch(`${this.apiBase}/api/containers/${containerId}/env`);
-            const data = await response.json();
-            
-            if (response.ok) {
-                this.renderEnvironmentTable(data.environment || []);
-            } else {
-                document.getElementById('envTableBody').innerHTML = `<tr><td colspan="2" class="error">Error: ${data.error}</td></tr>`;
-            }
-        } catch (error) {
-            document.getElementById('envTableBody').innerHTML = `<tr><td colspan="2" class="error">Error loading environment: ${error.message}</td></tr>`;
-        }
-
-        // Set up environment controls
-        document.getElementById('refreshEnvBtn').onclick = () => this.loadContainerEnvironment(containerId);
-        
-        const searchInput = document.getElementById('envSearch');
-        searchInput.oninput = () => this.filterEnvironmentTable(searchInput.value);
-    }
-
-    renderEnvironmentTable(envVars) {
-        const tbody = document.getElementById('envTableBody');
-        
-        if (envVars.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2" class="empty">No environment variables found</td></tr>';
-            return;
-        }
-
-        const html = envVars.map(env => `
-            <tr class="env-row">
-                <td>${env.key}</td>
-                <td>${env.value}</td>
-            </tr>
-        `).join('');
-
-        tbody.innerHTML = html;
-    }
-
-    filterEnvironmentTable(query) {
-        const rows = document.querySelectorAll('.env-row');
-        const lowerQuery = query.toLowerCase();
-        
-        rows.forEach(row => {
-            const key = row.cells[0].textContent.toLowerCase();
-            const value = row.cells[1].textContent.toLowerCase();
-            const matches = key.includes(lowerQuery) || value.includes(lowerQuery);
-            row.style.display = matches ? '' : 'none';
-        });
-    }
-
-    async loadContainerVolumes(containerId) {
-        try {
-            const response = await fetch(`${this.apiBase}/api/containers/${containerId}/details`);
-            const data = await response.json();
-            
-            if (response.ok && data.mounts) {
-                this.renderVolumesTable(data.mounts);
-            } else {
-                document.getElementById('volumesTableBody').innerHTML = '<tr><td colspan="4" class="empty">No volume mounts found</td></tr>';
-            }
-        } catch (error) {
-            document.getElementById('volumesTableBody').innerHTML = `<tr><td colspan="4" class="error">Error loading volumes: ${error.message}</td></tr>`;
-        }
-    }
-
-    renderVolumesTable(mounts) {
-        const tbody = document.getElementById('volumesTableBody');
-        
-        if (mounts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="empty">No volume mounts found</td></tr>';
-            return;
-        }
-
-        const html = mounts.map(mount => `
-            <tr>
-                <td>${mount.source || '-'}</td>
-                <td>${mount.destination || '-'}</td>
-                <td>${mount.mode || 'rw'}</td>
-                <td>${mount.type || 'bind'}</td>
-            </tr>
-        `).join('');
-
-        tbody.innerHTML = html;
-    }
-
-    async loadContainerNetwork(containerId) {
-        try {
-            const response = await fetch(`${this.apiBase}/api/containers/${containerId}/details`);
-            const data = await response.json();
-            
-            if (response.ok && data.network_settings) {
-                this.renderNetworkInfo(data.network_settings);
-            } else {
-                this.renderNetworkInfo({});
-            }
-        } catch (error) {
-            this.renderNetworkInfo({});
-        }
-    }
-
-    renderNetworkInfo(networkSettings) {
-        document.getElementById('networkMode').textContent = 'bridge';
-        document.getElementById('networkIP').textContent = networkSettings.ip_address || '-';
-        document.getElementById('networkGateway').textContent = networkSettings.gateway || '-';
-        document.getElementById('networkMAC').textContent = networkSettings.mac_address || '-';
-
-        const portsTableBody = document.getElementById('portsTableBody');
-        
-        if (networkSettings.ports && networkSettings.ports.length > 0) {
-            const html = networkSettings.ports.map(port => `
-                <tr>
-                    <td>${port.container_port}</td>
-                    <td>${port.host_port}</td>
-                    <td>${port.protocol}</td>
-                </tr>
-            `).join('');
-            portsTableBody.innerHTML = html;
-        } else {
-            portsTableBody.innerHTML = '<tr><td colspan="3" class="empty">No port bindings found</td></tr>';
-        }
-    }
-
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 B';
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(1024));
-        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-    }
+    // Container Details Implementation starts here
 
     // Container Details Methods
     async showContainerDetails(containerId) {
@@ -1254,16 +820,20 @@ class DockerGUI {
     }
     
     setupTabEventListeners() {
-        // Remove existing listeners to prevent duplicates
+        console.log('Setting up tab event listeners');
+        
+        // Remove existing listeners by replacing elements
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.replaceWith(btn.cloneNode(true));
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
         });
         
-        // Add new event listeners
+        // Add new event listeners with proper context binding
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const tabName = btn.getAttribute('data-tab');
+                console.log('Tab clicked:', tabName);
                 this.switchTab(tabName);
             });
         });
@@ -1271,7 +841,12 @@ class DockerGUI {
         // Also set up back button
         const backBtn = document.getElementById('backToContainers');
         if (backBtn) {
-            backBtn.addEventListener('click', () => {
+            // Remove existing listener
+            const newBackBtn = backBtn.cloneNode(true);
+            backBtn.parentNode.replaceChild(newBackBtn, backBtn);
+            
+            // Add new listener
+            document.getElementById('backToContainers').addEventListener('click', () => {
                 this.hideContainerDetails();
             });
         }
@@ -1280,48 +855,91 @@ class DockerGUI {
     switchTab(tabName) {
         console.log('Switching to tab:', tabName);
         
+        // Ensure we have valid elements
+        const allTabBtns = document.querySelectorAll('.tab-btn');
+        const allTabPanes = document.querySelectorAll('.tab-pane');
+        
+        console.log('Found tab buttons:', allTabBtns.length);
+        console.log('Found tab panes:', allTabPanes.length);
+        
         // Update tab buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        allTabBtns.forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
         
-        // Update tab content
-        document.querySelectorAll('.tab-pane').forEach(pane => {
+        const targetTab = document.querySelector(`[data-tab="${tabName}"]`);
+        if (targetTab) {
+            targetTab.classList.add('active');
+            console.log('Tab button activated:', tabName);
+        } else {
+            console.error('Tab button not found:', tabName);
+            return; // Exit early if tab button not found
+        }
+        
+        // Update tab content - hide all first
+        allTabPanes.forEach(pane => {
             pane.classList.remove('active');
+            pane.style.display = 'none'; // Force hide
+            console.log('Hidden pane:', pane.id);
         });
-        document.getElementById(`${tabName}Tab`).classList.add('active');
+        
+        // Show target pane
+        const targetPane = document.getElementById(`${tabName}Tab`);
+        if (targetPane) {
+            targetPane.classList.add('active');
+            targetPane.style.display = 'block'; // Force show
+            console.log('Tab pane activated:', targetPane.id);
+            console.log('Tab pane display style:', window.getComputedStyle(targetPane).display);
+        } else {
+            console.error('Tab pane not found:', `${tabName}Tab`);
+            return; // Exit early if tab pane not found
+        }
         
         // Load tab-specific content
         this.loadTabContent(tabName);
     }
     
     async loadTabContent(tabName) {
-        if (!this.currentContainerId) return;
+        console.log('Loading tab content for:', tabName);
+        console.log('Current container ID:', this.currentContainerId);
+        
+        if (!this.currentContainerId) {
+            console.error('No current container ID set!');
+            return;
+        }
         
         try {
             switch (tabName) {
                 case 'logs':
+                    console.log('Loading logs...');
                     await this.loadContainerLogs();
                     break;
                 case 'files':
+                    console.log('Loading files...');
                     await this.loadContainerFiles('/');
                     break;
                 case 'env':
+                    console.log('Loading environment...');
                     await this.loadContainerEnvironment();
                     break;
                 case 'exec':
+                    console.log('Setting up exec...');
                     this.setupContainerExec();
                     break;
                 case 'volumes':
+                    console.log('Loading volumes...');
                     await this.loadContainerVolumes();
                     break;
                 case 'network':
+                    console.log('Loading network...');
                     await this.loadContainerNetwork();
                     break;
                 case 'stats':
+                    console.log('Loading stats...');
                     await this.loadContainerStats();
                     break;
+                default:
+                    console.warn('Unknown tab:', tabName);
             }
         } catch (error) {
             console.error(`Error loading ${tabName} content:`, error);
@@ -1332,34 +950,169 @@ class DockerGUI {
         const logsContent = document.getElementById('logsContent');
         logsContent.innerHTML = '<div class="loading">Loading logs...</div>';
         
+        // Set up logs controls
+        this.setupLogsControls();
+        
         try {
+            // Try HTTP API first for reliability
             const response = await fetch(`${this.apiBase}/api/containers/${this.currentContainerId}/logs`);
             if (response.ok) {
-                const logs = await response.text();
-                logsContent.innerHTML = `<pre class="logs-text">${logs || 'No logs available'}</pre>`;
+                const data = await response.json();
+                const logs = data.logs || 'No logs available';
+                logsContent.innerHTML = `<div class="logs-stream"><pre class="logs-text" id="logsText">${logs}</pre></div>`;
+                
+                // If successful and logs exist, also start real-time streaming
+                if (logs && logs !== 'No logs available') {
+                    this.startLogStreaming();
+                }
             } else {
-                logsContent.innerHTML = '<div class="error">Error loading logs</div>';
+                // Fallback to real-time streaming
+                this.startLogStreaming();
             }
         } catch (error) {
-            console.error('Error loading logs:', error);
-            logsContent.innerHTML = '<div class="error">Error loading logs</div>';
+            console.error('Error loading logs via HTTP, trying WebSocket:', error);
+            // Fallback to real-time streaming
+            this.startLogStreaming();
         }
     }
     
+    setupLogsControls() {
+        const clearLogsBtn = document.getElementById('clearLogsBtn');
+        const downloadLogsBtn = document.getElementById('downloadLogsBtn');
+        const autoRefreshLogs = document.getElementById('autoRefreshLogs');
+        
+        if (clearLogsBtn) {
+            clearLogsBtn.onclick = () => this.clearLogs();
+        }
+        
+        if (downloadLogsBtn) {
+            downloadLogsBtn.onclick = () => this.downloadLogs();
+        }
+        
+        if (autoRefreshLogs) {
+            autoRefreshLogs.onchange = (e) => {
+                if (e.target.checked && !this.isLogsStreaming) {
+                    this.startLogStreaming();
+                } else if (!e.target.checked && this.isLogsStreaming) {
+                    this.stopLogStreaming();
+                }
+            };
+        }
+    }
+    
+    startLogStreaming() {
+        if (!this.currentContainerId || this.isLogsStreaming) {
+            return;
+        }
+        
+        const logsContent = document.getElementById('logsContent');
+        logsContent.innerHTML = '<div class="logs-stream"><pre class="logs-text" id="logsText"></pre></div>';
+        
+        // Start streaming
+        this.socket.emit('start_logs', {
+            container_id: this.currentContainerId
+        });
+    }
+    
+    stopLogStreaming() {
+        if (!this.currentContainerId || !this.isLogsStreaming) {
+            return;
+        }
+        
+        this.socket.emit('stop_logs', {
+            container_id: this.currentContainerId
+        });
+    }
+    
+    handleLogData(data) {
+        if (data.container_id !== this.currentContainerId) {
+            return; // Ignore logs from other containers
+        }
+        
+        const logsText = document.getElementById('logsText');
+        if (!logsText) {
+            return;
+        }
+        
+        if (data.type === 'initial') {
+            // Replace initial loading with historical logs
+            logsText.textContent = data.data || 'No logs available';
+        } else if (data.type === 'stream') {
+            // Append new log line
+            logsText.textContent += '\n' + data.data;
+        }
+        
+        // Auto-scroll to bottom
+        const logsContent = document.getElementById('logsContent');
+        if (logsContent) {
+            logsContent.scrollTop = logsContent.scrollHeight;
+        }
+    }
+    
+    updateLogsUI() {
+        const autoRefreshLogs = document.getElementById('autoRefreshLogs');
+        if (autoRefreshLogs) {
+            autoRefreshLogs.checked = this.isLogsStreaming;
+        }
+    }
+    
+    clearLogs() {
+        const logsText = document.getElementById('logsText');
+        if (logsText) {
+            logsText.textContent = '';
+        }
+    }
+    
+    downloadLogs() {
+        const logsText = document.getElementById('logsText');
+        if (!logsText || !logsText.textContent) {
+            this.showError('No logs to download');
+            return;
+        }
+        
+        const logs = logsText.textContent;
+        const blob = new Blob([logs], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.currentContainerId}_logs.txt`;
+        a.click();
+        
+        URL.revokeObjectURL(url);
+    }
+    
     async loadContainerFiles(path = '/') {
+        console.log('loadContainerFiles called with path:', path);
+        console.log('Container ID:', this.currentContainerId);
+        
         const filesContent = document.getElementById('filesContent');
         const currentPath = document.getElementById('currentPath');
+        const refreshFilesBtn = document.getElementById('refreshFilesBtn');
         
         filesContent.innerHTML = '<div class="loading">Loading files...</div>';
         currentPath.textContent = path;
         
+        // Set up refresh button
+        if (refreshFilesBtn) {
+            refreshFilesBtn.onclick = () => this.loadContainerFiles(path);
+        }
+        
         try {
-            const response = await fetch(`${this.apiBase}/api/containers/${this.currentContainerId}/files?path=${encodeURIComponent(path)}`);
+            const url = `${this.apiBase}/api/containers/${this.currentContainerId}/files?path=${encodeURIComponent(path)}`;
+            console.log('Fetching files from URL:', url);
+            
+            const response = await fetch(url);
+            console.log('Files API response status:', response.status);
+            
             if (response.ok) {
                 const files = await response.json();
+                console.log('Files data received:', files);
                 this.renderFiles(files, path);
             } else {
-                filesContent.innerHTML = '<div class="error">Error loading files</div>';
+                const error = await response.json();
+                console.error('Files API error:', error);
+                filesContent.innerHTML = `<div class="error">Error loading files: ${error.error || 'Unknown error'}</div>`;
             }
         } catch (error) {
             console.error('Error loading files:', error);
@@ -1387,14 +1140,15 @@ class DockerGUI {
         }
         
         files.forEach(file => {
-            const icon = file.is_dir ? 'fa-folder' : 'fa-file';
-            const fileClass = file.is_dir ? 'directory' : 'file';
-            const onclick = file.is_dir ? `dockerGUI.loadContainerFiles('${file.path}')` : '';
+            const icon = file.is_directory ? 'fa-folder' : 'fa-file';
+            const fileClass = file.is_directory ? 'directory' : 'file';
+            const filePath = file.path || `${currentPath.endsWith('/') ? currentPath : currentPath + '/'}${file.name}`;
+            const onclick = file.is_directory ? `dockerGUI.loadContainerFiles('${filePath}')` : '';
             
             html += `<div class="file-item ${fileClass}" ${onclick ? `onclick="${onclick}"` : ''}>
                 <i class="fas ${icon}"></i>
                 <span>${file.name}</span>
-                <span class="file-size">${file.is_dir ? '' : this.formatFileSize(file.size)}</span>
+                <span class="file-size">${file.is_directory ? '' : this.formatFileSize(file.size)}</span>
             </div>`;
         });
         
@@ -1403,15 +1157,26 @@ class DockerGUI {
     }
     
     async loadContainerEnvironment() {
+        console.log('loadContainerEnvironment called');
+        console.log('Container ID:', this.currentContainerId);
+        
         const envContent = document.getElementById('envContent');
         envContent.innerHTML = '<div class="loading">Loading environment variables...</div>';
         
         try {
-            const response = await fetch(`${this.apiBase}/api/containers/${this.currentContainerId}/env`);
+            const url = `${this.apiBase}/api/containers/${this.currentContainerId}/env`;
+            console.log('Fetching environment from URL:', url);
+            
+            const response = await fetch(url);
+            console.log('Environment API response status:', response.status);
+            
             if (response.ok) {
-                const envVars = await response.json();
-                this.renderEnvironmentVariables(envVars);
+                const data = await response.json();
+                console.log('Environment data received:', data);
+                this.renderEnvironmentVariables(data.environment || data);
             } else {
+                const errorText = await response.text();
+                console.error('Environment API error:', errorText);
                 envContent.innerHTML = '<div class="error">Error loading environment variables</div>';
             }
         } catch (error) {
@@ -1423,31 +1188,193 @@ class DockerGUI {
     renderEnvironmentVariables(envVars) {
         const envContent = document.getElementById('envContent');
         
-        if (!envVars || Object.keys(envVars).length === 0) {
+        if (!envVars || (Array.isArray(envVars) && envVars.length === 0) || (typeof envVars === 'object' && Object.keys(envVars).length === 0)) {
             envContent.innerHTML = '<div class="empty">No environment variables found</div>';
             return;
         }
         
         let html = '<div class="env-list">';
-        Object.entries(envVars).forEach(([key, value]) => {
-            html += `<div class="env-item">
-                <div class="env-key">${key}</div>
-                <div class="env-value">${value}</div>
-            </div>`;
-        });
-        html += '</div>';
         
+        if (Array.isArray(envVars)) {
+            // Handle array format: [{key: 'PATH', value: '/usr/bin'}, ...]
+            envVars.forEach(envVar => {
+                if (envVar.key && envVar.value) {
+                    html += `<div class="env-item">
+                        <div class="env-key">${envVar.key}</div>
+                        <div class="env-value">${envVar.value}</div>
+                    </div>`;
+                }
+            });
+        } else {
+            // Handle object format: {PATH: '/usr/bin', ...}
+            Object.entries(envVars).forEach(([key, value]) => {
+                html += `<div class="env-item">
+                    <div class="env-key">${key}</div>
+                    <div class="env-value">${value}</div>
+                </div>`;
+            });
+        }
+        
+        html += '</div>';
         envContent.innerHTML = html;
     }
     
     setupContainerExec() {
         const execTerminal = document.getElementById('execTerminal');
+        const connectExecBtn = document.getElementById('connectExecBtn');
+        const execShell = document.getElementById('execShell');
+        
+        // Initialize terminal display
         execTerminal.innerHTML = `
-            <div class="terminal-placeholder">
-                <p>Terminal functionality not yet implemented</p>
-                <p>Container: ${this.currentContainerId}</p>
+            <div class="terminal-placeholder" id="terminalPlaceholder">
+                Click "Connect" to open a terminal session in the container
+            </div>
+            <div class="terminal-output" id="terminalOutput" style="display: none;">
+                <div class="terminal-content" id="terminalContent"></div>
+                <div class="terminal-input-line">
+                    <span class="terminal-prompt" id="terminalPrompt">$</span>
+                    <input type="text" class="terminal-input" id="terminalInput" placeholder="Enter command...">
+                </div>
             </div>
         `;
+        
+        // Set up connect button
+        if (connectExecBtn) {
+            connectExecBtn.onclick = () => this.toggleExecSession();
+        }
+        
+        // Set up terminal input
+        const terminalInput = document.getElementById('terminalInput');
+        if (terminalInput) {
+            terminalInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.sendExecCommand(terminalInput.value);
+                    terminalInput.value = '';
+                }
+            });
+        }
+    }
+    
+    toggleExecSession() {
+        const connectExecBtn = document.getElementById('connectExecBtn');
+        const execShell = document.getElementById('execShell');
+        
+        if (!this.isExecConnected) {
+            // Start exec session
+            const shell = execShell.value;
+            this.startExecSession(shell);
+        } else {
+            // Stop exec session
+            this.stopExecSession();
+        }
+    }
+    
+    startExecSession(shell) {
+        if (!this.currentContainerId) {
+            this.showError('No container selected');
+            return;
+        }
+        
+        // Update UI
+        const connectExecBtn = document.getElementById('connectExecBtn');
+        const terminalPlaceholder = document.getElementById('terminalPlaceholder');
+        const terminalOutput = document.getElementById('terminalOutput');
+        
+        connectExecBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+        connectExecBtn.disabled = true;
+        
+        // Start exec session via WebSocket
+        this.socket.emit('start_exec', {
+            container_id: this.currentContainerId,
+            shell: shell
+        });
+    }
+    
+    stopExecSession() {
+        if (!this.currentContainerId) {
+            return;
+        }
+        
+        // Stop exec session via WebSocket
+        this.socket.emit('stop_exec', {
+            container_id: this.currentContainerId
+        });
+    }
+    
+    sendExecCommand(command) {
+        if (!this.isExecConnected || !command.trim()) {
+            return;
+        }
+        
+        // Send command via WebSocket
+        this.socket.emit('exec_input', {
+            container_id: this.currentContainerId,
+            command: command.trim()
+        });
+    }
+    
+    handleExecStarted(data) {
+        console.log('Exec session started:', data);
+        this.isExecConnected = true;
+        
+        // Update UI
+        const connectExecBtn = document.getElementById('connectExecBtn');
+        const terminalPlaceholder = document.getElementById('terminalPlaceholder');
+        const terminalOutput = document.getElementById('terminalOutput');
+        const terminalInput = document.getElementById('terminalInput');
+        
+        connectExecBtn.innerHTML = '<i class="fas fa-times"></i> Disconnect';
+        connectExecBtn.disabled = false;
+        
+        if (terminalPlaceholder) terminalPlaceholder.style.display = 'none';
+        if (terminalOutput) terminalOutput.style.display = 'block';
+        if (terminalInput) terminalInput.focus();
+    }
+    
+    handleExecStopped(data) {
+        console.log('Exec session stopped:', data);
+        this.isExecConnected = false;
+        
+        // Update UI
+        const connectExecBtn = document.getElementById('connectExecBtn');
+        const terminalPlaceholder = document.getElementById('terminalPlaceholder');
+        const terminalOutput = document.getElementById('terminalOutput');
+        
+        connectExecBtn.innerHTML = '<i class="fas fa-plug"></i> Connect';
+        connectExecBtn.disabled = false;
+        
+        if (terminalPlaceholder) terminalPlaceholder.style.display = 'block';
+        if (terminalOutput) terminalOutput.style.display = 'none';
+    }
+    
+    handleExecOutput(data) {
+        if (data.container_id !== this.currentContainerId) {
+            return; // Ignore output from other containers
+        }
+        
+        const terminalContent = document.getElementById('terminalContent');
+        const terminalPrompt = document.getElementById('terminalPrompt');
+        
+        if (!terminalContent) return;
+        
+        // Create output element
+        const outputElement = document.createElement('div');
+        outputElement.className = `terminal-line terminal-${data.type}`;
+        
+        if (data.type === 'prompt') {
+            if (terminalPrompt) {
+                terminalPrompt.textContent = data.data;
+            }
+        } else {
+            outputElement.textContent = data.data;
+            terminalContent.appendChild(outputElement);
+        }
+        
+        // Auto-scroll to bottom
+        const terminalOutput = document.getElementById('terminalOutput');
+        if (terminalOutput) {
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
     }
     
     async loadContainerVolumes() {
@@ -1475,16 +1402,6 @@ class DockerGUI {
     }
 
     // Utility Methods
-    formatDate(dateString) {
-        if (!dateString || dateString === '-') return '-';
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-        } catch (error) {
-            return dateString;
-        }
-    }
-
     showToast(message, type = 'info') {
         console.log(`Toast [${type}]: ${message}`);
         // For now, just log to console. Could implement actual toast notifications later.
@@ -1504,6 +1421,14 @@ class DockerGUI {
     hideLoading() {
         console.log('Data loaded');
         // Could hide loading spinner here
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0 || !bytes) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     startAutoRefresh() {
