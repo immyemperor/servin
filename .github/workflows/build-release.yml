@@ -13,8 +13,6 @@ permissions:
   
 env:
   GO_VERSION: '1.24'
-  APP_VERSION: '1.0.0'
-  VM_VERSION: '1.0.0'
 
 jobs:
   build:
@@ -44,6 +42,22 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Extract version from tag or commit
+      id: version
+      shell: bash
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          # Extract version from tag (remove 'v' prefix if present)
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+        else
+          # Use git describe for non-tag builds
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev-$(git rev-parse --short HEAD)")
+        fi
+        echo "APP_VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "VM_VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Using version: $VERSION"
 
     - name: Set up Go
       uses: actions/setup-go@v5
@@ -163,7 +177,7 @@ jobs:
           & "$nsisPath" servin-installer.nsi
           
           if (Test-Path "ServinSetup-1.0.0.exe") {
-            Move-Item "ServinSetup-1.0.0.exe" "../servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe"
+            Move-Item "ServinSetup-1.0.0.exe" "../servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe"
             Write-Host "Windows installer created successfully"
           }
         } else {
@@ -177,7 +191,7 @@ jobs:
         cd dist/${{ matrix.platform }}
         
         # Create the main distribution archive
-        archive_name="servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}"
+        archive_name="servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}"
         
         if [ "${{ matrix.platform }}" = "windows" ]; then
           # For Windows, create ZIP archive
@@ -194,9 +208,9 @@ jobs:
         fi
         
         # Create installer-only archive if installer exists
-        if [ -f "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe" ]; then
-          cp "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe" "../"
-          echo "Windows installer ready: servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe"
+        if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe" ]; then
+          cp "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe" "../"
+          echo "Windows installer ready: servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe"
         fi
 
     # Verify build artifacts
@@ -210,10 +224,10 @@ jobs:
         ls -la dist/${{ matrix.platform }}/
         echo ""
         echo "Final distribution packages:"
-        ls -la dist/servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*
+        ls -la dist/servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*
         echo ""
         echo "Distribution summary:"
-        find dist -name "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*" -type f | while read file; do
+        find dist -name "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*" -type f | while read file; do
           size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "unknown")
           echo "  $(basename "$file") (${size} bytes)"
         done
@@ -222,9 +236,9 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: servin-${{ matrix.platform }}-${{ env.APP_VERSION }}
+        name: servin-${{ matrix.platform }}-${{ steps.version.outputs.APP_VERSION }}
         path: |
-          dist/servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*
+          dist/servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*
 
   # Build VM images for containerization
   build-vm-images:
@@ -235,6 +249,21 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Extract version from tag or commit
+      id: version
+      shell: bash
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          # Extract version from tag (remove 'v' prefix if present)
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+        else
+          # Use git describe for non-tag builds
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev-$(git rev-parse --short HEAD)")
+        fi
+        echo "VM_VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Using VM version: $VERSION"
 
     - name: Install VM build dependencies
       run: |
@@ -251,10 +280,10 @@ jobs:
         mkdir -p vm-images
         
         # Create Alpine-based VM image (smallest)
-        ./scripts/build-vm-image.sh alpine 3.18 vm-images/servin-alpine-${{ env.VM_VERSION }}.qcow2
+        ./scripts/build-vm-image.sh alpine 3.18 vm-images/servin-alpine-${{ steps.version.outputs.VM_VERSION }}.qcow2
         
         # Create Ubuntu-based VM image (most compatible)  
-        ./scripts/build-vm-image.sh ubuntu 22.04 vm-images/servin-ubuntu-${{ env.VM_VERSION }}.qcow2
+        ./scripts/build-vm-image.sh ubuntu 22.04 vm-images/servin-ubuntu-${{ steps.version.outputs.VM_VERSION }}.qcow2
         
         # Generate checksums
         cd vm-images
@@ -264,7 +293,7 @@ jobs:
     - name: Upload VM images
       uses: actions/upload-artifact@v4
       with:
-        name: servin-vm-images-${{ env.VM_VERSION }}
+        name: servin-vm-images-${{ steps.version.outputs.VM_VERSION }}
         path: vm-images/
 
   # Enhanced package creation with VM support
@@ -274,6 +303,25 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Extract version from tag or commit
+      id: version
+      shell: bash
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          # Extract version from tag (remove 'v' prefix if present)
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+        else
+          # Use git describe for non-tag builds
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev-$(git rev-parse --short HEAD)")
+        fi
+        echo "APP_VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "VM_VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Using version: $VERSION"
+
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
@@ -282,7 +330,7 @@ jobs:
     - name: Download VM images
       uses: actions/download-artifact@v4
       with:
-        name: servin-vm-images-${{ env.VM_VERSION }}
+        name: servin-vm-images-${{ steps.version.outputs.VM_VERSION }}
         path: vm-images
 
     - name: Organize release packages with VM support
@@ -290,7 +338,7 @@ jobs:
         mkdir -p release/vm-images
         
         # Copy distribution packages to release directory
-        find artifacts -name "servin_${{ env.APP_VERSION }}_*" -type f | while read file; do
+        find artifacts -name "servin_${{ steps.version.outputs.APP_VERSION }}_*" -type f | while read file; do
           cp "$file" release/
         done
         
@@ -305,8 +353,8 @@ jobs:
         This release includes VM-based containerization for true container isolation.
         
         ## VM Images Included
-        - servin-alpine-${{ env.VM_VERSION }}.qcow2 - Lightweight Alpine Linux VM
-        - servin-ubuntu-${{ env.VM_VERSION }}.qcow2 - Ubuntu 22.04 LTS VM
+        - servin-alpine-${{ steps.version.outputs.VM_VERSION }}.qcow2 - Lightweight Alpine Linux VM
+        - servin-ubuntu-${{ steps.version.outputs.VM_VERSION }}.qcow2 - Ubuntu 22.04 LTS VM
         
         ## Quick Start
         1. Install Servin using any platform package
@@ -342,18 +390,18 @@ jobs:
     - name: Create unified release archive
       run: |
         cd release
-        zip -r ../servin-cross-platform-${{ env.APP_VERSION }}.zip .
+        zip -r ../servin-cross-platform-${{ steps.version.outputs.APP_VERSION }}.zip .
         cd ..
         
         echo "Final release archive:"
-        ls -la servin-cross-platform-${{ env.APP_VERSION }}.zip
+        ls -la servin-cross-platform-${{ steps.version.outputs.APP_VERSION }}.zip
 
     - name: Upload release package
       uses: actions/upload-artifact@v4
       with:
         name: servin-cross-platform-release
         path: |
-          servin-cross-platform-${{ env.APP_VERSION }}.zip
+          servin-cross-platform-${{ steps.version.outputs.APP_VERSION }}.zip
           release/
 
     # Create GitHub release on tag push
@@ -362,15 +410,15 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          release/servin_${{ env.APP_VERSION }}_*.zip
-          release/servin_${{ env.APP_VERSION }}_*.tar.gz
-          release/servin_${{ env.APP_VERSION }}_*_installer.exe
-          servin-cross-platform-${{ env.APP_VERSION }}.zip
+          release/servin_${{ steps.version.outputs.APP_VERSION }}_*.zip
+          release/servin_${{ steps.version.outputs.APP_VERSION }}_*.tar.gz
+          release/servin_${{ steps.version.outputs.APP_VERSION }}_*_installer.exe
+          servin-cross-platform-${{ steps.version.outputs.APP_VERSION }}.zip
         draft: false
         prerelease: false
         generate_release_notes: true
         body: |
-          ## Servin Container Runtime v${{ env.APP_VERSION }} with VM Containerization
+          ## Servin Container Runtime v${{ steps.version.outputs.APP_VERSION }} with VM Containerization
           
           ### 🚀 Revolutionary VM-Based Containerization
           
@@ -384,22 +432,22 @@ jobs:
           ### 📦 Installation Options
           
           **Windows (x64):**
-          - `servin_${{ env.APP_VERSION }}_windows_amd64_installer.exe` - NSIS Installer with VM Support (Recommended)
-          - `servin_${{ env.APP_VERSION }}_windows_amd64.zip` - Manual Installation Archive with VM Components
+          - `servin_${{ steps.version.outputs.APP_VERSION }}_windows_amd64_installer.exe` - NSIS Installer with VM Support (Recommended)
+          - `servin_${{ steps.version.outputs.APP_VERSION }}_windows_amd64.zip` - Manual Installation Archive with VM Components
           
           **Linux (x64):**
-          - `servin_${{ env.APP_VERSION }}_linux_amd64.tar.gz` - Distribution with VM Support and Wizard Installer
+          - `servin_${{ steps.version.outputs.APP_VERSION }}_linux_amd64.tar.gz` - Distribution with VM Support and Wizard Installer
           
           **macOS (Universal - Intel + Apple Silicon):**
-          - `servin_${{ env.APP_VERSION }}_macos_universal.tar.gz` - Universal Distribution with VM Support
+          - `servin_${{ steps.version.outputs.APP_VERSION }}_macos_universal.tar.gz` - Universal Distribution with VM Support
           
           **Cross-Platform:**
-          - `servin-cross-platform-${{ env.APP_VERSION }}.zip` - All platforms with VM images
+          - `servin-cross-platform-${{ steps.version.outputs.APP_VERSION }}.zip` - All platforms with VM images
           
           ### 🖥️ VM Images Included
           
-          - **Alpine Linux VM** (`servin-alpine-${{ env.VM_VERSION }}.qcow2`) - Ultra-lightweight, 100MB compressed
-          - **Ubuntu 22.04 VM** (`servin-ubuntu-${{ env.VM_VERSION }}.qcow2`) - Full compatibility, enterprise-ready
+          - **Alpine Linux VM** (`servin-alpine-${{ steps.version.outputs.VM_VERSION }}.qcow2`) - Ultra-lightweight, 100MB compressed
+          - **Ubuntu 22.04 VM** (`servin-ubuntu-${{ steps.version.outputs.VM_VERSION }}.qcow2`) - Full compatibility, enterprise-ready
           
           ### 🎯 Quick Start with VM Containerization
           
@@ -429,17 +477,17 @@ jobs:
           ### 🔧 Installation Instructions
           
           **Windows:**
-          1. Download and run `servin_${{ env.APP_VERSION }}_windows_amd64_installer.exe` as Administrator
+          1. Download and run `servin_${{ steps.version.outputs.APP_VERSION }}_windows_amd64_installer.exe` as Administrator
           2. Installer automatically configures VM support (Hyper-V/VirtualBox)
           3. Or extract ZIP and run `install-servin.bat`
           
           **macOS:**
-          1. Download `servin_${{ env.APP_VERSION }}_macos_universal.tar.gz`
+          1. Download `servin_${{ steps.version.outputs.APP_VERSION }}_macos_universal.tar.gz`
           2. Extract and double-click `ServinInstaller.command`
           3. Installer configures Virtualization.framework support
           
           **Linux:**
-          1. Download `servin_${{ env.APP_VERSION }}_linux_amd64.tar.gz`
+          1. Download `servin_${{ steps.version.outputs.APP_VERSION }}_linux_amd64.tar.gz`
           2. Extract and run `./ServinInstaller.sh`
           3. Installer configures KVM/QEMU support
           
@@ -488,22 +536,48 @@ jobs:
             arch: universal
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Extract version information
+      id: version
+      shell: bash
+      run: |
+        # Get APP_VERSION from git tag or commit
+        if [ -n "${{ github.ref_name }}" ] && [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
+          APP_VERSION="${{ github.ref_name }}"
+        else
+          APP_VERSION="v1.0.0-dev-$(git rev-parse --short HEAD)"
+        fi
+        
+        # Get VM_VERSION (independent versioning for VM images)
+        VM_VERSION="v1.0.0"
+        
+        # Remove 'v' prefix for file naming
+        APP_VERSION_CLEAN="${APP_VERSION#v}"
+        VM_VERSION_CLEAN="${VM_VERSION#v}"
+        
+        echo "APP_VERSION=${APP_VERSION_CLEAN}" >> $GITHUB_OUTPUT
+        echo "VM_VERSION=${VM_VERSION_CLEAN}" >> $GITHUB_OUTPUT
+        echo "Using APP_VERSION: ${APP_VERSION_CLEAN}"
+        echo "Using VM_VERSION: ${VM_VERSION_CLEAN}"
+
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
-        name: servin-${{ matrix.platform }}-${{ env.APP_VERSION }}
+        name: servin-${{ matrix.platform }}-${{ steps.version.outputs.APP_VERSION }}
 
     - name: Extract distribution archive
       shell: bash
       run: |
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ -f "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip" ]; then
-            powershell -Command "Expand-Archive -Path 'servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip' -DestinationPath 'test-install'"
+          if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip" ]; then
+            powershell -Command "Expand-Archive -Path 'servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip' -DestinationPath 'test-install'"
           fi
         else
-          if [ -f "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" ]; then
+          if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" ]; then
             mkdir -p test-install
-            tar -xzf "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" -C test-install --strip-components=1
+            tar -xzf "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" -C test-install --strip-components=1
           fi
         fi
 
@@ -573,7 +647,7 @@ jobs:
       run: |
         echo "Verifying wizard installers:"
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ -f "servin_${{ env.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe" ]; then
+          if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}_installer.exe" ]; then
             echo "Windows NSIS installer verified"
           elif [ -d "test-install/installer" ]; then
             echo "Windows installer package verified"

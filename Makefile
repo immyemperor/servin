@@ -5,7 +5,7 @@ BINARY_NAME=servin
 TUI_BINARY=servin-tui
 DESKTOP_BINARY=servin-desktop
 VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-BUILD_TIME=$(shell date +%Y-%m-%dT%H:%M:%S)
+BUILD_TIME=$(shell date +%Y-%m-%dT%H%M%S)
 LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 
 # VM Configuration

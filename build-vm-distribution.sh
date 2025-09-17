@@ -6,7 +6,7 @@ set -e
 # Configuration
 BUILD_DIR="dist"
 VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
-BUILD_TIME=$(date +%Y-%m-%dT%H:%M:%S)
+BUILD_TIME=$(date +%Y-%m-%dT%H%M%S)
 LDFLAGS="-ldflags \"-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME -s -w\""
 
 # VM Configuration
@@ -1286,4 +1286,3 @@ EOF
 
 # Run main function
 main "$@"
-EOF

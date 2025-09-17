@@ -140,6 +140,10 @@ vm-running
 *.vm
 vm-state/
 vm-logs/
+vm-images/
+*.iso
+*.qcow2
+*.img
 
 # Development and testing
 server.log
@@ -147,6 +151,7 @@ server.log
 debug.html
 test-output/
 coverage/
+cloud-init.iso
 
 # Backup files with extensions
 *.bak
@@ -163,3 +168,35 @@ packages/
 # Installation artifacts
 install.log
 setup.log
+
+# Additional build artifacts and temporary files
+*.bak
+*.orig
+*.rej
+build.sh.bak
+build-*.sh.bak
+*.yml.bak
+*.md.bak
+
+# macOS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Additional Python/Flask artifacts
+flask_session/
+instance/
+.webassets-cache
+
+# IDE specific
+.vscode/settings.json
+.vscode/launch.json
+.idea/workspace.xml
+.idea/tasks.xml
+
+# Testing artifacts
+.pytest_cache/
+.coverage
+htmlcov/

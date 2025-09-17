@@ -119,8 +119,20 @@ local-hostname: servin-alpine
 EOF
 
     # Create ISO with cloud-init data
-    genisoimage -output "$TEMP_DIR/cloud-init.iso" -volid cidata -joliet -rock "$TEMP_DIR/user-data" "$TEMP_DIR/meta-data" 2>/dev/null || \
-    mkisofs -o "$TEMP_DIR/cloud-init.iso" -V cidata -J -r "$TEMP_DIR/user-data" "$TEMP_DIR/meta-data"
+    if command -v genisoimage >/dev/null 2>&1; then
+        genisoimage -output "$TEMP_DIR/cloud-init.iso" -volid cidata -joliet -rock "$TEMP_DIR/user-data" "$TEMP_DIR/meta-data"
+    elif command -v mkisofs >/dev/null 2>&1; then
+        mkisofs -o "$TEMP_DIR/cloud-init.iso" -V cidata -J -r "$TEMP_DIR/user-data" "$TEMP_DIR/meta-data"
+    elif command -v hdiutil >/dev/null 2>&1; then
+        # macOS fallback using hdiutil
+        hdiutil makehybrid -iso -joliet -default-volume-name "cidata" -o "$TEMP_DIR/cloud-init.iso" "$TEMP_DIR/"
+    else
+        print_error "No ISO creation tool found. Please install genisoimage, mkisofs, or use macOS hdiutil"
+        print_info "Ubuntu/Debian: sudo apt-get install genisoimage"
+        print_info "CentOS/RHEL: sudo yum install genisoimage"
+        print_info "macOS: hdiutil is included by default"
+        return 1
+    fi
     
     print_success "Alpine VM image created: $output"
 }
