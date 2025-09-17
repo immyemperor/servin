@@ -33,29 +33,50 @@ The GUI features a single-page web application with real-time sections:
 ## 📦 Container Management
 
 ### **Container Dashboard**
-Displays all containers in a responsive card layout:
-- **Status Indicators**: Visual badges (🟢 running, 🔴 stopped, 🟡 paused)
-- **Container Information**: Name, image, status, and creation time
-- **Quick Actions**: Start, stop, remove buttons with confirmation dialogs
-- **Real-time Updates**: Automatic refresh every 5 seconds
+Displays all containers in a responsive table layout with intelligent action buttons:
+- **Status Indicators**: Real-time visual badges (🟢 running, 🔴 stopped, 🟡 paused)
+- **Container Information**: Name, image, status, ports, and creation time
+- **Smart Actions**: Context-aware buttons that adapt to container state
+- **Real-time Updates**: Live status monitoring with WebSocket integration
+- **Detailed View**: Click any container for comprehensive details
 
-### **Container Operations**
-Interactive buttons for each container:
-- **▶️ Start** - Start a stopped container with instant feedback
-- **⏸️ Stop** - Gracefully stop a running container  
-- **🗑️ Remove** - Delete container with confirmation dialog
-- **📋 Logs** - View real-time container logs (if supported)
-- **🔄 Auto-refresh** - Live status updates without manual refresh
+### **Container Details View**
+Enhanced container inspection with tabbed interface:
+- **📊 Overview** - Complete container metadata and configuration
+- **📝 Logs** - Real-time log streaming with auto-scroll and download
+- **📁 Files** - Container filesystem browser and file operations
+- **💻 Terminal** - Interactive shell access with auto-connect
+- **🔧 Environment** - Environment variables display and management
+- **� Volumes** - Mount points and volume information
+- **🌐 Network** - Networking configuration and port mappings
+- **� Statistics** - Resource usage monitoring and metrics
 
-### **Container Cards**
-```
-┌─────────────────────────────────────┐
-│ 📦 container-name          🟢 Running │
-│ Image: nginx:latest                   │
-│ Created: 2 hours ago                  │
-│ [▶️] [⏸️] [🗑️] [📋]                 │
-└─────────────────────────────────────┘
-```
+### **Intelligent Container Actions**
+Action buttons adapt dynamically based on container state:
+
+**For Running Containers:**
+- **⏸️ Stop** - Gracefully stop the container
+- **🔄 Restart** - Restart the container with current configuration
+
+**For Stopped Containers:**
+- **▶️ Start** - Start the container
+- **🗑️ Remove** - Delete the container with confirmation
+
+### **Interactive Terminal**
+Full-featured terminal interface with:
+- **Auto-Connect**: Automatically connects when accessing terminal tab
+- **Real Shell Prompt**: Displays `user@hostname:path$ ` format
+- **Command History**: Navigate previous commands with arrow keys
+- **Live Output**: Real-time command execution and output display
+- **Multiple Shells**: Supports bash, sh, and zsh shells
+
+### **Real-time Log Streaming**
+Advanced logging capabilities:
+- **Live Streaming**: WebSocket-based real-time log updates
+- **Persistent Logs**: Logs maintain content when switching tabs
+- **Auto-scroll**: Automatic scrolling to latest log entries
+- **Download Logs**: Export logs to local file system
+- **Clear Display**: Clean, formatted log presentation
 
 ## 🖼️ Image Management
 
@@ -120,11 +141,25 @@ Displays system information:
 - **Error Handling**: Comprehensive error messages and validation
 - **CORS Support**: Cross-origin requests for development
 
-### **pywebview Frontend**
-- **Native Integration**: Desktop window with web technologies
+### **Frontend Architecture**
+- **Modular Components**: 7 specialized JavaScript components for maintainable code
+  - `ServinGUI.js`: Main application controller and coordinator
+  - `ContainerDetails.js`: Container inspection and management
+  - `Logs.js`: Real-time log streaming and display
+  - `Terminal.js`: Interactive container terminal sessions
+  - `FileExplorer.js`: Container filesystem navigation
+  - `APIClient.js`: HTTP API communication layer
+  - `SocketManager.js`: WebSocket connection management
+- **CSS Framework**: 8 dedicated CSS modules for consistent styling
+  - Component-specific stylesheets with CSS custom properties
+  - Responsive design patterns and mobile-first approach
+  - Dark theme with consistent color palette and typography
+
+### **pywebview Integration**
+- **Native Desktop**: Desktop window with web technologies
 - **Cross-platform**: Consistent experience across operating systems
-- **Web Standards**: Modern HTML5, CSS3, and JavaScript
-- **Responsive Design**: Adapts to different window sizes
+- **Web Standards**: Modern HTML5, CSS3, and ES6+ JavaScript
+- **Responsive Design**: Adapts to different window sizes and screen densities
 
 ### **Binary Distribution**
 - **PyInstaller Compilation**: Single-file executable with embedded Python
@@ -199,6 +234,38 @@ The GUI communicates with Servin through these endpoints:
 - **Lazy Loading**: Efficient data fetching and caching
 - **Local State**: Maintains UI state between operations
 - **Fast Startup**: Binary launches in under 2 seconds
+
+## 🆕 Recent Enhancements
+
+### **UI/UX Improvements**
+- **Responsive Headers**: Container details headers now properly handle text overflow with ellipsis
+- **Enhanced Buttons**: Container action buttons adapt intelligently to container state
+- **Improved Styling**: Consistent spacing, typography, and color scheme across all components
+- **Mobile Responsive**: Better layout adaptation for different screen sizes
+
+### **Terminal Enhancements**
+- **Auto-Connect**: Terminal automatically connects without manual shell selection
+- **Realistic Prompt**: Enhanced shell prompt display with proper user@container format
+- **Better Session Management**: Improved connection handling and error recovery
+- **Command History**: Previous commands are preserved during session
+
+### **Log Management**
+- **Persistent Logs**: Log content persists when switching between tabs
+- **Streaming Optimization**: Real-time log streaming with efficient data handling
+- **Better Error Handling**: Improved handling of log retrieval failures
+- **Search Integration**: Log content remains searchable and scrollable
+
+### **Container Details**
+- **Enhanced Tabs**: All tabs (logs, files, exec, env, volumes, network, stats) now work consistently
+- **Environment Variables**: Fixed display of complex environment objects
+- **Action Intelligence**: Container buttons show relevant actions based on current state
+- **Data Persistence**: Tab content maintains state when switching views
+
+### **Architecture Updates**
+- **Modular Components**: 7 specialized JavaScript components for maintainability
+- **CSS Framework**: 8 dedicated CSS modules for consistent styling
+- **API Optimization**: Improved data fetching and response handling
+- **Component Communication**: Enhanced inter-component messaging and state management
 
 ## 🚀 Installation Methods
 

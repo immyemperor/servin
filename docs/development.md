@@ -715,6 +715,204 @@ git push origin feature/my-feature
 - [ ] Error handling is appropriate
 - [ ] Logging is adequate
 
+## GUI Development
+
+### Architecture Overview
+
+The Servin Desktop GUI is built with a modern web stack:
+
+**Backend**: Flask REST API server providing container management endpoints
+**Frontend**: Modular JavaScript components with responsive CSS design
+**Integration**: pywebview for native desktop application experience
+**Distribution**: PyInstaller for cross-platform binary compilation
+
+### Component Structure
+
+The GUI consists of 7 main JavaScript components:
+
+```javascript
+// Core application controller
+static/js/core/ServinGUI.js          // Main app initialization and coordination
+
+// Feature components
+static/js/components/ContainerDetails.js  // Container inspection and management
+static/js/components/Logs.js             // Real-time log streaming
+static/js/components/Terminal.js         // Interactive container terminal
+static/js/components/FileExplorer.js     // Container filesystem browser
+
+// Infrastructure components
+static/js/components/APIClient.js        // HTTP API communication
+static/js/components/SocketManager.js    // WebSocket connection management
+```
+
+### CSS Framework
+
+Organized styling with 8 CSS modules:
+
+```css
+static/css/core/base.css              // Base styles and CSS custom properties
+static/css/core/layout.css            // Main layout and responsive grid
+static/css/components/container.css    // Container list and cards
+static/css/components/container-details.css  // Detailed container view
+static/css/components/terminal.css     // Terminal styling
+static/css/components/logs.css         // Log display styling
+static/css/components/forms.css        // Form controls and inputs
+static/css/components/buttons.css      // Button styles and states
+```
+
+### Development Workflow
+
+Set up GUI development environment:
+
+```bash
+# Navigate to GUI directory
+cd cmd/servin-gui
+
+# Install Python dependencies
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+pip install -r requirements.txt
+
+# Run in development mode
+python main.py --dev
+
+# Test with browser fallback
+python demo.py
+```
+
+### Adding New Features
+
+#### 1. Backend API Endpoint
+
+Add new Flask routes in `main.py`:
+
+```python
+@app.route('/api/containers/<container_id>/custom', methods=['GET'])
+def get_container_custom(container_id):
+    try:
+        # Call servin binary for data
+        result = subprocess.run([
+            servin_binary, 'inspect', container_id, '--format', 'json'
+        ], capture_output=True, text=True, check=True)
+        
+        data = json.loads(result.stdout)
+        return jsonify(data)
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': str(e)}), 500
+```
+
+#### 2. Frontend Component
+
+Create new component file `static/js/components/NewFeature.js`:
+
+```javascript
+class NewFeature {
+    constructor(apiClient) {
+        this.apiClient = apiClient;
+        this.initialize();
+    }
+
+    initialize() {
+        this.setupEventListeners();
+        this.loadData();
+    }
+
+    async loadData() {
+        try {
+            const response = await this.apiClient.request('/api/containers/data');
+            this.renderData(response);
+        } catch (error) {
+            console.error('Failed to load data:', error);
+        }
+    }
+
+    renderData(data) {
+        // Update DOM with data
+    }
+
+    setupEventListeners() {
+        // Add event handlers
+    }
+}
+```
+
+#### 3. CSS Styling
+
+Add component styles in `static/css/components/new-feature.css`:
+
+```css
+.new-feature {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+}
+
+.new-feature__header {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.new-feature__content {
+    background: var(--color-surface-secondary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+}
+```
+
+### Testing GUI Components
+
+Test individual components:
+
+```bash
+# Run Flask server only (backend testing)
+python main.py --no-gui
+
+# Test with different browsers
+BROWSER=firefox python demo.py
+BROWSER=chrome python demo.py
+
+# Test binary distribution
+./build-gui.sh
+./bin/servin-gui
+```
+
+### Building and Distribution
+
+Create distributable binaries:
+
+```bash
+# Build for current platform
+./build-gui.sh
+
+# Build for all platforms (requires setup)
+./build-all.sh
+
+# Manual PyInstaller build
+pyinstaller --onefile --windowed \
+  --add-data "static:static" \
+  --add-data "templates:templates" \
+  main.py
+```
+
+### Debugging Tips
+
+**Component Issues**:
+- Use browser developer tools for JavaScript debugging
+- Check console for API errors and component initialization
+- Verify CSS with inspector tools
+
+**Backend Issues**:
+- Enable Flask debug mode with `--dev` flag
+- Check terminal output for Python errors
+- Verify servin binary path and permissions
+
+**WebSocket Issues**:
+- Monitor network tab for WebSocket connections
+- Check SocketManager connection state
+- Verify terminal and log streaming functionality
+
 ## API Development
 
 ### Adding New Endpoints

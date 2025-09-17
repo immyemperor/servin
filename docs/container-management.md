@@ -582,4 +582,72 @@ servin run -d \
   myapp:latest
 ```
 
-This comprehensive container management guide covers all aspects of working with containers in Servin, from basic operations to advanced configurations and best practices.
+## 🖥️ GUI Management Interface
+
+### Desktop GUI Features
+
+The Servin Desktop GUI provides a comprehensive visual interface for container management:
+
+#### **Container Dashboard**
+- **Live Status Display**: Real-time container status with automatic refresh
+- **Responsive Table**: Container list with name, image, status, ports, and created time
+- **Smart Actions**: Context-aware buttons that adapt to container state
+  - **Running containers**: Stop, Restart, View Details
+  - **Stopped containers**: Start, Delete, View Details
+- **Quick Operations**: One-click container management without command line
+
+#### **Container Details View**
+- **Tabbed Interface**: Organized information across multiple tabs
+  - **Logs**: Real-time log streaming with search and filtering
+  - **Files**: Container filesystem browser and file operations
+  - **Exec**: Interactive terminal sessions within containers
+  - **Environment**: Environment variables and configuration display
+  - **Volumes**: Volume mount information and management
+  - **Network**: Network configuration and port mappings
+  - **Stats**: Resource usage monitoring and performance metrics
+
+#### **Interactive Terminal**
+- **Auto-Connect**: Automatic connection to container shell
+- **Realistic Prompt**: Enhanced shell prompt with proper user@container format
+- **Command History**: Previous commands preserved during session
+- **Session Management**: Robust connection handling and error recovery
+
+#### **Real-time Log Streaming**
+- **Live Updates**: Continuous log streaming from running containers
+- **Persistent Display**: Log content persists when switching between tabs
+- **Search Integration**: Searchable and scrollable log content
+- **Error Handling**: Graceful handling of log retrieval failures
+
+#### **Enhanced User Experience**
+- **Responsive Design**: Adapts to different window sizes and screen densities
+- **Dark Theme**: Modern dark interface with consistent styling
+- **Mobile Support**: Touch-friendly interface for tablet use
+- **Keyboard Navigation**: Full keyboard accessibility support
+
+### Launching the GUI
+
+Access the desktop interface through multiple methods:
+
+```bash
+# Launch GUI directly
+servin-gui
+
+# Launch through main CLI
+servin gui
+
+# Launch with custom port
+servin gui --port 8080
+
+# Launch in development mode
+servin gui --dev
+```
+
+### Integration with CLI
+
+The GUI seamlessly integrates with CLI operations:
+- **Real-time Sync**: Changes made via CLI are immediately reflected in GUI
+- **Bi-directional Control**: Perform operations through either interface
+- **Consistent State**: Shared state management between CLI and GUI
+- **API Compatibility**: GUI uses the same APIs as CLI commands
+
+This comprehensive container management guide covers all aspects of working with containers in Servin, from command-line operations to modern GUI interfaces, providing flexibility for users of all preferences and workflows.
