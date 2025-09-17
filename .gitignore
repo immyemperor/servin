@@ -100,4 +100,66 @@ _cgo_export.*
 go.work
 go.work.sum
 
+# Servin binaries
 servin*
+servin-desktop*
+servin-tui*
+servin-gui*
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# Python environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+.virtualenv/
+
+# PyInstaller
+*.spec
+build/
+dist/
+
+# Container runtime data
+.servin/
+containers/
+images/
+volumes/
+networks/
+registry/
+
+# VM related files
+vm-running
+*.vm
+vm-state/
+vm-logs/
+
+# Development and testing
+server.log
+*.debug
+debug.html
+test-output/
+coverage/
+
+# Backup files with extensions
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+
+# Platform specific build artifacts
+build-*
+dist-*
+packages/
+
+# Installation artifacts
+install.log
+setup.log
