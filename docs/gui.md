@@ -1,6 +1,35 @@
 ---
 layout: default
-title: Desktop GUI Application
+title: Desktop GUI Applicat- **💻 Terminal** - Interactive shell access with auto-connect
+- **🔧 Environment** - Environment variables display and management
+- **📁 Volumes** - Mount points and volume information
+
+### **Enhanced Terminal Integration**
+The GUI features advanced terminal capabilities with seamless container integration:
+
+- **⚡ Auto-Connect** - Automatically establishes terminal sessions when container details are viewed
+- **🔄 Real-time Interaction** - Live bidirectional terminal sessions with container shells
+- **📚 Command History** - Navigate previous commands with up/down arrow keys
+- **🎨 Enhanced UI** - Professional terminal styling with VS Code-inspired design
+- **🔌 WebSocket Integration** - Real-time terminal output streaming
+- **📝 Session Management** - Automatic connection/disconnection with container lifecycle
+
+### **Terminal Features**
+```
+┌─────────────────────────────────────┐
+│ 💻 Container Terminal                │
+│ ◉ Connected to alpine-container      │
+│                                     │
+│ $ ls -la                            │
+│ total 8                             │
+│ drwxr-xr-x    1 root     root     4096 │
+│ drwxr-xr-x    1 root     root     4096 │
+│ -rw-r--r--    1 root     root        0 │
+│                                     │
+│ $ _                                 │
+│ [🔌 Connect] [📋 Clear] [⬇️ Download] │
+└─────────────────────────────────────┘
+```
 permalink: /gui/
 ---
 
@@ -118,7 +147,43 @@ Shows persistent volumes with:
 - **� Inspect** - View volume details and mount information
 - **🔄 Refresh** - Update volume list
 
-## 📊 System Information
+## � VM Engine Management
+
+### **Enhanced VM Engine Dashboard**
+The GUI features a comprehensive VM engine management interface with real-time monitoring:
+
+- **🟢 Live Status Indicators** - Color-coded engine status (running/stopped/starting)
+- **⚡ Real-time Updates** - Automatic status polling with visual feedback
+- **🎛️ Engine Controls** - Start, stop, and restart VM engine operations
+- **📊 Engine Information** - Provider details, platform info, and connection status
+- **🔄 Smart Button States** - Context-aware controls that adapt to engine state
+
+### **VM Status Display**
+```
+┌─────────────────────────────────────┐
+│ 🚀 VM Engine Status                  │
+│ ● Running    🟢 Development (Simulated) │
+│ Platform: macOS                       │
+│ Provider: Universal Development       │
+│ Containers: 3                         │
+│ [⏹️ Stop] [🔄 Restart]                │
+└─────────────────────────────────────┘
+```
+
+### **Engine Operations**
+- **▶️ Start Engine** - Initialize VM with visual progress feedback
+- **⏹️ Stop Engine** - Graceful shutdown with status confirmation
+- **🔄 Restart Engine** - Combined stop and start operation
+- **📊 Status Monitoring** - Continuous health checking and state updates
+- **🎨 Visual Feedback** - Toast notifications for operation results
+
+### **Cross-Platform VM Support**
+- **🌐 Universal Provider** - Consistent behavior across Windows, Linux, and macOS
+- **💾 State Persistence** - Engine state maintained across application restarts
+- **🔧 Development Mode** - Simplified VM for testing and development workflows
+- **⚡ Auto-Connect** - Seamless terminal integration when engine is available
+
+## �📊 System Information
 
 ### **Runtime Status**
 Displays system information:
@@ -213,6 +278,10 @@ The GUI communicates with Servin through these endpoints:
 | `/api/volumes` | GET | List volumes |
 | `/api/volumes` | POST | Create volume |
 | `/api/system/info` | GET | System information |
+| `/api/vm/status` | GET | VM engine status and information |
+| `/api/vm/start` | POST | Start VM engine |
+| `/api/vm/stop` | POST | Stop VM engine |
+| `/api/vm/restart` | POST | Restart VM engine |
 
 ## 🎨 User Experience
 

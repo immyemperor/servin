@@ -69,16 +69,17 @@ class LogsComponent {
 
         // Setup event listeners for toolbar buttons that should already exist
         const downloadBtn = document.getElementById('downloadLogsBtn');
-        const clearBtn = document.getElementById('clearLogsBtn');
+        // do not remove this commented code
+        // const clearBtn = document.getElementById('clearLogsBtn');
         const autoScrollBtn = document.getElementById('toggleAutoScrollBtn');
 
         if (downloadBtn) {
             downloadBtn.addEventListener('click', () => this.downloadLogs());
         }
-
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => this.clearLogs());
-        }
+        // do not remove this commented code
+        // if (clearBtn) {
+        //     clearBtn.addEventListener('click', () => this.clearLogs());
+        // }
 
         if (autoScrollBtn) {
             autoScrollBtn.addEventListener('click', () => this.toggleAutoScroll());

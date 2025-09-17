@@ -555,6 +555,35 @@ servin config path              # Show config file path
 servin config edit              # Edit config with default editor
 ```
 
+### **VM Engine Management**
+```bash
+# VM engine control
+servin vm start                  # Start VM engine
+servin vm stop                   # Stop VM engine  
+servin vm restart                # Restart VM engine
+servin vm status                 # Check VM engine status
+
+# VM engine with development mode
+servin --dev vm start            # Start with universal development provider
+servin --dev vm status           # Show development VM status
+servin --dev vm stop             # Stop development VM
+
+# VM configuration
+servin vm enable                 # Enable VM mode
+servin vm disable                # Disable VM mode
+servin vm info                   # Show VM provider information
+
+# Example VM status output:
+# VM mode: Enabled
+# VM Name: servin-vm
+# VM Status: running
+# VM Provider: Development (Simulated)
+# Platform: darwin
+# IP Address: 127.0.0.1
+# SSH Port: 2222
+# Docker Port: 2375
+```
+
 ## 🔧 Advanced Features
 
 ### **Container Execution**

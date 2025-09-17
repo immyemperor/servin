@@ -1,0 +1,374 @@
+/* VM Engine Dashboard Styles */
+
+.vm-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 20px;
+}
+
+.status-indicator-large.stopped .status-dot {
+    background: var(--danger-color);
+}
+
+.status-indicator-large.starting .status-dot {
+    background: var(--warning-color);
+    animation: pulse 1.5s infinite;
+}
+
+/* Engine Status Indicator */
+.engine-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.engine-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+.engine-status.running .engine-status-indicator {
+    background: var(--success-color);
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.4);
+}
+
+.engine-status.stopped .engine-status-indicator {
+    background: var(--danger-color);
+    box-shadow: 0 0 6px rgba(248, 81, 73, 0.4);
+}
+
+.engine-status.disabled .engine-status-indicator {
+    background: var(--text-secondary);
+}
+
+.engine-status.starting .engine-status-indicator {
+    background: var(--warning-color);
+    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 6px rgba(255, 140, 0, 0.4);
+}
+
+.engine-status #vmEngineText {
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.engine-status.running #vmEngineText {
+    color: var(--success-color);
+}
+
+.engine-status.stopped #vmEngineText {
+    color: var(--danger-color);
+}
+
+.engine-status.disabled #vmEngineText {
+    color: var(--text-secondary);
+}
+
+.engine-status.starting #vmEngineText {
+    color: var(--warning-color);
+}
+
+.vm-status-card,
+.vm-controls,
+.vm-info-card,
+.vm-logs-card {
+    background: var(--secondary-bg);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* VM Status Card */
+.vm-status-card {
+    grid-column: 1 / -1;
+}
+
+.status-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.status-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-color);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.status-info h3 {
+    margin: 0 0 4px 0;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.status-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.status-indicator-large {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-indicator-large .status-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--border-color);
+    transition: background-color 0.3s ease;
+}
+
+.status-indicator-large.running .status-dot {
+    background: var(--success-color);
+    box-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+}
+
+.status-indicator-large.stopped .status-dot {
+    background: var(--danger-color);
+}
+
+.status-indicator-large.starting .status-dot {
+    background: var(--warning-color);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Status Details */
+.status-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--primary-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.detail-label {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: monospace;
+    font-weight: 600;
+}
+
+/* VM Controls */
+.control-group {
+    margin-bottom: 24px;
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+.control-group h4 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.button-group .action-btn {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+}
+
+.button-group .action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.button-group .action-btn i {
+    width: 16px;
+    text-align: center;
+}
+
+/* VM Info Card */
+.vm-info-card {
+    grid-column: 1 / -1;
+}
+
+.vm-info-card h4 {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 8px;
+}
+
+.benefits-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.benefits-list li i {
+    color: var(--success-color);
+    font-size: 12px;
+}
+
+/* VM Logs Card */
+.vm-logs-card {
+    grid-column: 1 / -1;
+}
+
+.vm-logs-card h4 {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logs-container {
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    height: 200px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.logs-content {
+    height: 100%;
+    overflow-y: auto;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.log-placeholder {
+    color: var(--text-secondary);
+    font-style: italic;
+    margin: 0;
+}
+
+.logs-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.action-btn.small {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+/* Action Button Variants */
+.action-btn.success {
+    background: var(--success-color);
+    color: white;
+    border: 1px solid var(--success-color);
+}
+
+.action-btn.success:hover:not(:disabled) {
+    background: #059669;
+    border-color: #059669;
+}
+
+.action-btn.warning {
+    background: var(--warning-color);
+    color: white;
+    border: 1px solid var(--warning-color);
+}
+
+.action-btn.warning:hover:not(:disabled) {
+    background: #d97706;
+    border-color: #d97706;
+}
+
+.action-btn.danger {
+    background: var(--danger-color);
+    color: white;
+    border: 1px solid var(--danger-color);
+}
+
+.action-btn.danger:hover:not(:disabled) {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .vm-dashboard {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 16px;
+    }
+    
+    .vm-status-card,
+    .vm-info-card,
+    .vm-logs-card {
+        grid-column: 1;
+    }
+    
+    .status-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .benefits-list {
+        grid-template-columns: 1fr;
+    }
+}

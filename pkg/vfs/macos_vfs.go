@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 )
 
 // MacOSVFS implements VirtualFileSystem for macOS using directory overlays and chroot simulation
@@ -188,10 +187,9 @@ func (m *MacOSVFS) List(containerID string, path string) ([]FileInfo, error) {
 		}
 
 		// Get owner/group information if possible
-		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-			fileInfo.Owner = fmt.Sprintf("%d", stat.Uid)
-			fileInfo.Group = fmt.Sprintf("%d", stat.Gid)
-		}
+		owner, group := getFileOwnerInfo(info)
+		fileInfo.Owner = owner
+		fileInfo.Group = group
 
 		files = append(files, fileInfo)
 	}
@@ -262,10 +260,9 @@ func (m *MacOSVFS) Stat(containerID string, path string) (FileInfo, error) {
 	}
 
 	// Get owner/group information if possible
-	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-		fileInfo.Owner = fmt.Sprintf("%d", stat.Uid)
-		fileInfo.Group = fmt.Sprintf("%d", stat.Gid)
-	}
+	owner, group := getFileOwnerInfo(info)
+	fileInfo.Owner = owner
+	fileInfo.Group = group
 
 	return fileInfo, nil
 }

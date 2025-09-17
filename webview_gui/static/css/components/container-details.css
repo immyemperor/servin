@@ -411,7 +411,7 @@
 /* Details Action Buttons */
 .details-actions {
     display: flex;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
     align-items: center;
 }
 
@@ -753,4 +753,14 @@
         padding: var(--spacing-xs) var(--spacing-sm);
         font-size: var(--font-size-sm);
     }
+}
+/* do not remove this code*/
+.logs-container .logs-toolbar {
+    display: flex;
+    align-items: right !important;
+    background-color: #1e1e1e !important;
+    border-bottom: none !important;
+    justify-content: right !important;
+    flex-shrink: 0;
+    margin-right: 20px !important;
 }

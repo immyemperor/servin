@@ -14,6 +14,7 @@
 @import url('./components/modals.css');
 @import url('./components/container-details.css');
 @import url('./components/tabs.css');
+@import url('./components/vm.css');
 
 /* Utility styles - must come last for proper cascade */
 @import url('./utils/utilities.css');

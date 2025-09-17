@@ -421,10 +421,27 @@ class ContainerDetails {
         if (!this.currentContainerId) return;
         
         try {
-            await this.apiClient.startContainer(this.currentContainerId);
-            UIHelpers.showToast('Container started successfully', 'success');
-            // Refresh container details
-            setTimeout(() => this.show(this.currentContainerId), 1000);
+            const response = await this.apiClient.startContainer(this.currentContainerId);
+            
+            // Check if we got the new container information
+            if (response.success && response.new_container) {
+                UIHelpers.showToast('Container started successfully', 'success');
+                
+                // Update to show the new container
+                this.currentContainerId = response.new_container.id;
+                
+                // Refresh container details with the new container ID
+                setTimeout(() => this.show(this.currentContainerId), 1000);
+                
+                // Also notify parent component to refresh the container list
+                if (this.onContainerUpdated) {
+                    this.onContainerUpdated();
+                }
+            } else {
+                // Fallback for old response format or no new container info
+                UIHelpers.showToast('Container started successfully', 'success');
+                setTimeout(() => this.show(this.currentContainerId), 1000);
+            }
         } catch (error) {
             console.error('Failed to start container:', error);
             UIHelpers.showToast('Failed to start container', 'error');

@@ -1,8 +1,10 @@
-# Servin - Cross-Platform Container Runtime
+# Servin - Open-Source Cross-Platform Container Runtime
 
 ## Overview
 
-Servin is a lightweight container runtime built from scratch in Go that provides comprehensive containerization capabilities with cross-platform support for development and production environments. It includes advanced security features such as user namespaces, rootless containers, and local registry support.
+Servin is a **free and open-source** lightweight container runtime built from scratch in Go that provides comprehensive containerization capabilities with cross-platform support for development and production environments. As an open-source project, Servin includes advanced security features such as user namespaces, rootless containers, and local registry support, with full transparency and community-driven development.
+
+**🔓 Open Source License**: Servin is released under an open-source license, allowing free use, modification, and distribution for both personal and commercial projects.
 
 ## � Quick Installation
 
@@ -244,24 +246,62 @@ servin --log-file PATH COMMAND     # Specify custom log file
 ### Feature Matrix
 | Feature | Linux | Windows | macOS |
 |---------|-------|---------|-------|
+| **Core Runtime** | | | |
 | Namespaces | ✅ | ❌ (simulated) | ❌ (simulated) |
 | Cgroups | ✅ | ❌ | ❌ |
-| Networking | ✅ | ❌ | ❌ |
 | User Namespaces | ✅ | ❌ | ❌ |
-| Security Isolation | ✅ | ⚠️ (basic) | ⚠️ (basic) |
 | Rootless Containers | ✅ | ❌ | ❌ |
+| Security Isolation | ✅ | ⚠️ (basic) | ⚠️ (basic) |
 | Container Management | ✅ | ✅ | ✅ |
+| Container Simulation | ✅ | ✅ | ✅ |
+| **Images & Registry** | | | |
 | Image Management | ✅ | ✅ | ✅ |
 | Image Building | ✅ | ✅ | ✅ |
-| Volume Management | ✅ | ✅ | ✅ |
-| Compose Orchestration | ✅ | ✅ | ✅ |
+| Multi-Architecture | ✅ | ✅ | ✅ |
 | Local Registry | ✅ | ✅ | ✅ |
 | Registry Push/Pull | ✅ | ✅ | ✅ |
-| CRI Compatibility | ✅ | ✅ | ✅ |
-| Desktop Interface | ✅ | ✅ | ✅ |
+| Image Security Scan | ✅ | ✅ | ✅ |
+| **Storage & Network** | | | |
+| Volume Management | ✅ | ✅ | ✅ |
+| Bridge Networking | ✅ | ❌ | ❌ |
+| Port Management | ✅ | ✅ | ✅ |
+| Network Isolation | ✅ | ❌ | ❌ |
+| **Orchestration** | | | |
+| Compose Orchestration | ✅ | ✅ | ✅ |
+| Multi-Container Apps | ✅ | ✅ | ✅ |
+| Service Discovery | ✅ | ✅ | ✅ |
+| **Kubernetes Integration** | | | |
+| CRI v1alpha2 | ✅ | ✅ | ✅ |
+| Pod Sandbox Management | ✅ | ✅ | ✅ |
+| gRPC API Server | ✅ | ✅ | ✅ |
+| Kubelet Integration | ✅ | ✅ | ✅ |
+| **VM Engine** | | | |
+| VM Management | ✅ | ✅ | ✅ |
+| VM Status Monitoring | ✅ | ✅ | ✅ |
+| Cross-Platform VMs | ✅ | ✅ | ✅ |
+| VM Configuration | ✅ | ✅ | ✅ |
+| **User Interfaces** | | | |
+| CLI Interface | ✅ | ✅ | ✅ |
+| Terminal UI (TUI) | ✅ | ✅ | ✅ |
+| Desktop GUI | ✅ | ✅ | ✅ |
+| WebView Interface | ✅ | ✅ | ✅ |
+| **Security Features** | | | |
+| Capability Management | ✅ | ❌ | ❌ |
+| Security Policies | ✅ | ⚠️ (basic) | ⚠️ (basic) |
+| Security Testing | ✅ | ✅ | ✅ |
+| Privilege Dropping | ✅ | ❌ | ❌ |
+| **Monitoring & Logging** | | | |
+| Container Logs | ✅ | ✅ | ✅ |
+| Log Streaming | ✅ | ⚠️ (limited) | ⚠️ (limited) |
+| Health Checks | ✅ | ✅ | ✅ |
+| Metrics Export | ✅ | ✅ | ✅ |
+| Performance Monitoring | ✅ | ✅ | ✅ |
+| Prometheus Integration | ✅ | ✅ | ✅ |
+| **Development & DevOps** | | | |
 | State Persistence | ✅ | ✅ | ✅ |
-| Log Capture | ✅ | ⚠️ (limited) | ⚠️ (limited) |
-| Container Simulation | ✅ | ✅ | ✅ |
+| Development Mode | ✅ | ✅ | ✅ |
+| Cross-Platform Testing | ✅ | ✅ | ✅ |
+| Professional Installers | ✅ | ✅ | ✅ |
 
 ## Development Workflow
 
@@ -371,7 +411,40 @@ servin rm <container_id>
 
 Servin provides a complete foundation for understanding and working with container technologies while offering practical cross-platform development capabilities. It bridges the gap between learning containerization concepts and building production-ready solutions.
 
-## 📚 Learn More
+## � Open Source & Community
+
+### **Why Open Source?**
+Servin is committed to open-source principles, providing:
+- **🔍 Full Transparency**: Complete source code visibility and audit capability
+- **🤝 Community-Driven**: Development guided by community needs and contributions
+- **📚 Educational Value**: Learn containerization by studying real implementation
+- **🔒 No Vendor Lock-in**: Freedom to modify, extend, and distribute
+- **🆓 Always Free**: No licensing fees, premium tiers, or usage restrictions
+
+### **Contributing to Servin**
+We welcome contributions from developers of all skill levels:
+- **🐛 Bug Reports**: Help improve stability and reliability
+- **💡 Feature Requests**: Suggest new capabilities and enhancements
+- **📝 Documentation**: Improve guides, examples, and explanations
+- **💻 Code Contributions**: Implement features, fix bugs, optimize performance
+- **🧪 Testing**: Cross-platform testing and validation
+- **🌐 Translations**: Help make Servin accessible globally
+
+### **Repository & Development**
+- **📦 Source Code**: [https://github.com/immyemperor/servin](https://github.com/immyemperor/servin)
+- **🐛 Issue Tracker**: Report bugs and request features on GitHub
+- **📋 Project Board**: Track development progress and roadmap
+- **🔄 Pull Requests**: Contribute code improvements and new features
+- **📞 Discussions**: Join community discussions and ask questions
+
+### **License & Usage**
+Servin is released under an open-source license that permits:
+- ✅ **Personal Use**: Free for individual developers and personal projects
+- ✅ **Commercial Use**: No restrictions for business and enterprise usage
+- ✅ **Modification**: Adapt and customize for specific needs
+- ✅ **Distribution**: Share modified versions with the community
+
+## �📚 Learn More
 
 - **📖 Full Documentation**: [https://immyemperor.github.io/servin](https://immyemperor.github.io/servin)
 - **🛠️ Installation Guide**: [Installation Instructions](https://immyemperor.github.io/servin/installation/)

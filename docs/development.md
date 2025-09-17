@@ -390,6 +390,133 @@ EXPOSE 2375 2376
 CMD ["./servind"]
 ```
 
+## VM Engine Development
+
+### Universal Development Provider
+
+Servin includes a Universal Development Provider for cross-platform VM development and testing:
+
+```go
+// pkg/vm/universal_development_provider.go
+type UniversalDevelopmentVMProvider struct {
+    config     *VMConfig
+    vmPath     string
+    sshPort    int
+    running    bool
+    containers map[string]*ContainerInfo
+}
+
+// State persistence for development workflows
+func (p *UniversalDevelopmentVMProvider) saveRunningState() error {
+    stateFile := filepath.Join(p.vmPath, "vm-running")
+    if p.running {
+        return os.WriteFile(stateFile, []byte("running"), 0644)
+    } else {
+        os.Remove(stateFile)
+        return nil
+    }
+}
+```
+
+### Development Mode Features
+
+When using `--dev` flag, Servin provides enhanced development capabilities:
+
+```bash
+# Enable development mode with VM simulation
+servin --dev vm start    # Uses universal development provider
+servin --dev vm status   # Shows simulated VM state
+servin --dev vm stop     # Graceful shutdown with state persistence
+
+# Development mode automatically:
+# - Skips root privilege checks on macOS
+# - Uses universal provider across all platforms  
+# - Persists VM state between command invocations
+# - Provides consistent behavior for testing
+```
+
+### Cross-Platform Provider System
+
+The VM system supports multiple providers with automatic platform detection:
+
+```go
+// Development mode provider selection
+func GetVMProvider(config *VMConfig) (VMProvider, error) {
+    if isDevelopmentMode() {
+        // Use universal development provider for all platforms
+        return NewDevelopmentVMProvider(config)
+    }
+    
+    // Production providers (platform-specific)
+    switch runtime.GOOS {
+    case "darwin":
+        return NewVirtualizationFrameworkProvider(config)
+    case "windows": 
+        return NewHyperVProvider(config)
+    case "linux":
+        return NewKVMProvider(config)
+    }
+}
+```
+
+### VM State Management
+
+The development provider includes file-based state persistence:
+
+```bash
+# VM state is stored in:
+~/.servin/dev-vm/servin-vm/vm-running
+
+# State includes:
+# - Running status (file presence indicates running)
+# - Container information (JSON metadata)
+# - Configuration settings (VM config)
+# - Platform information (runtime.GOOS)
+```
+
+### GUI Integration Testing
+
+Test VM functionality with the web GUI:
+
+```bash
+# Start development server with VM support
+cd webview_gui
+python app.py
+
+# Test VM operations:
+# 1. Open http://127.0.0.1:5555
+# 2. Navigate to VM Engine section
+# 3. Test start/stop operations
+# 4. Verify status indicators update correctly
+# 5. Check button state management
+```
+
+### VM Development Workflow
+
+Recommended development workflow for VM features:
+
+```bash
+# 1. Clean development environment
+rm -rf ~/.servin/dev-vm
+
+# 2. Start with fresh VM state
+servin --dev vm status   # Should show stopped
+
+# 3. Test VM operations
+servin --dev vm start    # Should start and persist state
+servin --dev vm status   # Should show running  
+servin --dev vm stop     # Should stop and clear state
+
+# 4. Verify persistence
+servin --dev vm start    # Start again
+# In another terminal:
+servin --dev vm status   # Should show running (persisted)
+
+# 5. Test GUI integration
+cd webview_gui && python app.py
+# Verify web interface reflects correct VM state
+```
+
 ## Testing
 
 ### Unit Tests

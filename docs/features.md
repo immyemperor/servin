@@ -107,6 +107,12 @@ servin networks rm app-net           # Remove network
 - 🗂️ **File Browser** - Container filesystem exploration
 - ⚙️ **Settings Panel** - Runtime configuration management
 - 🎨 **Modern UI** - Clean, professional desktop interface
+- 🚀 **Enhanced VM Engine Status** - Real-time VM engine monitoring with color-coded indicators
+- 🟢 **Live Status Updates** - Automatic refresh of engine state (running/stopped/starting)
+- 🎛️ **VM Control Panel** - Start, stop, and restart VM engine with visual feedback
+- 🔄 **Auto-Connect Terminal** - Seamless terminal integration with automatic VM connection
+- 🌈 **Visual Status Indicators** - Green/red/orange status dots for instant engine state recognition
+- ⚡ **Cross-Platform VM Support** - Universal development provider for consistent behavior across platforms
 
 ## 📦 Installation Options
 

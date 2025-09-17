@@ -98,7 +98,7 @@ func runContainer(cmd *cobra.Command, args []string) error {
 		// Run in background
 		fmt.Printf("%s\n", c.ID)
 		go func() {
-			if err := c.Run(); err != nil {
+			if err := c.RunWithVM(); err != nil {
 				fmt.Printf("Container %s exited with error: %v\n", c.ID[:12], err)
 			}
 		}()
@@ -106,7 +106,7 @@ func runContainer(cmd *cobra.Command, args []string) error {
 	} else {
 		// Show exit instructions for foreground runs
 		fmt.Printf("Starting container... (Press Ctrl+C to exit)\n")
-		return c.Run()
+		return c.RunWithVM()
 	}
 }
 

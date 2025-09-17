@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 )
 
 // LinuxVFS implements VirtualFileSystem for Linux with namespace support
@@ -86,10 +85,9 @@ func (l *LinuxVFS) List(containerID string, path string) ([]FileInfo, error) {
 		}
 
 		// Get owner/group information
-		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-			fileInfo.Owner = fmt.Sprintf("%d", stat.Uid)
-			fileInfo.Group = fmt.Sprintf("%d", stat.Gid)
-		}
+		owner, group := getFileOwnerInfo(info)
+		fileInfo.Owner = owner
+		fileInfo.Group = group
 
 		files = append(files, fileInfo)
 	}
@@ -160,10 +158,9 @@ func (l *LinuxVFS) Stat(containerID string, path string) (FileInfo, error) {
 	}
 
 	// Get owner/group information
-	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-		fileInfo.Owner = fmt.Sprintf("%d", stat.Uid)
-		fileInfo.Group = fmt.Sprintf("%d", stat.Gid)
-	}
+	owner, group := getFileOwnerInfo(info)
+	fileInfo.Owner = owner
+	fileInfo.Group = group
 
 	return fileInfo, nil
 }

@@ -261,22 +261,166 @@ class ServinClient:
         
         raise ServinError(f"Container not found: {container_id}")
     
-    def start_container(self, container_id: str) -> bool:
+    def start_container(self, container_id: str) -> Dict[str, Any]:
         """
-        Start a container
+        Start a stopped container by recreating it with the same configuration
         
         Args:
             container_id: Container ID or name
             
         Returns:
-            True if successful
+            Dictionary with success status and new container information
         """
         try:
-            # Servin doesn't have a separate start command for existing containers
-            # This is a limitation we'll note in the UI
-            raise ServinError("Servin doesn't support starting stopped containers. You need to run a new container.")
+            # First, get the container information to check its current status
+            container = self.get_container(container_id)
+            
+            if container['status'] == 'running':
+                raise ServinError(f"Container {container_id} is already running")
+            
+            # For stopped/exited containers, we need to recreate them
+            # Read the container state from the state file
+            state_info = self._get_container_state(container_id)
+            
+            if not state_info:
+                raise ServinError(f"Could not find state information for container {container_id}")
+            
+            # Remove the old container first
+            self._run_command(["rm", container_id])
+            
+            # Build the run command with the original configuration
+            run_cmd = ["run", "-d"]  # Run in detached mode
+            
+            # Add name
+            if state_info.get('name'):
+                run_cmd.extend(["--name", state_info['name']])
+            
+            # Add hostname  
+            if state_info.get('hostname'):
+                run_cmd.extend(["--hostname", state_info['hostname']])
+                
+            # Add working directory
+            if state_info.get('work_dir') and state_info['work_dir'] != '/':
+                run_cmd.extend(["--workdir", state_info['work_dir']])
+            
+            # Add environment variables
+            if state_info.get('env'):
+                for key, value in state_info['env'].items():
+                    run_cmd.extend(["--env", f"{key}={value}"])
+            
+            # Add volumes
+            if state_info.get('volumes'):
+                for host_path, container_path in state_info['volumes'].items():
+                    run_cmd.extend(["--volume", f"{host_path}:{container_path}"])
+            
+            # Add port mappings
+            if state_info.get('port_mappings'):
+                for port_mapping in state_info['port_mappings']:
+                    if isinstance(port_mapping, dict):
+                        host_port = port_mapping.get('host_port', '')
+                        container_port = port_mapping.get('container_port', '')
+                        protocol = port_mapping.get('protocol', 'tcp')
+                        if host_port and container_port:
+                            run_cmd.extend(["-p", f"{host_port}:{container_port}/{protocol}"])
+            
+            # Add network mode
+            if state_info.get('network_mode') and state_info['network_mode'] != 'bridge':
+                run_cmd.extend(["--network", state_info['network_mode']])
+                
+            # Add resource limits
+            if state_info.get('memory'):
+                run_cmd.extend(["--memory", state_info['memory']])
+            if state_info.get('cpus'):
+                run_cmd.extend(["--cpus", state_info['cpus']])
+            
+            # Add image
+            run_cmd.append(state_info['image'])
+            
+            # Add command and args
+            if state_info.get('command'):
+                run_cmd.append(state_info['command'])
+            
+            if state_info.get('args'):
+                run_cmd.extend(state_info['args'])
+            
+            # Execute the run command
+            result = self._run_command(run_cmd)
+            
+            if result.returncode != 0:
+                raise ServinError(f"Failed to start container: {result.stderr}")
+            
+            # Get the new container ID from the output
+            new_container_id = result.stdout.strip()
+            
+            # Find the new container by name to get complete info
+            new_container = None
+            try:
+                if state_info.get('name'):
+                    new_container = self.get_container(state_info['name'])
+                else:
+                    new_container = self.get_container(new_container_id)
+            except ServinError:
+                # If we can't find it immediately, return basic info
+                new_container = {
+                    'id': new_container_id,
+                    'name': state_info.get('name', ''),
+                    'status': 'created'
+                }
+            
+            return {
+                'success': True,
+                'old_container_id': container_id,
+                'new_container': new_container,
+                'message': f'Container recreated successfully'
+            }
+            
         except Exception as e:
             raise ServinError(f"Failed to start container: {e}")
+    
+    def _get_container_state(self, container_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get container state from the state file
+        
+        Args:
+            container_id: Container ID or name
+            
+        Returns:
+            Container state dictionary or None
+        """
+        try:
+            import json
+            import os
+            import os.path
+            
+            # Get the state directory path
+            home_dir = os.path.expanduser("~")
+            state_dir = os.path.join(home_dir, ".servin", "containers")
+            
+            if not os.path.exists(state_dir):
+                return None
+            
+            # Find the state file for this container
+            # Try both full ID and short ID matches
+            for filename in os.listdir(state_dir):
+                if filename.endswith('.json'):
+                    state_file = os.path.join(state_dir, filename)
+                    try:
+                        with open(state_file, 'r') as f:
+                            state_data = json.load(f)
+                            
+                        # Check if this is the container we're looking for
+                        if (state_data.get('id', '').startswith(container_id) or 
+                            state_data.get('name') == container_id or
+                            filename.startswith(container_id)):
+                            return state_data
+                    except (json.JSONDecodeError, IOError):
+                        continue
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error reading container state: {e}")
+            return None
     
     def stop_container(self, container_id: str) -> bool:
         """

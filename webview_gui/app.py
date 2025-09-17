@@ -67,8 +67,8 @@ def start_container(container_id):
         return jsonify({'error': 'Servin runtime not available'}), 500
     
     try:
-        servin_client.start_container(container_id)
-        return jsonify({'success': True, 'message': f'Container {container_id} started'})
+        result = servin_client.start_container(container_id)
+        return jsonify(result)
     except ServinError as e:
         return jsonify({'error': str(e)}), 500
 
@@ -281,6 +281,196 @@ def create_volume():
         servin_client.create_volume(volume_name)
         return jsonify({'success': True, 'message': f'Volume {volume_name} created successfully'})
     except ServinError as e:
+        return jsonify({'error': str(e)}), 500
+
+# VM Engine Management APIs
+@app.route('/api/vm/status', methods=['GET'])
+def get_vm_status():
+    """Get VM engine status"""
+    if not servin_client:
+        return jsonify({'error': 'Servin runtime not available'}), 500
+    
+    try:
+        # Get the Servin root directory (parent of webview_gui)
+        servin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        # Call servin vm status command using go run
+        result = subprocess.run(['go', 'run', 'main.go', '--dev', 'vm', 'status'], 
+                              cwd=servin_root,
+                              capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            # Parse the status output
+            output_lines = result.stdout.strip().split('\n')
+            status_info = {
+                'available': True,
+                'enabled': False,
+                'running': False,
+                'provider': 'Unknown',
+                'platform': 'Unknown',
+                'containers': 0,
+                'details': {}
+            }
+            
+            for line in output_lines:
+                if 'VM mode:' in line:
+                    status_info['enabled'] = 'Enabled' in line
+                elif 'VM Status:' in line:
+                    status_info['running'] = 'running' in line.lower()
+                elif 'VM Provider:' in line:
+                    status_info['provider'] = line.split(':', 1)[1].strip()
+                elif 'Platform:' in line:
+                    status_info['platform'] = line.split(':', 1)[1].strip()
+                elif 'VM Name:' in line:
+                    status_info['details']['name'] = line.split(':', 1)[1].strip()
+                elif 'IP Address:' in line:
+                    status_info['details']['ip'] = line.split(':', 1)[1].strip()
+                elif 'SSH Port:' in line:
+                    status_info['details']['ssh_port'] = line.split(':', 1)[1].strip()
+                elif 'Docker Port:' in line:
+                    status_info['details']['docker_port'] = line.split(':', 1)[1].strip()
+                elif 'Containers in VM:' in line:
+                    try:
+                        status_info['containers'] = int(line.split(':', 1)[1].strip())
+                    except:
+                        status_info['containers'] = 0
+            
+            return jsonify(status_info)
+        else:
+            return jsonify({'available': False, 'error': result.stderr or 'VM not available'})
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({'available': False, 'error': 'VM status check timeout'})
+    except Exception as e:
+        return jsonify({'available': False, 'error': str(e)})
+
+@app.route('/api/vm/start', methods=['POST'])
+def start_vm():
+    """Start the VM engine"""
+    if not servin_client:
+        return jsonify({'error': 'Servin runtime not available'}), 500
+    
+    try:
+        # Get the Servin root directory (parent of webview_gui)
+        servin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        result = subprocess.run(['go', 'run', 'main.go', '--dev', 'vm', 'start'], 
+                              cwd=servin_root,
+                              capture_output=True, text=True, timeout=60)
+        
+        if result.returncode == 0:
+            return jsonify({'success': True, 'message': 'VM engine started successfully'})
+        else:
+            return jsonify({'error': result.stderr or 'Failed to start VM engine'}), 500
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'VM start timeout - VM may be starting in background'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/vm/stop', methods=['POST'])
+def stop_vm():
+    """Stop the VM engine"""
+    if not servin_client:
+        return jsonify({'error': 'Servin runtime not available'}), 500
+    
+    try:
+        # Get the Servin root directory (parent of webview_gui)
+        servin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        result = subprocess.run(['go', 'run', 'main.go', '--dev', 'vm', 'stop'], 
+                              cwd=servin_root,
+                              capture_output=True, text=True, timeout=30)
+        
+        if result.returncode == 0:
+            return jsonify({'success': True, 'message': 'VM engine stopped successfully'})
+        else:
+            return jsonify({'error': result.stderr or 'Failed to stop VM engine'}), 500
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'VM stop timeout'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/vm/restart', methods=['POST'])
+def restart_vm():
+    """Restart the VM engine"""
+    if not servin_client:
+        return jsonify({'error': 'Servin runtime not available'}), 500
+    
+    try:
+        # Get the Servin root directory (parent of webview_gui)
+        servin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        # Stop first
+        stop_result = subprocess.run(['go', 'run', 'main.go', '--dev', 'vm', 'stop'], 
+                                   cwd=servin_root,
+                                   capture_output=True, text=True, timeout=30)
+        
+        # Wait a moment
+        time.sleep(2)
+        
+        # Start again
+        start_result = subprocess.run(['go', 'run', 'main.go', '--dev', 'vm', 'start'], 
+                                    cwd=servin_root,
+                                    capture_output=True, text=True, timeout=60)
+        
+        if start_result.returncode == 0:
+            return jsonify({'success': True, 'message': 'VM engine restarted successfully'})
+        else:
+            return jsonify({'error': start_result.stderr or 'Failed to restart VM engine'}), 500
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'VM restart timeout'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/vm/enable', methods=['POST'])
+def enable_vm():
+    """Enable VM mode"""
+    if not servin_client:
+        return jsonify({'error': 'Servin runtime not available'}), 500
+    
+    try:
+        # Get the Servin root directory (parent of webview_gui)
+        servin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        result = subprocess.run(['go', 'run', 'main.go', '--dev', 'vm', 'enable'], 
+                              cwd=servin_root,
+                              capture_output=True, text=True, timeout=15)
+        
+        if result.returncode == 0:
+            return jsonify({'success': True, 'message': 'VM mode enabled successfully'})
+        else:
+            return jsonify({'error': result.stderr or 'Failed to enable VM mode'}), 500
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'VM enable timeout'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/vm/disable', methods=['POST'])
+def disable_vm():
+    """Disable VM mode"""
+    if not servin_client:
+        return jsonify({'error': 'Servin runtime not available'}), 500
+    
+    try:
+        # Get the Servin root directory (parent of webview_gui)
+        servin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        result = subprocess.run(['go', 'run', 'main.go', '--dev', 'vm', 'disable'], 
+                              cwd=servin_root,
+                              capture_output=True, text=True, timeout=15)
+        
+        if result.returncode == 0:
+            return jsonify({'success': True, 'message': 'VM mode disabled successfully'})
+        else:
+            return jsonify({'error': result.stderr or 'Failed to disable VM mode'}), 500
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'VM disable timeout'}), 500
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 # System Information APIs

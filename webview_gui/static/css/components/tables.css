@@ -178,7 +178,7 @@
     cursor: pointer;
     transition: all var(--transition-fast);
     font-size: var(--font-size-sm);
-    width: 28px;
+    width: auto;
     height: 28px;
     display: flex;
     align-items: center;
