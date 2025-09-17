@@ -199,21 +199,9 @@ build_webview_gui() {
         return
     fi
     
-    # Build with PyInstaller
+    # Build with PyInstaller using spec file
     echo -e "${YELLOW}  🔨 Building executable with PyInstaller...${NC}"
-    if pyinstaller --clean --onefile --name "$gui_name" \
-        --add-data "templates:templates" \
-        --add-data "static:static" \
-        --hidden-import=flask \
-        --hidden-import=flask_cors \
-        --hidden-import=webview \
-        --hidden-import=tkinter \
-        --exclude-module=matplotlib \
-        --exclude-module=numpy \
-        --exclude-module=pandas \
-        --exclude-module=scipy \
-        --windowed \
-        main.py >/dev/null 2>&1; then
+    if pyinstaller --clean --distpath=dist --workpath=build servin-gui.spec >/dev/null 2>&1; then
         
         # Copy the built executable to the build directory
         if [[ -f "dist/$gui_name" ]]; then

@@ -14,11 +14,40 @@ import subprocess
 import webview
 
 # Add the current directory to Python path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
+# Handle PyInstaller bundled executable paths
+if hasattr(sys, '_MEIPASS'):
+    # Running from PyInstaller bundle
+    current_dir = sys._MEIPASS
+    print(f"🚀 Running from PyInstaller bundle: {current_dir}")
+else:
+    # Running from source
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    print(f"🐍 Running from source: {current_dir}")
+
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-from app import app
+# Debug: Print Python path and current directory for troubleshooting
+print(f"🐍 Python executable: {sys.executable}")
+print(f"📂 Current directory: {current_dir}")
+print(f"📦 Python path: {sys.path[:3]}...")  # Show first 3 entries
+
+# Import Flask app with error handling
+try:
+    from app import app
+    print("✅ Successfully imported Flask app")
+except ImportError as e:
+    print(f"❌ Failed to import app module: {e}")
+    print(f"📂 Looking for app.py in: {current_dir}")
+    print(f"📁 Directory contents: {os.listdir(current_dir)}")
+    # Try to help with debugging
+    if hasattr(sys, '_MEIPASS'):
+        print(f"🔧 PyInstaller temp dir: {sys._MEIPASS}")
+        try:
+            print(f"🔧 PyInstaller temp contents: {os.listdir(sys._MEIPASS)}")
+        except:
+            print("🔧 Could not list PyInstaller temp contents")
+    raise
 
 class ServinDesktopGUI:
     def __init__(self):

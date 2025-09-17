@@ -54,6 +54,10 @@ jobs:
       if: matrix.platform == 'windows'
       shell: powershell
       run: |
+        # Verify Python installation
+        python --version
+        pip --version
+        
         # Install NSIS for installer creation
         choco install nsis -y --no-progress
         # Update PATH for current session
@@ -100,7 +104,23 @@ jobs:
       shell: bash
       run: |
         echo "Building Servin for ${{ matrix.platform }} using build-all.sh..."
-        PLATFORM=${{ matrix.platform }} ./build-all.sh    # Build Windows installer if NSIS is available
+        PLATFORM=${{ matrix.platform }} ./build-all.sh
+        
+    # Verify build outputs
+    - name: Verify build outputs
+      shell: bash
+      run: |
+        echo "Verifying build outputs for ${{ matrix.platform }}..."
+        ls -la build/${{ matrix.platform }}/
+        
+        # Test GUI executable if it exists
+        if [ -f "build/${{ matrix.platform }}/servin-gui" ] || [ -f "build/${{ matrix.platform }}/servin-gui.exe" ]; then
+          echo "Testing GUI executable..."
+          python3 webview_gui/test_executable.py build/${{ matrix.platform }}/servin-gui*
+        else
+          echo "GUI executable not found, checking if build failed..."
+        fi
+        
     - name: Build Windows installer
       if: matrix.platform == 'windows'
       shell: powershell
