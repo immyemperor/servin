@@ -289,13 +289,36 @@ bundle_vm_dependencies() {
     fi
     
     # Download and extract QEMU
-    if curl -L "$qemu_url" -o "$vm_dir/qemu.tar.xz" 2>/dev/null; then
+    print_info "Attempting to download QEMU from: $qemu_url"
+    
+    if curl -L --max-time 300 --retry 3 "$qemu_url" -o "$vm_dir/qemu.tar.xz"; then
+        print_info "QEMU download successful, extracting..."
         cd "$vm_dir"
-        tar -xf qemu.tar.xz --strip-components=1 2>/dev/null || print_warning "Failed to extract QEMU"
-        rm -f qemu.tar.xz
-        print_success "QEMU bundled"
+        
+        if tar -xf qemu.tar.xz --strip-components=1; then
+            rm -f qemu.tar.xz
+            
+            # Verify QEMU extraction was successful
+            if [[ -f "bin/qemu-system-x86_64" ]] || [[ -f "bin/qemu-system-aarch64" ]]; then
+                print_success "QEMU bundled successfully"
+                
+                # Show bundled QEMU size for verification
+                QEMU_SIZE=$(du -sh . | cut -f1)
+                print_info "Bundled QEMU size: $QEMU_SIZE"
+            else
+                print_warning "QEMU extraction verification failed - binary not found"
+                # Create a fallback marker
+                echo "QEMU_FALLBACK=homebrew" > "$vm_dir/qemu-fallback.txt"
+            fi
+        else
+            print_warning "Failed to extract QEMU archive"
+            rm -f qemu.tar.xz
+            echo "QEMU_FALLBACK=homebrew" > "$vm_dir/qemu-fallback.txt"
+        fi
     else
-        print_warning "Failed to download QEMU, will use system installation"
+        print_warning "Failed to download QEMU from $qemu_url"
+        print_info "Package will use system QEMU installation via Homebrew"
+        echo "QEMU_FALLBACK=homebrew" > "$vm_dir/qemu-fallback.txt"
     fi
     
     # Create VM setup script

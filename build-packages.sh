@@ -410,6 +410,31 @@ EOF
     cd "$release_dir"
     find . -type f -name "*.exe" -o -name "*.AppImage" -o -name "*.pkg" -o -name "*.dmg" | xargs sha256sum > checksums.txt 2>/dev/null || true
     
+    # Copy installers to root dist/ directory for GitHub Actions compatibility
+    print_info "Creating GitHub Actions compatible installer copies..."
+    
+    # Windows installer
+    if [[ -f "$release_dir/windows/Servin-Installer-$VERSION.exe" ]]; then
+        cp "$release_dir/windows/Servin-Installer-$VERSION.exe" "$dist_dir/servin_${VERSION}_installer.exe"
+        print_info "Windows installer copied to dist/servin_${VERSION}_installer.exe"
+    fi
+    
+    # Linux AppImage
+    if ls "$release_dir/linux/Servin-"*.AppImage >/dev/null 2>&1; then
+        APPIMAGE_FILE=$(ls "$release_dir/linux/Servin-"*.AppImage | head -1)
+        APPIMAGE_NAME=$(basename "$APPIMAGE_FILE")
+        cp "$APPIMAGE_FILE" "$dist_dir/servin_${VERSION}_installer.AppImage"
+        print_info "Linux AppImage copied to dist/servin_${VERSION}_installer.AppImage"
+    fi
+    
+    # macOS PKG
+    if ls "$release_dir/macos/Servin-"*.pkg >/dev/null 2>&1; then
+        PKG_FILE=$(ls "$release_dir/macos/Servin-"*.pkg | head -1)
+        PKG_NAME=$(basename "$PKG_FILE")
+        cp "$PKG_FILE" "$dist_dir/servin_${VERSION}_installer.pkg"
+        print_info "macOS PKG copied to dist/servin_${VERSION}_installer.pkg"
+    fi
+    
     # Create archive
     print_info "Creating distribution archive..."
     cd "$dist_dir"

@@ -1,0 +1,20 @@
+{
+  "test_name": "Documentation Validation",
+  "timestamp": "2025-09-18T17:56:58+05:30",
+  "duration_seconds": 0,
+  "status": "PASSED",
+  "doc_results": [
+  "README.md:FOUND",
+  "README.md:HAS_INSTALLER_INFO",
+  "docs/:FOUND",
+  "INSTALL.md:FOUND",
+  "INSTALL.md:HAS_INSTALLER_INFO",
+  "BUILD_GUIDE.md:FOUND",
+  "BUILD_GUIDE.md:HAS_INSTALLER_INFO",
+  "installer_docs:FOUND"
+],
+  "details": {
+    "files_checked": 4,
+    "results_count": 8
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "test_name": "VM Dependencies Check",
+  "timestamp": "2025-09-18T17:56:58+05:30",
+  "duration_seconds": 0,
+  "status": "PASSED",
+  "vm_results": [
+  "cmd/vm.go:FOUND",
+  "pkg/vm/:FOUND",
+  "scripts/:FOUND",
+  "vm_linux:FOUND",
+  "vm_macos:FOUND",
+  "vm_windows:FOUND",
+  "container_go.mod:FOUND",
+  "container_main.go:FOUND",
+  "container_cmd/:FOUND",
+  "container_pkg/:FOUND"
+],
+  "details": {
+    "checks_performed": 10,
+    "vm_files_checked": 3,
+    "platforms_checked": 3
+  }
+}

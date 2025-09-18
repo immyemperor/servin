@@ -1,0 +1,14 @@
+{
+  "test_name": "Package Creation Test",
+  "timestamp": "2025-09-18T17:56:58+05:30",
+  "duration_seconds": 0,
+  "status": "FAILED",
+  "build_script_executable": true,
+  "build_execution_success": false,
+  "found_artifacts": [
+  "build:      19",
+  "dist:     123",
+  "packages:       1"
+],
+  "build_output_file": "/Users/akumar/Documents/codebase/servin/test-results/artifacts/build_test_output.log"
+}

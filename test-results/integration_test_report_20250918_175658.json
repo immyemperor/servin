@@ -1,0 +1,111 @@
+{
+  "integration_test_session": {
+    "timestamp": "2025-09-18T17:56:58+05:30",
+    "session_id": "20250918_175658",
+    "total_tests": 5,
+    "test_results": [
+{
+  "test_name": "Build System Validation",
+  "timestamp": "2025-09-18T17:56:58+05:30",
+  "duration_seconds": 0,
+  "status": "PASSED",
+  "found_scripts": [
+  "build-packages.sh",
+  "build.sh",
+  "build-all.sh"
+],
+  "missing_scripts": [
+  ""
+],
+  "details": {
+    "required_scripts": 3,
+    "found_scripts": 3,
+    "missing_scripts": 0
+  }
+}
+,
+{
+  "test_name": "Documentation Validation",
+  "timestamp": "2025-09-18T17:56:58+05:30",
+  "duration_seconds": 0,
+  "status": "PASSED",
+  "doc_results": [
+  "README.md:FOUND",
+  "README.md:HAS_INSTALLER_INFO",
+  "docs/:FOUND",
+  "INSTALL.md:FOUND",
+  "INSTALL.md:HAS_INSTALLER_INFO",
+  "BUILD_GUIDE.md:FOUND",
+  "BUILD_GUIDE.md:HAS_INSTALLER_INFO",
+  "installer_docs:FOUND"
+],
+  "details": {
+    "files_checked": 4,
+    "results_count": 8
+  }
+}
+,
+{
+  "test_name": "GitHub Actions Workflow Validation",
+  "timestamp": "2025-09-18T17:56:58+05:30",
+  "duration_seconds": 0,
+  "status": "PASSED",
+  "workflow_file": ".github/workflows/build-release.yml",
+  "validation_results": [
+  "name::FOUND",
+  "jobs::FOUND",
+  "build::FOUND",
+  "strategy::FOUND",
+  "matrix::FOUND",
+  "verification:FOUND",
+  "platform_windows:FOUND",
+  "platform_linux:FOUND",
+  "platform_mac:FOUND"
+],
+  "details": {
+    "file_exists": true,
+    "checks_performed": 9
+  }
+}
+,
+{
+  "test_name": "Package Creation Test",
+  "timestamp": "2025-09-18T17:56:58+05:30",
+  "duration_seconds": 0,
+  "status": "FAILED",
+  "build_script_executable": true,
+  "build_execution_success": false,
+  "found_artifacts": [
+  "build:      19",
+  "dist:     123",
+  "packages:       1"
+],
+  "build_output_file": "/Users/akumar/Documents/codebase/servin/test-results/artifacts/build_test_output.log"
+}
+,
+{
+  "test_name": "VM Dependencies Check",
+  "timestamp": "2025-09-18T17:56:58+05:30",
+  "duration_seconds": 0,
+  "status": "PASSED",
+  "vm_results": [
+  "cmd/vm.go:FOUND",
+  "pkg/vm/:FOUND",
+  "scripts/:FOUND",
+  "vm_linux:FOUND",
+  "vm_macos:FOUND",
+  "vm_windows:FOUND",
+  "container_go.mod:FOUND",
+  "container_main.go:FOUND",
+  "container_cmd/:FOUND",
+  "container_pkg/:FOUND"
+],
+  "details": {
+    "checks_performed": 10,
+    "vm_files_checked": 3,
+    "platforms_checked": 3
+  }
+}
+    ]
+  }
+}
