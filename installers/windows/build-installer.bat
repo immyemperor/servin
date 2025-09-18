@@ -66,9 +66,12 @@ echo [DEBUG] Available files:
 dir
 
 echo [DEBUG] Running NSIS with command: makensis /NOCD servin-installer.nsi
-makensis /NOCD servin-installer.nsi
+echo [DEBUG] NSIS output:
+makensis /NOCD servin-installer.nsi 2>&1 | tee build.log
 
 echo [DEBUG] NSIS exit code: %errorlevel%
+echo [DEBUG] Build log contents:
+type build.log 2>nul || echo No build log found
 
 if %errorlevel% eq 0 (
     echo.
@@ -98,16 +101,21 @@ if %errorlevel% eq 0 (
         echo [DEBUG] Expected file: servin-installer-1.0.0.exe
         echo [DEBUG] Files matching pattern:
         dir /b *installer*.exe 2>nul || echo No installer files found
+        echo [DEBUG] All .exe files:
+        dir /b *.exe 2>nul || echo No exe files found
         exit /b 1
     )
 ) else (
     echo.
     echo [ERROR] NSIS compilation failed with exit code %errorlevel%
-    echo [DEBUG] Check the NSIS output above for specific errors
-    echo [DEBUG] Common issues:
+    echo [DEBUG] Build log contents:
+    type build.log 2>nul || echo No build log available
+    echo [DEBUG] Common NSIS issues:
     echo   - Missing required files (check servin.exe, servin-tui.exe)
     echo   - Syntax errors in .nsi file
     echo   - Missing NSIS plugins or includes
+    echo   - Icon file format issues
+    echo   - License file encoding problems
     pause
     exit /b 1
 )

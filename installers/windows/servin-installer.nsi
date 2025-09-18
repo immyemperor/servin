@@ -36,15 +36,19 @@ VIAddVersionKey "FileVersion" "1.0.0.0"
 
 # Modern UI configuration
 !define MUI_ABORTWARNING
-!define MUI_ICON "servin.ico"
-!define MUI_UNICON "servin.ico"
+!if /FILEEXISTS "servin.ico"
+  !define MUI_ICON "servin.ico"
+  !define MUI_UNICON "servin.ico"
+!endif
 !define MUI_HEADERIMAGE
 !define MUI_WELCOMEFINISHPAGE_BITMAP_NOSTRETCH
 !define MUI_COMPONENTSPAGE_SMALLDESC
 
 # Installer pages
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "LICENSE.txt"
+!if /FILEEXISTS "LICENSE.txt"
+  !insertmacro MUI_PAGE_LICENSE "LICENSE.txt"
+!endif
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 

@@ -309,60 +309,112 @@ bundle_vm_dependencies() {
     print_header "Bundling VM Dependencies"
     
     local vm_dir="$APPDIR/opt/vm"
-    mkdir -p "$vm_dir/bin" "$vm_dir/share"
+    mkdir -p "$vm_dir/bin" "$vm_dir/share" "$vm_dir/lib"
     
     # Bundle QEMU binaries if available
     if command -v qemu-system-x86_64 >/dev/null 2>&1; then
         print_info "Bundling QEMU binaries..."
         
-        # Copy QEMU system binaries
-        cp "$(which qemu-system-x86_64)" "$vm_dir/bin/" 2>/dev/null && print_success "qemu-system-x86_64 bundled"
-        cp "$(which qemu-img)" "$vm_dir/bin/" 2>/dev/null && print_success "qemu-img bundled"
+        # Copy QEMU system binaries (multiple architectures for completeness)
+        local qemu_binaries=(
+            "qemu-system-x86_64"
+            "qemu-system-i386" 
+            "qemu-img"
+            "qemu-nbd"
+            "qemu-storage-daemon"
+        )
         
-        # Copy QEMU data files
+        for binary in "${qemu_binaries[@]}"; do
+            if command -v "$binary" >/dev/null 2>&1; then
+                cp "$(which $binary)" "$vm_dir/bin/" 2>/dev/null && print_success "$binary bundled"
+            fi
+        done
+        
+        # Copy QEMU data files (comprehensive set)
         local qemu_share_dir="/usr/share/qemu"
         if [[ -d "$qemu_share_dir" ]]; then
             print_info "Bundling QEMU data files..."
             mkdir -p "$vm_dir/share/qemu"
             
-            # Copy essential QEMU files (BIOS, VGA BIOS, etc.)
-            for file in "$qemu_share_dir"/{bios*.bin,vgabios*.bin,efi-*.rom,kvmvapic.bin}; do
-                [[ -f "$file" ]] && cp "$file" "$vm_dir/share/qemu/" 2>/dev/null
+            # Copy all essential QEMU files
+            for pattern in "*.bin" "*.rom" "*.dtb" "*.img"; do
+                find "$qemu_share_dir" -name "$pattern" -exec cp {} "$vm_dir/share/qemu/" \; 2>/dev/null
             done
             
-            # Copy firmware files
-            [[ -d "$qemu_share_dir/firmware" ]] && cp -r "$qemu_share_dir/firmware" "$vm_dir/share/qemu/" 2>/dev/null
+            # Copy firmware and keymaps directories
+            for subdir in firmware keymaps; do
+                [[ -d "$qemu_share_dir/$subdir" ]] && cp -r "$qemu_share_dir/$subdir" "$vm_dir/share/qemu/" 2>/dev/null
+            done
             
             print_success "QEMU data files bundled"
         fi
         
-        # Copy required libraries for QEMU
+        # Bundle comprehensive QEMU libraries
         print_info "Bundling QEMU libraries..."
         local qemu_libs=(
             "libvirglrenderer.so*"
-            "libspice-server.so*"
+            "libspice-server.so*" 
             "libusbredirparser.so*"
             "libcacard.so*"
+            "libfdt.so*"
+            "libpixman-1.so*"
+            "libslirp.so*"
+            "libbrlapi.so*"
+            "libiscsi.so*"
+            "libnfs.so*"
+            "libcurl.so*"
+            "libssh.so*"
+            "libgnutls.so*"
+            "libnettle.so*"
+            "libhogweed.so*"
         )
         
-        mkdir -p "$vm_dir/lib"
         for lib_pattern in "${qemu_libs[@]}"; do
-            find /usr/lib* /lib* -name "$lib_pattern" 2>/dev/null | head -5 | while read lib; do
+            find /usr/lib* /lib* -name "$lib_pattern" 2>/dev/null | head -10 | while read lib; do
                 [[ -f "$lib" ]] && cp "$lib" "$vm_dir/lib/" 2>/dev/null
             done
         done
         
+        # Bundle additional VM tools
+        print_info "Bundling additional VM tools..."
+        local vm_tools=(
+            "socat"
+            "screen" 
+            "minicom"
+            "telnet"
+        )
+        
+        for tool in "${vm_tools[@]}"; do
+            if command -v "$tool" >/dev/null 2>&1; then
+                cp "$(which $tool)" "$vm_dir/bin/" 2>/dev/null && print_success "$tool bundled"
+            fi
+        done
+        
+        # Create a minimal Alpine Linux kernel and initrd for VM bootstrapping
+        print_info "Downloading minimal VM bootstrap components..."
+        local bootstrap_dir="$vm_dir/share/bootstrap"
+        mkdir -p "$bootstrap_dir"
+        
+        # Download Alpine Linux kernel and initrd (smaller footprint)
+        local alpine_version="3.19"
+        local arch="x86_64"
+        local base_url="https://dl-cdn.alpinelinux.org/alpine/v${alpine_version}/releases/${arch}/netboot-${alpine_version}.1"
+        
+        if command -v wget >/dev/null 2>&1; then
+            print_info "Downloading Alpine Linux kernel..."
+            wget -q "${base_url}/vmlinuz-virt" -O "$bootstrap_dir/vmlinuz-virt" 2>/dev/null || print_warning "Kernel download failed"
+            
+            print_info "Downloading Alpine Linux initrd..."
+            wget -q "${base_url}/initramfs-virt" -O "$bootstrap_dir/initramfs-virt" 2>/dev/null || print_warning "Initrd download failed"
+        fi
+        
     else
         print_warning "QEMU not found in system, AppImage will require QEMU installation"
-        # Download minimal QEMU for basic functionality
-        print_info "Downloading minimal QEMU binaries..."
-        
-        local qemu_url="https://github.com/qemu/qemu/releases/download/v8.1.0"
-        # Note: In a real implementation, we'd download or include pre-built QEMU binaries
-        print_warning "QEMU download not implemented - AppImage will be smaller but require system QEMU"
+        # Create placeholder to indicate VM capability
+        echo "VM support available but requires system QEMU installation" > "$vm_dir/README.txt"
     fi
     
-    # Create VM environment setup script
+    # Create comprehensive VM environment setup script
     cat > "$vm_dir/setup-vm-env.sh" << 'EOF'
 #!/bin/bash
 # Setup VM environment for Servin AppImage
@@ -379,10 +431,16 @@ export LD_LIBRARY_PATH="$APPDIR/opt/vm/lib:$LD_LIBRARY_PATH"
 # Set Servin VM configuration
 export SERVIN_VM_QEMU_PATH="$APPDIR/opt/vm/bin/qemu-system-x86_64"
 export SERVIN_VM_QEMU_IMG_PATH="$APPDIR/opt/vm/bin/qemu-img"
+export SERVIN_VM_BOOTSTRAP_DIR="$APPDIR/opt/vm/share/bootstrap"
+
+# Set QEMU system configuration
+export QEMU_SYSTEM_PREFIX="$APPDIR/opt/vm"
 EOF
     chmod +x "$vm_dir/setup-vm-env.sh"
     
-    print_success "VM dependencies bundled"
+    # Calculate and report bundled VM size
+    local vm_size=$(du -sh "$vm_dir" 2>/dev/null | cut -f1 || echo "unknown")
+    print_success "VM dependencies bundled (size: $vm_size)"
 }
 
 # Bundle dependencies
