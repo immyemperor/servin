@@ -291,11 +291,28 @@ create_appimage() {
     
     # Create the AppImage
     print_info "Building AppImage..."
+    print_info "Current directory: $(pwd)"
+    print_info "AppDir location: $APPDIR"
+    
+    # Check if AppDir exists and has content
+    if [[ ! -d "$APPDIR" ]]; then
+        print_error "AppDir not found: $APPDIR"
+        return 1
+    fi
+    
+    print_info "AppDir contents:"
+    ls -la "$APPDIR" || true
     
     # Check if FUSE is available, if not extract appimagetool
     if command -v fusermount >/dev/null 2>&1 || [[ -c "/dev/fuse" ]]; then
         # FUSE is available, run appimagetool normally
-        ARCH="$ARCH" ./tools/appimagetool "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage"
+        print_info "FUSE detected, using standard appimagetool execution"
+        if ARCH="$ARCH" ./tools/appimagetool "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage"; then
+            print_success "AppImage created with FUSE"
+        else
+            print_error "AppImage creation failed with FUSE"
+            return 1
+        fi
     else
         # No FUSE, extract and run appimagetool
         print_warning "FUSE not available, extracting appimagetool..."
@@ -304,6 +321,8 @@ create_appimage() {
         cd tools
         chmod +x appimagetool
         
+        print_info "Attempting appimagetool extraction..."
+        
         # Try extraction with error handling
         if ./appimagetool --appimage-extract >/dev/null 2>&1; then
             print_info "appimagetool extracted successfully"
@@ -311,9 +330,17 @@ create_appimage() {
             print_warning "Standard extraction failed, trying alternative method..."
             # Alternative extraction method for environments without FUSE
             if command -v unsquashfs >/dev/null 2>&1; then
-                unsquashfs -d squashfs-root appimagetool >/dev/null 2>&1 || print_error "Unsquashfs extraction failed"
+                print_info "Using unsquashfs for extraction..."
+                if unsquashfs -d squashfs-root appimagetool >/dev/null 2>&1; then
+                    print_success "Unsquashfs extraction successful"
+                else
+                    print_error "Unsquashfs extraction failed"
+                    cd ..
+                    return 1
+                fi
             else
                 print_error "No extraction method available - install squashfs-tools or enable FUSE"
+                cd ..
                 return 1
             fi
         fi
@@ -321,12 +348,20 @@ create_appimage() {
         if [[ -d "squashfs-root" ]]; then
             # Run the extracted appimagetool
             cd ..
-            ARCH="$ARCH" ./tools/squashfs-root/AppRun "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage"
+            print_info "Running extracted appimagetool..."
+            if ARCH="$ARCH" ./tools/squashfs-root/AppRun "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage"; then
+                print_success "AppImage created with extracted appimagetool"
+            else
+                print_error "AppImage creation failed with extracted appimagetool"
+                rm -rf tools/squashfs-root
+                return 1
+            fi
             
             # Clean up
             rm -rf tools/squashfs-root
         else
             print_error "Failed to extract appimagetool"
+            cd ..
             return 1
         fi
     fi

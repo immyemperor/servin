@@ -146,24 +146,40 @@ build_executables() {
             print_info "Building GUI executable for Windows..."
             
             # Check if Python and PyInstaller are available
-            if command -v python3 >/dev/null 2>&1 && python3 -c "import PyInstaller" 2>/dev/null; then
-                cd webview_gui
+            if command -v python3 >/dev/null 2>&1; then
+                print_info "Python3 found: $(python3 --version)"
                 
-                # Install GUI dependencies if needed
-                python3 -m pip install -r requirements.txt --quiet 2>/dev/null || print_warning "Failed to install GUI requirements"
-                
-                # Build GUI executable
-                python3 -m PyInstaller --clean --onefile servin-gui.spec --distpath "../$output_dir" --workpath "../build/gui-work" --specpath . 2>/dev/null
-                
-                if [[ -f "../$output_dir/$gui_name" ]]; then
-                    print_success "GUI executable built: $gui_name"
+                if python3 -c "import PyInstaller" 2>/dev/null; then
+                    print_info "PyInstaller available"
+                    cd webview_gui
+                    
+                    # Install GUI dependencies if needed
+                    print_info "Installing GUI requirements..."
+                    python3 -m pip install -r requirements.txt --quiet 2>/dev/null || {
+                        print_warning "Failed to install GUI requirements, trying without upgrade"
+                        python3 -m pip install --no-deps -r requirements.txt --quiet 2>/dev/null || print_warning "GUI requirements installation failed"
+                    }
+                    
+                    # Build GUI executable with better error handling
+                    print_info "Building GUI with PyInstaller..."
+                    if python3 -m PyInstaller --clean --onefile servin-gui.spec --distpath "../$output_dir" --workpath "../build/gui-work" --specpath . --log-level WARN 2>&1; then
+                        if [[ -f "../$output_dir/$gui_name" ]]; then
+                            print_success "GUI executable built: $gui_name"
+                        else
+                            print_warning "PyInstaller completed but GUI executable not found at expected location"
+                            ls -la "../$output_dir/" || true
+                        fi
+                    else
+                        print_warning "PyInstaller build failed, installer will be CLI-only"
+                        print_info "This is acceptable - Windows installer will work without GUI"
+                    fi
+                    
+                    cd ..
                 else
-                    print_warning "GUI executable build failed, installer will be CLI-only"
+                    print_warning "PyInstaller not available, skipping GUI build"
                 fi
-                
-                cd ..
             else
-                print_warning "Python3 or PyInstaller not available, skipping GUI build"
+                print_warning "Python3 not available, skipping GUI build"
             fi
         fi
         
@@ -182,7 +198,15 @@ build_windows_installer() {
     # Copy Windows executables
     cp "$SCRIPT_DIR/build/windows-amd64/servin.exe" "$windows_dir/"
     cp "$SCRIPT_DIR/build/windows-amd64/servin-tui.exe" "$windows_dir/" 2>/dev/null || true
-    cp "$SCRIPT_DIR/build/windows-amd64/servin-gui.exe" "$windows_dir/" 2>/dev/null || print_warning "GUI executable not found, building CLI-only installer"
+    
+    # Copy GUI executable if it was built
+    if [[ -f "$SCRIPT_DIR/build/windows-amd64/servin-gui.exe" ]]; then
+        cp "$SCRIPT_DIR/build/windows-amd64/servin-gui.exe" "$windows_dir/"
+        print_success "GUI executable included in Windows installer"
+    else
+        print_warning "GUI executable not found, building CLI-only installer"
+        print_info "Windows installer will work without GUI components"
+    fi
     
     # Check if we can build on this platform
     if [[ "$PLATFORM" == "windows" ]] && command -v makensis >/dev/null 2>&1; then
