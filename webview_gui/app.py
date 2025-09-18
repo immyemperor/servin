@@ -17,7 +17,27 @@ from servin_client import ServinClient, ServinError
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'servin-gui-secret-key'
 CORS(app)  # Enable CORS for all routes
-socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Configure SocketIO with explicit async mode for PyInstaller compatibility
+import sys
+try:
+    # For Windows PyInstaller builds, prefer eventlet
+    if sys.platform.startswith('win') and hasattr(sys, '_MEIPASS'):
+        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=False, engineio_logger=False)
+    else:
+        # Try threading mode first (most compatible with PyInstaller)
+        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+except ValueError:
+    # Fallback to eventlet if available
+    try:
+        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+    except ValueError:
+        # Final fallback to gevent
+        try:
+            socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
+        except ValueError:
+            # Last resort - let it auto-detect but with logger=False
+            socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False)
 
 # Store active log streaming processes
 active_log_streams = {}

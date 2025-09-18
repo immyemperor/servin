@@ -7,7 +7,6 @@ set -e
 BUILD_DIR="dist"
 VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME=$(date +%Y-%m-%dT%H%M%S)
-LDFLAGS="-ldflags \"-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME -s -w\""
 
 # VM Configuration
 VM_IMAGES_DIR="vm-images"
@@ -88,14 +87,14 @@ build_binaries() {
         
         # Build main binary with VM tags
         GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build \
-            $LDFLAGS \
+            -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME -s -w" \
             -tags "vm_enabled,$vm_support" \
             -o "$output_dir/$binary_name" .
         
         # Build desktop GUI
         if [ "$os" != "linux" ] || [ "$arch" = "amd64" ]; then
             GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build \
-                $LDFLAGS \
+                -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME -s -w" \
                 -tags "desktop,vm_enabled" \
                 -o "$output_dir/servin-desktop$([ "$os" = "windows" ] && echo ".exe")" \
                 ./cmd/servin-desktop
@@ -1098,7 +1097,7 @@ enhance_binaries_with_vm() {
         
         # Rebuild with VM support
         GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build \
-            $LDFLAGS \
+            -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME -s -w" \
             -tags "$vm_tags" \
             -o "$build_dir/$binary_name" .
             
