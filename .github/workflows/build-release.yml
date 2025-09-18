@@ -437,11 +437,6 @@ jobs:
               INSTALLER_STRUCTURE_OK=false
               VERIFICATION_PASSED=false
             fi
-              echo "  Payload files: $PAYLOAD_COUNT"
-            else
-              echo "❌ Invalid PKG structure or missing payload"
-              VERIFICATION_PASSED=false
-            fi
             
           else
             echo "❌ Source PKG installer not found"
