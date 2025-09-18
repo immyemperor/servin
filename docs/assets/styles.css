@@ -67,7 +67,6 @@ body {
 
 /* Ensure main content areas have light backgrounds */
 .page-content,
-.wrapper,
 main,
 .content {
   background-color: #ffffff !important;

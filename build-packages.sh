@@ -3,11 +3,28 @@
 # Servin Container Runtime - Cross-Platform Package Builder
 # Builds complete installer packages for Windows, Linux, and macOS with embedded VM dependencies
 
+# Color output functions (defined first)
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+print_success() { echo -e "${GREEN}✓ $1${NC}"; }
+print_warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
+print_error() { echo -e "${RED}✗ $1${NC}"; }
+print_info() { echo -e "${BLUE}→ $1${NC}"; }
+print_header() { echo -e "\n${CYAN}${BOLD}$1${NC}"; }
+print_platform() { echo -e "${MAGENTA}${BOLD}$1${NC}"; }
+
 # Enhanced error handling
 set -euo pipefail
 IFS=$'\n\t'
 
-# Error trap for debugging
+# Error trap for debugging (now print_error is available)
 error_exit() {
     local line_no=$1
     local error_code=$2
@@ -30,23 +47,6 @@ BUILD_TIME=$(date +"%H%M%S")
 print_info "Build started at $(date)"
 print_info "Script directory: $SCRIPT_DIR"
 print_info "Working directory: $(pwd)"
-
-# Color output functions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-BOLD='\033[1m'
-NC='\033[0m'
-
-print_success() { echo -e "${GREEN}✓ $1${NC}"; }
-print_warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
-print_error() { echo -e "${RED}✗ $1${NC}"; }
-print_info() { echo -e "${BLUE}→ $1${NC}"; }
-print_header() { echo -e "\n${CYAN}${BOLD}$1${NC}"; }
-print_platform() { echo -e "${MAGENTA}${BOLD}$1${NC}"; }
 
 print_banner() {
     echo -e "${CYAN}${BOLD}"
