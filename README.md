@@ -635,6 +635,74 @@ docker exec CONTAINER CMD      →  servin exec CONTAINER CMD
 - **Better Resource Control**: VM boundaries provide cleaner resource management
 - **Educational Value**: Understand containerization without abstraction layers
 
+## 🚀 Deployment Modes
+
+Servin supports two primary deployment modes to fit different infrastructure needs:
+
+### 🎯 **Pure VM Mode (Recommended)**
+
+**Best for:** Development, production workloads, Docker replacement scenarios
+
+```bash
+# Install natively (Windows/Linux/macOS)
+# Download installer from GitHub releases
+./servin vm start
+./servin run nginx:alpine
+```
+
+**Advantages:**
+- ✅ **Best Performance**: Direct VM management without container overhead
+- ✅ **True Cross-Platform**: Identical behavior on Windows/Mac/Linux
+- ✅ **Security**: VM-level isolation superior to containers
+- ✅ **Resource Efficiency**: No Docker daemon overhead
+
+### 🔄 **Hybrid Mode (Advanced)**
+
+**Best for:** Kubernetes deployments, service orchestration, hybrid infrastructure
+
+```bash
+# Run Servin daemon in Docker/Kubernetes
+docker run -d --privileged \
+  --name servin-daemon \
+  -v /var/run:/var/run \
+  -p 10250:10250 \
+  servin:latest
+
+# Servin manages VM-based workloads
+servin run nginx:alpine  # Runs in VM, not Docker!
+```
+
+**Architecture:**
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Docker Host   │    │  Servin Container│    │   VM Workloads  │
+│                 │───▶│    (daemon)      │───▶│   (containers)  │
+│   Kubernetes    │    │                  │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+**When to Use Hybrid Mode:**
+- ✅ **Kubernetes Integration**: Servin as a containerized service
+- ✅ **Orchestration Platforms**: Service mesh deployments
+- ✅ **Hybrid Infrastructure**: Docker for services, VMs for workloads
+- ✅ **Development Testing**: Quick daemon setup
+
+**When to Use Pure VM Mode:**
+- ✅ **Single-host Development**: Direct binary usage
+- ✅ **Production Workloads**: Maximum performance
+- ✅ **Docker Replacement**: Pure VM-based containerization
+- ✅ **Learning**: Understanding containerization fundamentals
+
+### 📊 **Mode Comparison**
+
+| Feature | Pure VM Mode | Hybrid Mode |
+|---------|-------------|-------------|
+| **Performance** | ⭐⭐⭐⭐⭐ Best | ⭐⭐⭐⭐ Good |
+| **Kubernetes** | ⭐⭐ Manual | ⭐⭐⭐⭐⭐ Native |
+| **Simplicity** | ⭐⭐⭐⭐⭐ Simple | ⭐⭐⭐ Complex |
+| **Security** | ⭐⭐⭐⭐⭐ VM isolation | ⭐⭐⭐⭐ Container + VM |
+| **Resource Usage** | ⭐⭐⭐⭐⭐ Efficient | ⭐⭐⭐ Overhead |
+
 ### Migration Checklist
 
 #### Phase 1: Installation & Setup
