@@ -300,8 +300,18 @@ jobs:
         # Debug current working directory and file structure
         echo "🔍 Debug Information"
         echo "Current working directory: $(pwd)"
-        echo "Directory structure:"
+        echo "GitHub workspace: $GITHUB_WORKSPACE"
+        echo "Directory tree structure (first 3 levels):"
+        find . -maxdepth 3 -type d 2>/dev/null | head -20 | sort
+        echo ""
+        echo "All installer files in workspace:"
         find . -name "*.exe" -o -name "*.AppImage" -o -name "*.pkg" 2>/dev/null | head -20
+        echo ""
+        echo "Specific paths to check:"
+        echo "  - installers/ exists: $([ -d "installers" ] && echo "YES" || echo "NO")"
+        echo "  - servin/installers/ exists: $([ -d "servin/installers" ] && echo "YES" || echo "NO")"
+        echo "  - dist/ exists: $([ -d "dist" ] && echo "YES" || echo "NO")" 
+        echo "  - servin/dist/ exists: $([ -d "servin/dist" ] && echo "YES" || echo "NO")"
         echo ""
         echo "Installers directory contents:"
         ls -la installers/ 2>/dev/null || echo "installers/ directory not found"
@@ -327,8 +337,12 @@ jobs:
           for path in \
             "installers/windows/Servin-Installer-1.0.0.exe" \
             "installers/windows/servin-installer-1.0.0.exe" \
+            "servin/installers/windows/Servin-Installer-1.0.0.exe" \
+            "servin/installers/windows/servin-installer-1.0.0.exe" \
             "dist/servin_1.0.0_installer.exe" \
-            "dist/Servin-Installer-1.0.0.exe"; do
+            "dist/Servin-Installer-1.0.0.exe" \
+            "servin/dist/servin_1.0.0_installer.exe" \
+            "servin/dist/Servin-Installer-1.0.0.exe"; do
             
             if [ -f "$path" ]; then
               WINDOWS_INSTALLER="$path"
@@ -392,8 +406,11 @@ jobs:
           LINUX_APPIMAGE=""
           for path in \
             "installers/linux/build/Servin-"*.AppImage \
+            "servin/installers/linux/build/Servin-"*.AppImage \
             "dist/servin_1.0.0_installer.AppImage" \
-            "dist/Servin-"*.AppImage; do
+            "dist/Servin-"*.AppImage \
+            "servin/dist/servin_1.0.0_installer.AppImage" \
+            "servin/dist/Servin-"*.AppImage; do
             
             if ls $path >/dev/null 2>&1; then
               LINUX_APPIMAGE=$(ls $path | head -1)
@@ -464,12 +481,29 @@ jobs:
           echo "🔍 Verifying macOS Package..."
           echo "============================"
           
+          # Check multiple possible locations for macOS PKG
+          MACOS_PKG=""
+          for path in \
+            "installers/macos/build/Servin-"*.pkg \
+            "servin/installers/macos/build/Servin-"*.pkg \
+            "dist/servin_"*".pkg" \
+            "servin/dist/servin_"*".pkg"; do
+            
+            if ls $path >/dev/null 2>&1; then
+              MACOS_PKG=$(ls $path | head -1)
+              echo "✓ macOS PKG found at: $MACOS_PKG"
+              break
+            else
+              echo "✗ Not found: $path"
+            fi
+          done
+          
           # Check source PKG installer
-          if ls installers/macos/build/Servin-*.pkg >/dev/null 2>&1; then
+          if [ -n "$MACOS_PKG" ]; then
             INSTALLER_FOUND=true
-            PKG_FILE=$(ls installers/macos/build/Servin-*.pkg | head -1)
+            PKG_FILE="$MACOS_PKG"
             INSTALLER_SIZE=$(stat -c%s "$PKG_FILE" 2>/dev/null || stat -f%z "$PKG_FILE" 2>/dev/null)
-            echo "✓ Source PKG installer found: $(ls -lh installers/macos/build/Servin-*.pkg)"
+            echo "✓ Source PKG installer found: $(ls -lh "$PKG_FILE")"
             echo "  Size: ${INSTALLER_SIZE} bytes ($(echo "scale=2; $INSTALLER_SIZE/1024/1024" | bc 2>/dev/null || echo "~$(($INSTALLER_SIZE/1024/1024))")MB)"
             
             # Verify minimum PKG size (should include QEMU)
