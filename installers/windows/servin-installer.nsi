@@ -539,6 +539,9 @@ Section "Servin Core Runtime" SEC01
   # Install main executables (these files need to be in the build directory)
   File "servin.exe"
   File "servin-tui.exe" 
+  
+  # Install GUI executable if available
+  IfFileExists "servin-gui.exe" 0 +2
   File "servin-gui.exe"
   
   # Install configuration files

@@ -140,6 +140,33 @@ build_executables() {
             GOOS="$goos" GOARCH="$goarch" go build -ldflags="-s -w" -o "$output_dir/$tui_name" ./cmd/servin-tui/
         fi
         
+        # Build GUI for Windows (requires Python environment)
+        if [[ "$goos" == "windows" ]] && [[ -d "webview_gui" ]]; then
+            local gui_name="servin-gui.exe"
+            print_info "Building GUI executable for Windows..."
+            
+            # Check if Python and PyInstaller are available
+            if command -v python3 >/dev/null 2>&1 && python3 -c "import PyInstaller" 2>/dev/null; then
+                cd webview_gui
+                
+                # Install GUI dependencies if needed
+                python3 -m pip install -r requirements.txt --quiet 2>/dev/null || print_warning "Failed to install GUI requirements"
+                
+                # Build GUI executable
+                python3 -m PyInstaller --clean --onefile servin-gui.spec --distpath "../$output_dir" --workpath "../build/gui-work" --specpath . 2>/dev/null
+                
+                if [[ -f "../$output_dir/$gui_name" ]]; then
+                    print_success "GUI executable built: $gui_name"
+                else
+                    print_warning "GUI executable build failed, installer will be CLI-only"
+                fi
+                
+                cd ..
+            else
+                print_warning "Python3 or PyInstaller not available, skipping GUI build"
+            fi
+        fi
+        
         print_success "Built $goos/$goarch"
     done
     
@@ -155,13 +182,27 @@ build_windows_installer() {
     # Copy Windows executables
     cp "$SCRIPT_DIR/build/windows-amd64/servin.exe" "$windows_dir/"
     cp "$SCRIPT_DIR/build/windows-amd64/servin-tui.exe" "$windows_dir/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/build/windows-amd64/servin-gui.exe" "$windows_dir/" 2>/dev/null || print_warning "GUI executable not found, building CLI-only installer"
     
     # Check if we can build on this platform
     if [[ "$PLATFORM" == "windows" ]] && command -v makensis >/dev/null 2>&1; then
         print_info "Building NSIS installer natively..."
         cd "$windows_dir"
-        ./build-installer.bat
-        print_success "Windows installer built"
+        
+        # Use proper Windows command execution
+        if [[ "$OS" == "Windows_NT" ]] || command -v cmd.exe >/dev/null 2>&1; then
+            cmd.exe /c "build-installer.bat"
+        else
+            chmod +x build-installer.bat
+            ./build-installer.bat
+        fi
+        
+        if [[ $? -eq 0 ]]; then
+            print_success "Windows installer built"
+        else
+            print_error "Windows installer build failed"
+            return 1
+        fi
     elif command -v docker >/dev/null 2>&1; then
         print_info "Building NSIS installer using Docker..."
         

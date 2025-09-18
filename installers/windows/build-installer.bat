@@ -25,10 +25,8 @@ if not exist "servin.exe" (
 )
 
 if not exist "servin-gui.exe" (
-    echo [ERROR] servin-gui.exe not found
-    echo Please build the Servin GUI executable first
-    pause
-    exit /b 1
+    echo [WARNING] servin-gui.exe not found - GUI components will not be included
+    echo This is optional if building CLI-only version
 )
 
 if not exist "servin-tui.exe" (
