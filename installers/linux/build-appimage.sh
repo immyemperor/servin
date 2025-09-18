@@ -291,7 +291,45 @@ create_appimage() {
     
     # Create the AppImage
     print_info "Building AppImage..."
-    ARCH="$ARCH" ./tools/appimagetool "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage"
+    
+    # Check if FUSE is available, if not extract appimagetool
+    if command -v fusermount >/dev/null 2>&1 || [[ -c "/dev/fuse" ]]; then
+        # FUSE is available, run appimagetool normally
+        ARCH="$ARCH" ./tools/appimagetool "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage"
+    else
+        # No FUSE, extract and run appimagetool
+        print_warning "FUSE not available, extracting appimagetool..."
+        
+        # Extract appimagetool
+        cd tools
+        chmod +x appimagetool
+        
+        # Try extraction with error handling
+        if ./appimagetool --appimage-extract >/dev/null 2>&1; then
+            print_info "appimagetool extracted successfully"
+        else
+            print_warning "Standard extraction failed, trying alternative method..."
+            # Alternative extraction method for environments without FUSE
+            if command -v unsquashfs >/dev/null 2>&1; then
+                unsquashfs -d squashfs-root appimagetool >/dev/null 2>&1 || print_error "Unsquashfs extraction failed"
+            else
+                print_error "No extraction method available - install squashfs-tools or enable FUSE"
+                return 1
+            fi
+        fi
+        
+        if [[ -d "squashfs-root" ]]; then
+            # Run the extracted appimagetool
+            cd ..
+            ARCH="$ARCH" ./tools/squashfs-root/AppRun "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage"
+            
+            # Clean up
+            rm -rf tools/squashfs-root
+        else
+            print_error "Failed to extract appimagetool"
+            return 1
+        fi
+    fi
     
     if [[ -f "Servin-${VERSION}-${ARCH}.AppImage" ]]; then
         print_success "AppImage created successfully: Servin-${VERSION}-${ARCH}.AppImage"

@@ -158,6 +158,7 @@ jobs:
           pkg-config \
           libcairo2-dev \
           libgirepository1.0-dev \
+          squashfs-tools \
           wget \
           unzip
         
