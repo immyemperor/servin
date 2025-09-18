@@ -102,19 +102,19 @@ check_prerequisites() {
 
 # Build cross-platform executables
 build_executables() {
-    print_header "Building Cross-Platform Executables"
+    local target_platforms=("$@")
+    
+    if [[ ${#target_platforms[@]} -eq 0 ]]; then
+        # Default: build all platforms
+        target_platforms=("windows/amd64" "linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64")
+        print_header "Building Cross-Platform Executables (All Platforms)"
+    else
+        print_header "Building Executables for Selected Platforms"
+    fi
     
     cd "$SCRIPT_DIR/.."
     
-    local targets=(
-        "windows/amd64"
-        "linux/amd64"
-        "linux/arm64"
-        "darwin/amd64"
-        "darwin/arm64"
-    )
-    
-    for target in "${targets[@]}"; do
+    for target in "${target_platforms[@]}"; do
         local goos=$(echo "$target" | cut -d'/' -f1)
         local goarch=$(echo "$target" | cut -d'/' -f2)
         local output_dir="build/${goos}-${goarch}"
@@ -129,7 +129,7 @@ build_executables() {
         mkdir -p "$output_dir"
         
         # Build main executable
-        GOOS="$goos" GOARCH="$goarch" go build -ldflags="-s -w" -o "$output_dir/$binary_name" main.go
+        GOOS="$goos" GOARCH="$goarch" go build -ldflags="-s -w" -o "$output_dir/$binary_name" .
         
         # Build TUI if cmd/servin-tui exists
         if [[ -d "cmd/servin-tui" ]]; then
@@ -508,7 +508,23 @@ main() {
     
     detect_platform
     check_prerequisites
-    build_executables
+    
+    # Build executables for selected platforms only
+    if [[ "$build_all" == "true" ]]; then
+        build_executables
+    else
+        local target_platforms=()
+        if [[ "$build_windows" == "true" ]]; then
+            target_platforms+=("windows/amd64")
+        fi
+        if [[ "$build_linux" == "true" ]]; then
+            target_platforms+=("linux/amd64" "linux/arm64")
+        fi
+        if [[ "$build_macos" == "true" ]]; then
+            target_platforms+=("darwin/amd64" "darwin/arm64")
+        fi
+        build_executables "${target_platforms[@]}"
+    fi
     
     if [[ "$build_all" == "true" || "$build_windows" == "true" ]]; then
         build_windows_installer

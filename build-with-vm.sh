@@ -11,7 +11,7 @@ echo ""
 
 # Build Servin binary
 echo "📦 Building Servin binary..."
-go build -o servin main.go
+go build -o servin .
 echo "✅ Servin binary built successfully"
 echo ""
 
