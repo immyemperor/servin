@@ -59,18 +59,35 @@ detect_platform() {
 check_prerequisites() {
     print_header "Checking Prerequisites"
     
-    # Check if Servin is built
-    if [[ ! -f "$SCRIPT_DIR/../servin" ]]; then
+    # Check if Servin is built (check multiple possible locations)
+    local servin_binary=""
+    if [[ -f "$SCRIPT_DIR/servin" ]]; then
+        servin_binary="$SCRIPT_DIR/servin"
+    elif [[ -f "$SCRIPT_DIR/../servin" ]]; then
+        servin_binary="$SCRIPT_DIR/../servin"
+    elif [[ -f "$SCRIPT_DIR/build/*/servin" ]]; then
+        servin_binary=$(find "$SCRIPT_DIR/build" -name "servin" -type f | head -1)
+    fi
+    
+    if [[ -z "$servin_binary" || ! -f "$servin_binary" ]]; then
         print_error "Servin executable not found. Building..."
-        cd "$SCRIPT_DIR/.."
+        cd "$SCRIPT_DIR"
         
-        # Build for current platform
+        # Ensure we're in the correct directory with go.mod
+        if [[ ! -f "go.mod" ]]; then
+            print_error "go.mod not found. This script must be run from the project root."
+            exit 1
+        fi
+        
+        # Build for current platform using proper Go module syntax
+        print_info "Building Servin using Go modules..."
         if [[ -f "Makefile" ]]; then
             make build
         elif [[ -f "build.sh" ]]; then
             ./build.sh
         else
-            go build -o servin main.go
+            # Use proper Go module build command
+            go build -o servin .
         fi
         
         if [[ ! -f "servin" ]]; then

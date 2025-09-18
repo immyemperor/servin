@@ -54,6 +54,16 @@ else
     esac
 fi
 
+# Ensure we're in the correct directory with go.mod
+if [[ ! -f "go.mod" ]]; then
+    echo -e "${RED}❌ Error: go.mod not found. This script must be run from the project root directory.${NC}"
+    echo -e "${YELLOW}💡 Current directory: $(pwd)${NC}"
+    echo -e "${YELLOW}💡 Expected files: go.mod, main.go${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Found go.mod - proceeding with build${NC}"
+
 case $ARCH in
     x86_64|amd64) ARCH="amd64" ;;
     arm64|aarch64) ARCH="arm64" ;;
@@ -114,15 +124,13 @@ build_for_arch() {
     local arch_build_dir="${BUILD_DIR}${arch_suffix}"
     mkdir -p "$arch_build_dir"
     
-    # Build main CLI
-    echo -e "${YELLOW}  📦 Building CLI (servin${arch_suffix}${exe_ext})${NC}"
-    GOOS=${goos} GOARCH=${target_arch} go build -ldflags="-s -w" -o "${arch_build_dir}/servin${exe_ext}" ./main.go
-    
-    # Build Desktop
-    echo -e "${YELLOW}  📦 Building Desktop (servin-tui${arch_suffix}${exe_ext})${NC}"
-    GOOS=${goos} GOARCH=${target_arch} go build -ldflags="-s -w" -o "${arch_build_dir}/servin-tui${exe_ext}" ./cmd/servin-tui/main.go
-    
-    return 0
+    # Build main Servin binary
+    print_info "Building main binary for ${target_platform}..."
+    GOOS=${goos} GOARCH=${target_arch} go build -ldflags="-s -w" -o "${arch_build_dir}/servin${exe_ext}" .
+
+    # Build TUI component
+    print_info "Building TUI for ${target_platform}..."
+    GOOS=${goos} GOARCH=${target_arch} go build -ldflags="-s -w" -o "${arch_build_dir}/servin-tui${exe_ext}" ./cmd/servin-tui    return 0
 }
 
 # Function to build WebView GUI (architecture-independent)
