@@ -97,7 +97,7 @@ build_binaries() {
                 -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME -s -w" \
                 -tags "desktop,vm_enabled" \
                 -o "$output_dir/servin-desktop$([ "$os" = "windows" ] && echo ".exe")" \
-                ./cmd/servin-desktop
+                ./cmd/servin-tui
         fi
         
         # Copy WebView GUI

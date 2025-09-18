@@ -3,7 +3,7 @@
 # Build variables
 BINARY_NAME=servin
 TUI_BINARY=servin-tui
-DESKTOP_BINARY=servin-desktop
+DESKTOP_BINARY=servin-tui
 VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME=$(shell date +%Y-%m-%dT%H%M%S)
 LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
@@ -41,7 +41,7 @@ build-tui:
 # Build Desktop GUI component with VM support
 build-desktop:
 	@echo "Building Servin Desktop GUI with VM monitoring..."
-	go build $(LDFLAGS) -tags "desktop,vm_enabled,kvm,qemu,hvf,hyperv" -o $(DESKTOP_BINARY)$(DESKTOP_BINARY_EXT) ./cmd/servin-desktop
+	go build $(LDFLAGS) -tags "desktop,vm_enabled,kvm,qemu,hvf,hyperv" -o $(DESKTOP_BINARY)$(DESKTOP_BINARY_EXT) ./cmd/servin-tui
 
 # Build with enhanced VM support
 build-vm: build build-desktop

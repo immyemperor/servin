@@ -13,11 +13,24 @@ def test_imports():
         'mock_servin_client',
         'flask',
         'flask_cors',
+        'flask_socketio',
         'webview',
         'tkinter',
+        'threading',
+        'queue',
+        '_thread',
     ]
     
-    print("[TEST] Testing module imports...")
+    # Async libraries (optional but preferred)
+    async_modules = [
+        'eventlet',
+        'eventlet.wsgi',
+        'gevent',
+        'socketio',
+        'engineio',
+    ]
+    
+    print("[TEST] Testing core module imports...")
     
     for module_name in modules_to_test:
         try:
@@ -27,6 +40,20 @@ def test_imports():
         except ImportError as e:
             test_results[module_name] = f"[FAILED]: {e}"
             print(f"  {module_name}: [FAILED] {e}")
+        except Exception as e:
+            test_results[module_name] = f"[ERROR]: {e}"
+            print(f"  {module_name}: [ERROR] {e}")
+    
+    print("\n[TEST] Testing async libraries...")
+    
+    for module_name in async_modules:
+        try:
+            __import__(module_name)
+            test_results[module_name] = "[OK]"
+            print(f"  {module_name}: [OK]")
+        except ImportError as e:
+            test_results[module_name] = f"[OPTIONAL]: {e}"
+            print(f"  {module_name}: [OPTIONAL] {e}")
         except Exception as e:
             test_results[module_name] = f"[ERROR]: {e}"
             print(f"  {module_name}: [ERROR] {e}")

@@ -75,7 +75,7 @@ jobs:
         
         # Install Python WebView dependencies for Windows
         pip install --upgrade pip
-        pip install pywebview flask flask-cors flask-socketio eventlet pyinstaller
+        pip install pywebview flask flask-cors flask-socketio eventlet gevent pyinstaller
         
         # Install NSIS for installer creation
         choco install nsis -y --no-progress
@@ -94,6 +94,8 @@ jobs:
         python -c "import webview; print('webview available')"
         python -c "import flask_socketio; print('flask-socketio available')"
         python -c "import eventlet; print('eventlet available')"
+        python -c "import gevent; print('gevent available')"
+        python -c "import threading; print('threading available')"
 
     - name: Install Linux dependencies
       if: matrix.platform == 'linux'

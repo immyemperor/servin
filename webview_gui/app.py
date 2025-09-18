@@ -20,24 +20,87 @@ CORS(app)  # Enable CORS for all routes
 
 # Configure SocketIO with explicit async mode for PyInstaller compatibility
 import sys
-try:
-    # For Windows PyInstaller builds, prefer eventlet
-    if sys.platform.startswith('win') and hasattr(sys, '_MEIPASS'):
-        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=False, engineio_logger=False)
-    else:
-        # Try threading mode first (most compatible with PyInstaller)
-        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
-except ValueError:
-    # Fallback to eventlet if available
-    try:
-        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
-    except ValueError:
-        # Final fallback to gevent
+
+def create_socketio_instance(flask_app):
+    """Create SocketIO instance with proper fallback for PyInstaller builds"""
+    
+    # For PyInstaller builds, be more explicit about imports
+    if hasattr(sys, '_MEIPASS'):
+        print("[DEBUG] Running from PyInstaller bundle, checking async libraries...")
+        
+        # Check which async libraries are available
+        available_modes = []
+        
+        # Test threading (most basic, should always work)
         try:
-            socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
+            import threading
+            import queue
+            available_modes.append('threading')
+            print("[DEBUG] Threading mode available")
+        except ImportError as e:
+            print(f"[DEBUG] Threading not available: {e}")
+        
+        # Test eventlet
+        try:
+            import eventlet
+            available_modes.append('eventlet')
+            print("[DEBUG] Eventlet mode available")
+        except ImportError as e:
+            print(f"[DEBUG] Eventlet not available: {e}")
+        
+        # Test gevent
+        try:
+            import gevent
+            available_modes.append('gevent')
+            print("[DEBUG] Gevent mode available")
+        except ImportError as e:
+            print(f"[DEBUG] Gevent not available: {e}")
+        
+        print(f"[DEBUG] Available async modes: {available_modes}")
+        
+        # Try each available mode
+        for mode in available_modes:
+            try:
+                print(f"[DEBUG] Trying SocketIO with async_mode='{mode}'")
+                socketio_instance = SocketIO(flask_app, cors_allowed_origins="*", async_mode=mode, logger=False, engineio_logger=False)
+                print(f"[DEBUG] SocketIO successfully created with async_mode='{mode}'")
+                return socketio_instance
+            except Exception as e:
+                print(f"[DEBUG] Failed to create SocketIO with {mode}: {e}")
+                continue
+        
+        # Last resort: try without async_mode (auto-detect)
+        try:
+            print("[DEBUG] Trying SocketIO with auto-detection...")
+            socketio_instance = SocketIO(flask_app, cors_allowed_origins="*", logger=False, engineio_logger=False)
+            print("[DEBUG] SocketIO successfully created with auto-detection")
+            return socketio_instance
+        except Exception as e:
+            print(f"[DEBUG] Auto-detection also failed: {e}")
+            raise Exception(f"Could not create SocketIO instance. Available modes: {available_modes}")
+    
+    else:
+        # Running from source - use simpler logic
+        try:
+            return SocketIO(flask_app, cors_allowed_origins="*", async_mode='threading')
         except ValueError:
-            # Last resort - let it auto-detect but with logger=False
-            socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False)
+            try:
+                return SocketIO(flask_app, cors_allowed_origins="*", async_mode='eventlet')
+            except ValueError:
+                return SocketIO(flask_app, cors_allowed_origins="*", logger=False, engineio_logger=False)
+
+# Create SocketIO instance
+try:
+    socketio = create_socketio_instance(app)
+except Exception as e:
+    print(f"[ERROR] Failed to create SocketIO: {e}")
+    print("[ERROR] WebView GUI will run without real-time features")
+    # Create a minimal mock SocketIO for basic functionality
+    class MockSocketIO:
+        def emit(self, *args, **kwargs): pass
+        def on(self, *args, **kwargs): pass
+        def run(self, app, **kwargs): app.run(**kwargs)
+    socketio = MockSocketIO()
 
 # Store active log streaming processes
 active_log_streams = {}
