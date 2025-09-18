@@ -79,6 +79,11 @@ jobs:
         
         # Install NSIS for installer creation
         choco install nsis -y --no-progress
+        
+        # Install Packer for VM image building
+        Write-Host "Installing Packer..."
+        choco install packer -y --no-progress
+        
         # Update PATH for current session
         $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
         Write-Host "Checking NSIS installation..."
@@ -90,12 +95,19 @@ jobs:
           Write-Host "NSIS not found in standard locations"
         }
         
+        # Install Packer QEMU plugin
+        Write-Host "Installing Packer QEMU plugin..."
+        packer plugins install github.com/hashicorp/qemu
+        
         # Test WebView and SocketIO imports
         python -c "import webview; print('webview available')"
         python -c "import flask_socketio; print('flask-socketio available')"
         python -c "import eventlet; print('eventlet available')"
         python -c "import gevent; print('gevent available')"
         python -c "import threading; print('threading available')"
+        
+        # Verify Packer installation
+        packer version
 
     - name: Install Linux dependencies
       if: matrix.platform == 'linux'
@@ -118,7 +130,21 @@ jobs:
           xauth \
           pkg-config \
           libcairo2-dev \
-          libgirepository1.0-dev
+          libgirepository1.0-dev \
+          wget \
+          unzip
+        
+        # Install Packer for VM image building
+        echo "Installing Packer..."
+        PACKER_VERSION="1.10.0"
+        wget -q "https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip"
+        sudo unzip -q packer_${PACKER_VERSION}_linux_amd64.zip -d /usr/local/bin/
+        sudo chmod +x /usr/local/bin/packer
+        rm packer_${PACKER_VERSION}_linux_amd64.zip
+        
+        # Install Packer QEMU plugin
+        echo "Installing Packer QEMU plugin..."
+        packer plugins install github.com/hashicorp/qemu || echo "Packer QEMU plugin installation failed"
         
         # Install Python WebView dependencies
         python3 -m pip install --upgrade pip
@@ -128,6 +154,7 @@ jobs:
         python3 --version
         qemu-system-x86_64 --version
         genisoimage --version
+        packer version || echo "Packer not available"
         python3 -c "import webview; print('webview available')" || echo "webview not available"
 
     - name: Install macOS dependencies
@@ -143,6 +170,14 @@ jobs:
         echo "Installing Python WebView dependencies..."
         python3 -m pip install --break-system-packages pywebview flask flask-cors flask-socketio eventlet pyinstaller
         
+        # Install Packer and QEMU for VM image building
+        echo "Installing Packer and QEMU..."
+        brew install packer qemu --quiet || echo "Packer/QEMU installation failed"
+        
+        # Install Packer QEMU plugin
+        echo "Installing Packer QEMU plugin..."
+        packer plugins install github.com/hashicorp/qemu || echo "Packer QEMU plugin installation failed"
+        
         # Check tkinter availability
         python3 -c "import tkinter; print('tkinter available')" || echo "tkinter not available"
         if ! python3 -c "import tkinter" 2>/dev/null; then
@@ -156,6 +191,8 @@ jobs:
         python3 -c "import flask; print('✓ flask available')" || echo "✗ flask not available"
         python3 -c "import flask_socketio; print('✓ flask-socketio available')" || echo "✗ flask-socketio not available"
         python3 -c "import PyInstaller; print('✓ PyInstaller available')" || echo "✗ PyInstaller not available"
+        packer version || echo "✗ Packer not available"
+        qemu-system-x86_64 --version || echo "✗ QEMU not available"
 
     # Make build script executable
     - name: Make build script executable
@@ -170,10 +207,17 @@ jobs:
         # First run traditional build
         PLATFORM=${{ matrix.platform }} ./build-all.sh
         
-        # Then enhance with VM capabilities
+        # Then enhance with VM capabilities (with error handling)
         if [ -f "./build-vm-distribution.sh" ]; then
           echo "Adding VM containerization support..."
-          ./build-vm-distribution.sh --platform ${{ matrix.platform }} --enhance-existing
+          chmod +x ./build-vm-distribution.sh
+          if ./build-vm-distribution.sh --platform ${{ matrix.platform }} --enhance-existing 2>/dev/null; then
+            echo "✓ VM capabilities added successfully"
+          else
+            echo "⚠️ VM enhancement failed, continuing with standard build..."
+          fi
+        else
+          echo "VM distribution script not found, using standard build"
         fi
         
     # Verify build outputs

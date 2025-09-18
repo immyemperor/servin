@@ -304,6 +304,26 @@ get_iso_url() {
     esac
 }
 
+get_iso_checksum() {
+    local distro=$1
+    local version=$2
+    
+    case $distro in
+        alpine)
+            # For Alpine, we can use 'none' for checksum or fetch dynamically
+            echo "none"
+            ;;
+        ubuntu)
+            # For Ubuntu, we can use 'none' for checksum or fetch dynamically  
+            echo "none"
+            ;;
+        debian)
+            # For Debian, we can use 'none' for checksum or fetch dynamically
+            echo "none"
+            ;;
+    esac
+}
+
 create_installers() {
     print_info "Creating platform installers..."
     
