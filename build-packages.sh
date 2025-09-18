@@ -63,8 +63,8 @@ check_prerequisites() {
     local servin_binary=""
     if [[ -f "$SCRIPT_DIR/servin" ]]; then
         servin_binary="$SCRIPT_DIR/servin"
-    elif [[ -f "$SCRIPT_DIR/../servin" ]]; then
-        servin_binary="$SCRIPT_DIR/../servin"
+    elif [[ -f "$SCRIPT_DIR/servin" ]]; then
+        servin_binary="$SCRIPT_DIR/servin"
     elif [[ -f "$SCRIPT_DIR/build/*/servin" ]]; then
         servin_binary=$(find "$SCRIPT_DIR/build" -name "servin" -type f | head -1)
     fi
@@ -112,7 +112,7 @@ build_executables() {
         print_header "Building Executables for Selected Platforms"
     fi
     
-    cd "$SCRIPT_DIR/.."
+    cd "$SCRIPT_DIR"
     
     for target in "${target_platforms[@]}"; do
         local goos=$(echo "$target" | cut -d'/' -f1)
@@ -150,11 +150,11 @@ build_executables() {
 build_windows_installer() {
     print_platform "Building Windows Installer (NSIS)"
     
-    local windows_dir="$SCRIPT_DIR/windows"
+    local windows_dir="$SCRIPT_DIR/installers/windows"
     
     # Copy Windows executables
-    cp "$SCRIPT_DIR/../build/windows-amd64/servin.exe" "$windows_dir/"
-    cp "$SCRIPT_DIR/../build/windows-amd64/servin-tui.exe" "$windows_dir/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/build/windows-amd64/servin.exe" "$windows_dir/"
+    cp "$SCRIPT_DIR/build/windows-amd64/servin-tui.exe" "$windows_dir/" 2>/dev/null || true
     
     # Check if we can build on this platform
     if [[ "$PLATFORM" == "windows" ]] && command -v makensis >/dev/null 2>&1; then
@@ -200,11 +200,11 @@ EOF
 build_linux_appimage() {
     print_platform "Building Linux AppImage"
     
-    local linux_dir="$SCRIPT_DIR/linux"
+    local linux_dir="$SCRIPT_DIR/installers/linux"
     
     # Copy Linux executables
-    cp "$SCRIPT_DIR/../build/linux-amd64/servin" "$linux_dir/"
-    cp "$SCRIPT_DIR/../build/linux-amd64/servin-tui" "$linux_dir/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/build/linux-amd64/servin" "$linux_dir/"
+    cp "$SCRIPT_DIR/build/linux-amd64/servin-tui" "$linux_dir/" 2>/dev/null || true
     
     if [[ "$PLATFORM" == "linux" ]]; then
         print_info "Building AppImage natively..."
@@ -253,15 +253,15 @@ EOF
 build_macos_package() {
     print_platform "Building macOS Package"
     
-    local macos_dir="$SCRIPT_DIR/macos"
+    local macos_dir="$SCRIPT_DIR/installers/macos"
     
     # Copy macOS executables
     if [[ "$ARCH" == "arm64" ]]; then
-        cp "$SCRIPT_DIR/../build/darwin-arm64/servin" "$macos_dir/"
-        cp "$SCRIPT_DIR/../build/darwin-arm64/servin-tui" "$macos_dir/" 2>/dev/null || true
+        cp "$SCRIPT_DIR/build/darwin-arm64/servin" "$macos_dir/"
+        cp "$SCRIPT_DIR/build/darwin-arm64/servin-tui" "$macos_dir/" 2>/dev/null || true
     else
-        cp "$SCRIPT_DIR/../build/darwin-amd64/servin" "$macos_dir/"
-        cp "$SCRIPT_DIR/../build/darwin-amd64/servin-tui" "$macos_dir/" 2>/dev/null || true
+        cp "$SCRIPT_DIR/build/darwin-amd64/servin" "$macos_dir/"
+        cp "$SCRIPT_DIR/build/darwin-amd64/servin-tui" "$macos_dir/" 2>/dev/null || true
     fi
     
     if [[ "$PLATFORM" == "macos" ]]; then
@@ -290,31 +290,31 @@ create_distribution() {
     print_info "Collecting installer packages..."
     
     # Windows
-    if [[ -f "$SCRIPT_DIR/windows/Servin-Installer-$VERSION.exe" ]]; then
-        cp "$SCRIPT_DIR/windows/Servin-Installer-$VERSION.exe" "$release_dir/windows/"
+    if [[ -f "$SCRIPT_DIR/installers/windows/Servin-Installer-$VERSION.exe" ]]; then
+        cp "$SCRIPT_DIR/installers/windows/Servin-Installer-$VERSION.exe" "$release_dir/windows/"
         print_success "Windows installer included"
     fi
     
     # Linux
-    if ls "$SCRIPT_DIR/linux/build/Servin-"*.AppImage >/dev/null 2>&1; then
-        cp "$SCRIPT_DIR/linux/build/Servin-"*.AppImage "$release_dir/linux/"
-        cp "$SCRIPT_DIR/linux/build/install-servin-appimage.sh" "$release_dir/linux/" 2>/dev/null || true
+    if ls "$SCRIPT_DIR/installers/linux/build/Servin-"*.AppImage >/dev/null 2>&1; then
+        cp "$SCRIPT_DIR/installers/linux/build/Servin-"*.AppImage "$release_dir/linux/"
+        cp "$SCRIPT_DIR/installers/linux/build/install-servin-appimage.sh" "$release_dir/linux/" 2>/dev/null || true
         print_success "Linux AppImage included"
     fi
     
     # macOS
-    if ls "$SCRIPT_DIR/macos/build/Servin-"*.pkg >/dev/null 2>&1; then
-        cp "$SCRIPT_DIR/macos/build/Servin-"*.pkg "$release_dir/macos/"
-        cp "$SCRIPT_DIR/macos/build/Servin-"*.dmg "$release_dir/macos/" 2>/dev/null || true
+    if ls "$SCRIPT_DIR/installers/macos/build/Servin-"*.pkg >/dev/null 2>&1; then
+        cp "$SCRIPT_DIR/installers/macos/build/Servin-"*.pkg "$release_dir/macos/"
+        cp "$SCRIPT_DIR/installers/macos/build/Servin-"*.dmg "$release_dir/macos/" 2>/dev/null || true
         print_success "macOS package included"
     fi
     
     # Copy documentation
     print_info "Including documentation..."
-    cp "$SCRIPT_DIR/../README.md" "$release_dir/docs/"
-    cp "$SCRIPT_DIR/../LICENSE" "$release_dir/docs/" 2>/dev/null || true
-    cp "$SCRIPT_DIR/../INSTALL.md" "$release_dir/docs/" 2>/dev/null || true
-    cp "$SCRIPT_DIR/../VM_PREREQUISITES.md" "$release_dir/docs/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/README.md" "$release_dir/docs/"
+    cp "$SCRIPT_DIR/LICENSE" "$release_dir/docs/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/INSTALL.md" "$release_dir/docs/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/VM_PREREQUISITES.md" "$release_dir/docs/" 2>/dev/null || true
     
     # Create installation guide
     cat > "$release_dir/INSTALLATION_GUIDE.md" << EOF
