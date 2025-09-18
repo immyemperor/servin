@@ -6,98 +6,132 @@ permalink: /features/
 
 # ✨ Features
 
-Servin Container Runtime provides a comprehensive set of features for modern container management, Kubernetes integration, and professional development workflows.
+Servin Container Runtime provides a comprehensive set of features through its **revolutionary dual-mode architecture**, offering both native Linux containerization and universal VM-based containerization across all platforms.
+
+## 🚀 Revolutionary Dual-Mode Architecture
+
+### **🎯 Universal Containerization**
+- ✅ **Native Mode** (Linux): Direct kernel integration for maximum performance
+- ✅ **VM Mode** (Universal): True Linux containers on Windows, macOS, and Linux
+- ✅ **Automatic Selection**: Optimal mode chosen per platform
+- ✅ **Identical API**: Same commands work across all platforms and modes
+- ✅ **Seamless Switching**: Change modes without losing containers or data
+
+### **Platform Support Matrix**
+
+| Feature | Linux Native | Linux VM | Windows VM | macOS VM |
+|---------|-------------|----------|------------|----------|
+| **Full Linux Containers** | ✅ | ✅ | ✅ | ✅ |
+| **Namespaces (PID/Net/Mount/etc)** | ✅ | ✅ | ✅ | ✅ |
+| **cgroups Resource Control** | ✅ | ✅ | ✅ | ✅ |
+| **Hardware Isolation** | ❌ | ✅ | ✅ | ✅ |
+| **Security Boundaries** | Process | VM | VM | VM |
+| **Performance** | Native | Near-Native | Near-Native | Near-Native |
 
 ## 🎯 Core Runtime Features
 
 ### **Container Lifecycle Management**
-- ✅ **Create, Start, Stop, Delete** - Full container lifecycle control
-- ✅ **Pause/Unpause** - Container execution control
-- ✅ **Restart Policies** - Automatic container restart on failure
-- ✅ **Health Checks** - Container health monitoring and reporting
-- ✅ **Resource Limits** - CPU and memory constraint enforcement
-- ✅ **Environment Variables** - Dynamic container configuration
-- ✅ **Port Mapping** - Network port forwarding and exposure
+- ✅ **Create, Start, Stop, Delete** - Full container lifecycle control (all modes)
+- ✅ **Pause/Unpause** - Container execution control (all modes)
+- ✅ **Restart Policies** - Automatic container restart on failure (all modes)
+- ✅ **Health Checks** - Container health monitoring and reporting (all modes)
+- ✅ **Resource Limits** - CPU and memory constraint enforcement (all modes)
+- ✅ **Environment Variables** - Dynamic container configuration (all modes)
+- ✅ **Port Mapping** - Network port forwarding and exposure (all modes)
+- ✅ **VM Persistence** - Container state survives VM restarts (VM mode)
 
 ### **Image Management**
-- ✅ **Pull/Push Operations** - Registry integration for image distribution
-- ✅ **Image Building** - Dockerfile-based image creation
-- ✅ **Tag Management** - Image versioning and tagging
-- ✅ **Layer Caching** - Efficient image storage and reuse
-- ✅ **Multi-Architecture** - ARM64 and AMD64 image support
-- ✅ **Image Cleanup** - Automatic removal of unused images
-- ✅ **Security Scanning** - Built-in vulnerability detection
+- ✅ **Pull/Push Operations** - Registry integration for image distribution (all modes)
+- ✅ **Image Building** - Dockerfile-based image creation (all modes)
+- ✅ **Tag Management** - Image versioning and tagging (all modes)
+- ✅ **Layer Caching** - Efficient image storage and reuse (all modes)
+- ✅ **Multi-Architecture** - ARM64 and AMD64 image support (all modes)
+- ✅ **Image Cleanup** - Automatic removal of unused images (all modes)
+- ✅ **Cross-Mode Sharing** - Images work in both native and VM modes
 
 ### **Volume Management**
-- ✅ **Bind Mounts** - Host directory mounting
-- ✅ **Named Volumes** - Persistent volume creation and management
-- ✅ **Volume Drivers** - Pluggable storage backend support
-- ✅ **Volume Backup** - Data protection and migration
-- ✅ **Permission Management** - Access control for mounted volumes
-- ✅ **Volume Cleanup** - Automatic removal of unused volumes
+- ✅ **Bind Mounts** - Host directory mounting (all modes)
+- ✅ **Named Volumes** - Persistent volume creation and management (all modes)
+- ✅ **Volume Drivers** - Pluggable storage backend support (all modes)
+- ✅ **Volume Backup** - Data protection and migration (all modes)
+- ✅ **Permission Management** - Access control for mounted volumes (all modes)
+- ✅ **VM Volume Bridge** - Seamless host-VM volume sharing (VM mode)
+- ✅ **Volume Cleanup** - Automatic removal of unused volumes (all modes)
 
 ### **Network Management**
-- ✅ **Bridge Networks** - Container-to-container communication
-- ✅ **Host Networking** - Direct host network access
-- ✅ **Custom Networks** - User-defined network configurations
-- ✅ **Network Isolation** - Security through network segmentation
-- ✅ **DNS Resolution** - Automatic service discovery
-- ✅ **Load Balancing** - Traffic distribution across containers
+- ✅ **Bridge Networks** - Container-to-container communication (all modes)
+- ✅ **Host Networking** - Direct host network access (all modes)
+- ✅ **Custom Networks** - User-defined network configurations (all modes)
+- ✅ **Network Isolation** - Security through network segmentation (all modes)
+- ✅ **DNS Resolution** - Automatic service discovery (all modes)
+- ✅ **VM Network Bridge** - Host-VM network integration (VM mode)
+- ✅ **Load Balancing** - Traffic distribution across containers (all modes)
 
 ## 🔌 Kubernetes Integration
 
 ### **Container Runtime Interface (CRI)**
-- ✅ **Full CRI v1alpha2** - Complete Kubernetes compatibility
-- ✅ **Pod Sandbox Management** - Kubernetes pod lifecycle support
-- ✅ **Container Runtime Service** - gRPC-based container operations
-- ✅ **Image Service** - Kubernetes image management integration
-- ✅ **Runtime Configuration** - Dynamic runtime parameter adjustment
-- ✅ **Security Contexts** - Kubernetes security policy enforcement
+- ✅ **Full CRI v1alpha2** - Complete Kubernetes compatibility (all modes)
+- ✅ **Pod Sandbox Management** - Kubernetes pod lifecycle support (all modes)
+- ✅ **Container Runtime Service** - gRPC-based container operations (all modes)
+- ✅ **Image Service** - Kubernetes image management integration (all modes)
+- ✅ **Runtime Configuration** - Dynamic runtime parameter adjustment (all modes)
+- ✅ **Security Contexts** - Kubernetes security policy enforcement (all modes)
+- ✅ **VM-Aware CRI** - CRI optimized for VM mode operations (VM mode)
 
 ### **Kubelet Integration**
-- ✅ **gRPC API Server** - Port 10010 for kubelet communication
-- ✅ **Pod Lifecycle** - Full pod creation, execution, and cleanup
-- ✅ **Container Logs** - Kubernetes-compatible log streaming
-- ✅ **Resource Reporting** - Node resource usage metrics
-- ✅ **Health Monitoring** - Container and pod health status
-- ✅ **Event Reporting** - Kubernetes event system integration
+- ✅ **gRPC API Server** - Port 10010 for kubelet communication (all modes)
+- ✅ **Pod Lifecycle** - Full pod creation, execution, and cleanup (all modes)
+- ✅ **Container Logs** - Kubernetes-compatible log streaming (all modes)
+- ✅ **Resource Reporting** - Node resource usage metrics (all modes)
+- ✅ **Health Monitoring** - Container and pod health status (all modes)
+- ✅ **Event Reporting** - Kubernetes event system integration (all modes)
+- ✅ **VM Resource Mapping** - VM resources exposed to Kubernetes (VM mode)
 
 ## 🖥️ User Interfaces
 
 ### **Command Line Interface (CLI)**
+Universal CLI that works identically across all platforms and modes:
+
 ```bash
-# Container Operations
+# Container Operations (work in all modes)
 servin containers ls                 # List all containers
 servin containers create ubuntu      # Create new container
 servin containers start web-app     # Start container
 servin containers stop web-app      # Stop container
 servin containers rm web-app        # Remove container
 
-# Image Operations
+# Image Operations (work in all modes)
 servin images ls                     # List local images
 servin images pull ubuntu:latest     # Pull image from registry
 servin images build -t myapp .       # Build image from Dockerfile
 servin images push myapp:latest      # Push image to registry
 
-# Volume Operations
+# Volume Operations (work in all modes)
 servin volumes ls                    # List volumes
 servin volumes create data-vol       # Create new volume
 servin volumes rm data-vol           # Remove volume
 
-# Network Operations
+# Network Operations (work in all modes)
 servin networks ls                   # List networks
 servin networks create app-net       # Create network
 servin networks rm app-net           # Remove network
+
+# VM Mode Specific Operations
+servin vm status                     # Show VM status (VM mode only)
+servin vm start                      # Start VM (VM mode only)
+servin vm stop                       # Stop VM (VM mode only)
+servin vm reset                      # Reset VM to clean state (VM mode only)
 ```
 
 ### **Terminal User Interface (TUI)**
-- 🖥️ **Interactive Menus** - Menu-driven container management
-- 📊 **Real-time Status** - Live container and resource monitoring
+- 🖥️ **Mode Indicator** - Clear display of current mode (Native/VM)
+- 📊 **Real-time Status** - Live container and resource monitoring (all modes)
 - 🔍 **Search and Filter** - Quick navigation through containers and images
 - 📋 **Detailed Views** - Comprehensive container and image information
 - ⌨️ **Keyboard Navigation** - Efficient keyboard-only operation
 - 🎨 **Color-coded Status** - Visual status indicators
 - 📱 **Responsive Design** - Adapts to different terminal sizes
+- 🔧 **VM Controls** - VM management interface (VM mode)
 
 ### **Desktop GUI Application**
 - 🖱️ **Visual Management** - Point-and-click container operations

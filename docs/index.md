@@ -6,7 +6,7 @@ permalink: /
 
 # 🚀 Servin Container Runtime
 
-**An open-source, Docker-compatible container runtime with Kubernetes CRI support and professional desktop interface.**
+**Revolutionary dual-mode container runtime with universal cross-platform containerization through VM-based Linux containers.**
 
 <div class="feature-grid">
   <div class="feature-box">

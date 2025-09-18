@@ -130,9 +130,31 @@ The documentation includes:
 - **Cross-platform logs**: Platform-specific log file locations
 - **Operational monitoring**: Comprehensive audit trail and troubleshooting
 
+### VM Mode Commands
+
+When using Servin's VM mode (automatically enabled on Windows/macOS), all standard container commands work identically but run within a secure Linux VM:
+
+```bash
+# Enable VM mode (automatic on Windows/macOS)
+servin init --vm             # Initialize VM-based containerization
+
+# Standard commands work identically in VM mode
+servin run ubuntu:latest bash    # Run containers in VM
+servin run --vm ubuntu bash      # Explicitly force VM mode
+servin ls                        # List containers (VM or native)
+servin stop CONTAINER_ID         # Stop containers in VM
+servin exec CONTAINER_ID bash    # Execute commands in VM containers
+
+# VM management
+servin vm status             # Check VM status
+servin vm start              # Start containerization VM
+servin vm stop               # Stop containerization VM
+servin vm reset              # Reset VM to clean state
+```
+
 ### Command Line Interface
 ```bash
-# Container operations
+# Container operations (work in both native and VM modes)
 servin run [--name NAME] IMAGE COMMAND [ARGS...]
 servin ls                    # List containers
 servin stop CONTAINER_ID     # Stop running container
@@ -140,7 +162,7 @@ servin rm CONTAINER_ID       # Remove container
 servin exec CONTAINER_ID CMD # Execute command in container
 servin logs CONTAINER_ID     # Fetch logs from container
 
-# Image operations
+# Image operations (work in both native and VM modes)
 servin image ls              # List images
 servin image import FILE     # Import tarball as image
 servin image rm IMAGE        # Remove image
@@ -160,12 +182,12 @@ servin gui --tui             # Launch Terminal User Interface
 servin gui --dev             # Launch in development mode
 servin gui --port 8081       # Launch GUI on custom port
 
-# Network operations (Linux only)
+# Network operations (native Linux + VM mode on all platforms)
 servin network ls            # List networks
 servin network create NAME   # Create network
 servin network rm NAME       # Remove network
 
-# Volume operations
+# Volume operations (work in both native and VM modes)
 servin volume ls             # List volumes
 servin volume create NAME    # Create volume
 servin volume rm VOLUME      # Remove volume
@@ -173,9 +195,34 @@ servin volume rm-all         # Remove all volumes
 servin volume inspect VOLUME # Inspect volume details
 servin volume prune          # Remove unused volumes
 
-# Logs operations
+# Logs operations (work in both native and VM modes)
 servin logs CONTAINER        # Show container logs
 servin logs -f CONTAINER     # Follow logs in real-time
+```
+
+## Why VM Mode is Revolutionary
+
+### 🚀 **Universal Containerization**
+- **One Solution, All Platforms**: Identical container behavior on Windows, macOS, and Linux
+- **No Platform Limitations**: Full Linux container capabilities everywhere, not just basic process isolation
+- **True Hardware Isolation**: VM-level security boundaries that exceed native container security
+
+### 🔧 **Technical Advantages**
+- **Complete Linux Environment**: Full access to Linux namespaces, cgroups, and security features on any OS
+- **Hardware-Level Security**: VM isolation provides stronger security than process-level containers
+- **Consistent Development**: Developers get identical container behavior across all platforms
+- **Production Parity**: Development containers match Linux production environments exactly
+
+### 💡 **Use Cases Enabled by VM Mode**
+- **Cross-Platform Development Teams**: Windows/Mac developers can run identical Linux containers
+- **Security-Critical Applications**: VM isolation for enhanced security requirements
+- **Legacy System Modernization**: Run modern containerized applications on older Windows/Mac systems
+- **Hybrid Cloud Deployments**: Consistent container behavior from developer laptops to cloud instances
+- **Educational Environments**: Teaching containerization concepts on any platform
+
+### 🎯 **When to Use Each Mode**
+- **VM Mode**: Windows/macOS (automatic), enhanced security needs, cross-platform consistency
+- **Native Mode**: Linux servers, maximum performance, traditional container workflows
 servin logs -t CONTAINER     # Show logs with timestamps
 servin logs --tail 10 CONTAINER  # Show last 10 lines
 servin logs --since 1h CONTAINER # Show logs from last hour
@@ -231,29 +278,123 @@ servin --log-file PATH COMMAND     # Specify custom log file
 
 ## Platform-Specific Behavior
 
-### Storage Locations
-| Platform | Container State | Images | Volumes | Networks | Logs | Registry |
-|----------|----------------|--------|---------|----------|------|----------|
-| Linux | `/var/lib/servin/containers` | `/var/lib/servin/images` | `/var/lib/servin/volumes` | `/var/lib/servin/networks` | `/var/lib/servin/logs` | `/var/lib/servin/registry` |
-| Windows | `%USERPROFILE%\.servin\containers` | `%USERPROFILE%\.servin\images` | `%USERPROFILE%\.servin\volumes` | N/A | `%USERPROFILE%\.servin\logs` | `%USERPROFILE%\.servin\registry` |
-| macOS | `~/.servin/containers` | `~/.servin/images` | `~/.servin/volumes` | N/A | `~/.servin/logs` | `~/.servin/registry` |
+## Installation and Setup
 
-### Root Privileges
-- **Linux**: Required for namespace and cgroup operations
-- **Windows**: Development mode enabled by default
-- **macOS**: Required but can be bypassed with `--dev` flag
+### VM Mode Prerequisites
+For optimal VM-based containerization experience:
+
+**Windows:**
+- Windows 10/11 Pro or Enterprise (for Hyper-V)
+- Enable Hyper-V or WSL2
+- 4GB+ RAM recommended for VM operations
+
+**macOS:**
+- macOS 10.15+ with Virtualization.framework
+- 4GB+ RAM recommended for VM operations
+- Rosetta 2 for Apple Silicon compatibility
+
+**Linux:**
+- KVM/QEMU support for VM mode (optional, native mode preferred)
+- libvirt for VM management
+
+### Quick Start with VM Mode
+
+```bash
+# Install Servin (platform-specific installer)
+# Windows: Run servin-installer.exe
+# macOS: Run servin-installer.pkg  
+# Linux: ./install.sh
+
+# Initialize VM mode (automatic on Windows/macOS)
+servin init --vm
+
+# Pull and run your first container in VM
+servin run ubuntu:latest echo "Hello from VM containers!"
+
+# Check VM status
+servin vm status
+
+# Start GUI for easy VM management
+servin gui
+```
+
+## Platform-Specific Behavior
+
+### Storage Locations
+
+#### Native Mode (Linux)
+| Component | Location |
+|-----------|----------|
+| Container State | `/var/lib/servin/containers` |
+| Images | `/var/lib/servin/images` |
+| Volumes | `/var/lib/servin/volumes` |
+| Networks | `/var/lib/servin/networks` |
+| Logs | `/var/lib/servin/logs` |
+| Registry | `/var/lib/servin/registry` |
+
+#### VM Mode (All Platforms)
+| Platform | Base Directory | VM Storage | Container Data |
+|----------|---------------|------------|----------------|
+| Linux | `/var/lib/servin/vm/` | `/var/lib/servin/vm/disk.qcow2` | Inside VM filesystem |
+| Windows | `%USERPROFILE%\.servin\vm\` | `%USERPROFILE%\.servin\vm\disk.vhdx` | Inside VM filesystem |
+| macOS | `~/.servin/vm/` | `~/.servin/vm/disk.img` | Inside VM filesystem |
 
 ### Feature Matrix
+
+#### 🔄 **Dual-Mode Architecture**: Native + VM-Based Containerization
+
+Servin provides **two containerization modes** for maximum flexibility:
+
+1. **Native Mode**: Direct OS integration (Linux-only for full features)  
+2. **VM Mode**: Universal Linux VM for cross-platform true containerization
+
+```bash
+# Enable VM mode for universal containerization
+servin vm enable
+
+# Run containers with true isolation on ANY platform
+servin run --vm alpine echo "Hello from Linux VM!"
+```
+
+#### Containerization Features by Mode
 | Feature | Linux | Windows | macOS |
 |---------|-------|---------|-------|
-| **Core Runtime** | | | |
-| Namespaces | ✅ | ❌ (simulated) | ❌ (simulated) |
-| Cgroups | ✅ | ❌ | ❌ |
+| **Container Isolation (Native Mode)** | | | |
+| Namespaces (PID, NET, etc.) | ✅ | ❌ | ❌ |
+| Cgroups Resource Control | ✅ | ❌ | ❌ |
 | User Namespaces | ✅ | ❌ | ❌ |
 | Rootless Containers | ✅ | ❌ | ❌ |
-| Security Isolation | ✅ | ⚠️ (basic) | ⚠️ (basic) |
-| Container Management | ✅ | ✅ | ✅ |
+| Security Isolation | ✅ | ❌ | ❌ |
+| **Container Isolation (VM Mode)** | | | |
+| Namespaces (PID, NET, etc.) | ✅ | ✅ | ✅ |
+| Cgroups Resource Control | ✅ | ✅ | ✅ |
+| User Namespaces | ✅ | ✅ | ✅ |
+| Rootless Containers | ✅ | ✅ | ✅ |
+| Security Isolation | ✅ | ✅ | ✅ |
+| **Container Management (All Modes)** | | | |
+| Container Lifecycle | ✅ | ✅ | ✅ |
+| Process Management | ✅ | ✅ | ✅ |
 | Container Simulation | ✅ | ✅ | ✅ |
+
+#### 🚀 **VM-Based Universal Containerization** (Revolutionary Feature)
+| Feature | Linux | Windows | macOS |
+|---------|-------|---------|-------|
+| **True Container Isolation** | | | |
+| Hardware-Level Isolation | ✅ | ✅ | ✅ |
+| Full Linux Namespaces | ✅ | ✅ | ✅ |
+| Complete Cgroups Support | ✅ | ✅ | ✅ |
+| User Namespaces | ✅ | ✅ | ✅ |
+| Rootless Containers | ✅ | ✅ | ✅ |
+| Network Isolation | ✅ | ✅ | ✅ |
+| **VM Infrastructure** | | | |
+| Virtualization Framework | KVM/QEMU | Hyper-V | Virtualization.framework |
+| Hardware Acceleration | ✅ | ✅ | ✅ |
+| VM Lifecycle Management | ✅ | ✅ | ✅ |
+| Resource Optimization | ✅ | ✅ | ✅ |
+
+#### Universal Platform Features
+| Feature | Linux | Windows | macOS |
+|---------|-------|---------|-------|
 | **Images & Registry** | | | |
 | Image Management | ✅ | ✅ | ✅ |
 | Image Building | ✅ | ✅ | ✅ |
@@ -261,11 +402,13 @@ servin --log-file PATH COMMAND     # Specify custom log file
 | Local Registry | ✅ | ✅ | ✅ |
 | Registry Push/Pull | ✅ | ✅ | ✅ |
 | Image Security Scan | ✅ | ✅ | ✅ |
-| **Storage & Network** | | | |
+| **Storage & Networking** | | | |
 | Volume Management | ✅ | ✅ | ✅ |
-| Bridge Networking | ✅ | ❌ | ❌ |
+| Bridge Networking (Native) | ✅ | ❌ | ❌ |
+| Bridge Networking (VM) | ✅ | ✅ | ✅ |
 | Port Management | ✅ | ✅ | ✅ |
-| Network Isolation | ✅ | ❌ | ❌ |
+| Network Isolation (Native) | ✅ | ❌ | ❌ |
+| Network Isolation (VM) | ✅ | ✅ | ✅ |
 | **Orchestration** | | | |
 | Compose Orchestration | ✅ | ✅ | ✅ |
 | Multi-Container Apps | ✅ | ✅ | ✅ |
@@ -286,13 +429,17 @@ servin --log-file PATH COMMAND     # Specify custom log file
 | Desktop GUI | ✅ | ✅ | ✅ |
 | WebView Interface | ✅ | ✅ | ✅ |
 | **Security Features** | | | |
-| Capability Management | ✅ | ❌ | ❌ |
-| Security Policies | ✅ | ⚠️ (basic) | ⚠️ (basic) |
+| Capability Management (Native) | ✅ | ❌ | ❌ |
+| Capability Management (VM) | ✅ | ✅ | ✅ |
+| Security Policies (Native) | ✅ | ❌ | ❌ |
+| Security Policies (VM) | ✅ | ✅ | ✅ |
 | Security Testing | ✅ | ✅ | ✅ |
-| Privilege Dropping | ✅ | ❌ | ❌ |
+| Privilege Dropping (Native) | ✅ | ❌ | ❌ |
+| Privilege Dropping (VM) | ✅ | ✅ | ✅ |
 | **Monitoring & Logging** | | | |
 | Container Logs | ✅ | ✅ | ✅ |
-| Log Streaming | ✅ | ⚠️ (limited) | ⚠️ (limited) |
+| Log Streaming (Native) | ✅ | ❌ | ❌ |
+| Log Streaming (VM) | ✅ | ✅ | ✅ |
 | Health Checks | ✅ | ✅ | ✅ |
 | Metrics Export | ✅ | ✅ | ✅ |
 | Performance Monitoring | ✅ | ✅ | ✅ |
@@ -302,6 +449,8 @@ servin --log-file PATH COMMAND     # Specify custom log file
 | Development Mode | ✅ | ✅ | ✅ |
 | Cross-Platform Testing | ✅ | ✅ | ✅ |
 | Professional Installers | ✅ | ✅ | ✅ |
+
+> **🚀 Revolutionary Insight**: With VM mode enabled, Servin provides **identical containerization capabilities** across all platforms, solving the fundamental cross-platform container compatibility problem.
 
 ## Development Workflow
 
@@ -407,9 +556,79 @@ servin rm <container_id>
 - **Windows Containers** integration
 - **macOS containers** via hypervisor framework
 
+## 🚀 Getting Started Guide
+
+### For Docker Users
+Migrating from Docker to Servin is straightforward with familiar commands:
+
+```bash
+# Docker vs Servin command comparison
+docker run ubuntu:latest       →  servin run ubuntu:latest
+docker ps                      →  servin ls  
+docker stop CONTAINER          →  servin stop CONTAINER
+docker rm CONTAINER            →  servin rm CONTAINER
+docker images                  →  servin image ls
+docker build .                 →  servin build .
+docker exec CONTAINER CMD      →  servin exec CONTAINER CMD
+```
+
+### VM Mode Advantages for Ex-Docker Users
+- **Cross-Platform Consistency**: Same container behavior on Windows/Mac as Linux
+- **Enhanced Security**: VM-level isolation exceeds Docker's process isolation
+- **No Docker Desktop**: Native tool without licensing restrictions
+- **Better Resource Control**: VM boundaries provide cleaner resource management
+- **Educational Value**: Understand containerization without abstraction layers
+
+### Migration Checklist
+
+#### Phase 1: Installation & Setup
+- [ ] Install Servin for your platform
+- [ ] Initialize VM mode: `servin init --vm`
+- [ ] Verify installation: `servin version`
+- [ ] Test basic functionality: `servin run hello-world`
+
+#### Phase 2: Image Migration
+- [ ] Export Docker images: `docker save myapp:latest | servin image import -`
+- [ ] Pull common images: `servin pull ubuntu nginx postgres`
+- [ ] Convert Dockerfiles to Buildfiles (minimal changes needed)
+- [ ] Test image compatibility
+
+#### Phase 3: Workflow Integration
+- [ ] Update CI/CD scripts to use Servin commands
+- [ ] Configure development environment variables
+- [ ] Test container networking and volumes
+- [ ] Verify application compatibility
+
+#### Phase 4: Team Adoption
+- [ ] Document Servin-specific workflows
+- [ ] Train team on VM mode benefits
+- [ ] Establish cross-platform development standards
+- [ ] Monitor performance and resource usage
+
+### Example: WordPress Development Environment
+
+```bash
+# Traditional Docker approach (Linux only)
+docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=secret mysql:5.7
+docker run -d --name wordpress -p 8080:80 --link mysql:mysql wordpress
+
+# Servin approach (works identically on Windows/Mac/Linux)
+servin run -d --name mysql -e MYSQL_ROOT_PASSWORD=secret mysql:5.7
+servin run -d --name wordpress -p 8080:80 --link mysql:mysql wordpress
+
+# VM mode provides identical behavior across all platforms!
+```
+
 ## Conclusion
 
 Servin provides a complete foundation for understanding and working with container technologies while offering practical cross-platform development capabilities. It bridges the gap between learning containerization concepts and building production-ready solutions.
+
+**🎯 Key Takeaways:**
+- **Universal Containerization**: VM mode enables true Linux containers on any platform
+- **Enhanced Security**: VM-level isolation provides superior security boundaries  
+- **Educational Value**: Learn containerization without vendor abstractions
+- **Production Ready**: Comprehensive feature set for real-world applications
+- **Open Source Freedom**: No licensing restrictions or vendor lock-in
 
 ## � Open Source & Community
 

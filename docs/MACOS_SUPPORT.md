@@ -2,98 +2,183 @@
 
 ## Overview
 
-Servin now supports macOS as a development and testing platform alongside Windows and Linux. While full containerization features require Linux kernel capabilities, macOS support enables:
+Servin provides **full containerization capabilities** on macOS through its revolutionary **VM mode**, enabling true Linux containers on macOS with identical functionality to Linux systems.
 
-- ✅ **Image Management**: Import, list, inspect, and remove container images
-- ✅ **RootFS Creation**: Create container filesystems from images or basic templates
-- ✅ **State Management**: Track container state and metadata
-- ✅ **CLI Interface**: Full command-line interface compatibility
-- ⚠️ **Limited Isolation**: No namespace/cgroup isolation (development only)
+- ✅ **Full Linux Containers**: Complete Linux container functionality via VM mode
+- ✅ **Hardware-Level Isolation**: VM boundaries provide superior security
+- ✅ **Universal Compatibility**: Same container behavior as Linux and Windows
+- ✅ **Native macOS Integration**: Seamless GUI and CLI experience
+- ✅ **True Containerization**: Full namespaces, cgroups, and security features
+
+## VM Mode Architecture
+
+### 🚀 **Revolutionary Containerization**
+Servin's VM mode provides **true Linux containerization** on macOS by running a lightweight Linux VM that hosts the container engine:
+
+```
+┌─────────────────────────────────────────┐
+│              macOS Host                 │
+│  ┌─────────────────────────────────────┐│
+│  │         Servin CLI/GUI              ││
+│  └─────────────────────────────────────┘│
+│  ┌─────────────────────────────────────┐│
+│  │      Virtualization.framework       ││
+│  │  ┌─────────────────────────────────┐││
+│  │  │       Linux VM                 │││
+│  │  │ ┌─────────────────────────────┐│││
+│  │  │ │    Container Engine        ││││
+│  │  │ │ ┌─────────┐ ┌─────────────┐││││
+│  │  │ │ │Container│ │  Container  ││││
+│  │  │ │ │    A    │ │      B      ││││
+│  │  │ │ └─────────┘ └─────────────┘││││
+│  │  │ └─────────────────────────────┘│││
+│  │  └─────────────────────────────────┘││
+│  └─────────────────────────────────────┘│
+└─────────────────────────────────────────┘
+```
+
+### 🔧 **Technical Implementation**
+- **VM Backend**: Virtualization.framework (Apple's native virtualization)
+- **Linux Distribution**: Lightweight Alpine Linux VM
+- **Resource Efficiency**: Optimized VM with minimal overhead
+- **Automatic Management**: VM lifecycle handled transparently
+- **State Persistence**: Container state survives VM restarts
 
 ## Platform-Specific Behavior
 
 ### Storage Locations
 
-**macOS** uses the following directories:
+**VM Mode** (macOS default):
 ```bash
-~/Library/Application Support/.servin/
-├── containers/          # Container state and rootfs
-└── images/             # Image storage and metadata
+~/.servin/vm/                    # VM storage and configuration
+├── vm-disk.img                  # VM disk image (contains all containers)
+├── vm-config.json              # VM configuration
+└── vm-state/                   # VM runtime state
+
+# Container data lives inside the VM:
+VM: /var/lib/servin/
+├── containers/                 # Container state and rootfs
+├── images/                     # Image storage and metadata
+├── volumes/                    # Named volumes
+└── networks/                   # Network configurations
 ```
 
-**Alternative path** (fallback):
+### No Root Privileges Required
+
+**VM mode eliminates the need for sudo on macOS**:
 ```bash
-~/.servin/
-├── containers/          # Container state and rootfs  
-└── images/             # Image storage and metadata
+# All these work without sudo in VM mode:
+servin run ubuntu:latest /bin/sh
+servin pull nginx:alpine
+servin build -t myapp .
+servin network create mynet
 ```
 
-### Root Privileges
+### System Integration
 
-macOS requires `sudo` for container operations (similar to Linux):
-```bash
-# Requires sudo on macOS
-sudo servin run alpine:latest /bin/sh
-
-# Development mode bypasses root check
-servin run --dev alpine:latest /bin/sh
-```
-
-### System Integration Points (SIP)
-
-macOS System Integrity Protection (SIP) affects:
-- **chroot**: Not available without disabling SIP
-- **Network interfaces**: Limited without root
-- **System calls**: Restricted namespace operations
+**macOS-Native Experience**:
+- **Native GUI**: macOS-style application with proper integration
+- **Menu Bar Integration**: System tray controls and status
+- **Notification Support**: macOS notifications for container events
+- **Finder Integration**: Volume mounting appears in Finder
+- **Security**: Respects macOS security policies and sandboxing
 
 ## Usage Examples
 
-### Basic Container Operations
+### Full Container Operations
 
 ```bash
-# Import an image (works on macOS)
-servin image import alpine.tar.gz alpine:latest
+# All standard Docker operations work identically:
 
-# List images (works on macOS)  
-servin image ls
+# Pull and run containers
+servin pull ubuntu:latest
+servin run ubuntu:latest bash
 
-# Create container with limited isolation (macOS)
-sudo servin run alpine:latest /bin/sh
-# or in dev mode:
-servin run --dev alpine:latest /bin/sh
+# Container management
+servin ps                        # List running containers
+servin stop CONTAINER_ID         # Stop container
+servin rm CONTAINER_ID           # Remove container
+
+# Image operations
+servin images                    # List images
+servin build -t myapp .          # Build from Dockerfile
+servin tag myapp:latest myapp:v1 # Tag images
+
+# Volume operations
+servin volume create data-vol    # Create volume
+servin run -v data-vol:/data ubuntu # Mount volume
+
+# Network operations
+servin network create mynet      # Create network
+servin run --network mynet nginx # Use custom network
+```
+
+### VM Management
+
+```bash
+# VM lifecycle management
+servin vm status                 # Check VM status
+servin vm start                  # Start VM (automatic on first container)
+servin vm stop                   # Stop VM (preserves container state)
+servin vm reset                  # Reset VM to clean state
+
+# Resource management
+servin vm info                   # Show VM resource usage
+servin vm logs                   # View VM system logs
 ```
 
 ### Development Workflow
 
 ```bash
-# 1. Import test images
-servin image import test-app.tar.gz myapp:dev
+# 1. Start with VM mode (automatic)
+servin version                   # Shows VM mode is active
 
-# 2. Test container creation (dev mode)
-servin run --dev --name test-container myapp:dev /bin/bash
+# 2. Develop with containers
+servin run --name dev-env -v $(pwd):/workspace ubuntu:latest bash
 
-# 3. Inspect container state
-servin ls
+# 3. Build and test applications
+servin build -t myapp:dev .
+servin run --name test-app myapp:dev
 
-# 4. Clean up
+# 4. Push to registry (optional)
+servin push myapp:dev
+
+# 5. Clean up when done
 servin rm --all
-servin image rm myapp:dev
+servin image prune
 ```
 
 ## Platform Comparison
 
-| Feature | Linux | macOS | Windows |
-|---------|-------|-------|---------|
-| **Image Management** | ✅ Full | ✅ Full | ✅ Full |
-| **RootFS Creation** | ✅ Full | ✅ Full | ✅ Full |
-| **Process Isolation** | ✅ Namespaces | ❌ Limited | ❌ Limited |
-| **Filesystem Isolation** | ✅ chroot | ⚠️ Simulated | ⚠️ Simulated |
-| **Network Isolation** | ✅ netns | ❌ Host only | ❌ Host only |
-| **Resource Control** | ✅ cgroups | ❌ None | ❌ None |
-| **Root Required** | ✅ Yes | ✅ Yes* | ❌ No |
-| **Development Mode** | ✅ Bypass | ✅ Bypass | ✅ Default |
+| Feature | Linux Native | macOS VM Mode | Windows VM Mode |
+|---------|-------------|---------------|-----------------|
+| **Full Linux Containers** | ✅ | ✅ | ✅ |
+| **Namespaces (PID/Net/Mount/etc)** | ✅ | ✅ | ✅ |
+| **cgroups Resource Control** | ✅ | ✅ | ✅ |
+| **Security Boundaries** | Process | VM | VM |
+| **Hardware Isolation** | ❌ | ✅ | ✅ |
+| **Performance** | Native | Near-Native | Near-Native |
+| **Docker Compatibility** | ✅ | ✅ | ✅ |
+| **Root Required** | ✅ | ❌ | ❌ |
+| **Native GUI** | ✅ | ✅ | ✅ |
 
-*macOS requires `sudo` but `--dev` flag bypasses this
+## Why VM Mode is Superior
+
+### 🔒 **Enhanced Security**
+- **VM Isolation**: Stronger security boundaries than process-level containers
+- **Hardware Boundaries**: Physical separation between host and containers
+- **Sandboxing**: macOS-compatible security model with no SIP conflicts
+
+### 🚀 **True Compatibility**
+- **Identical Behavior**: Same container behavior as Linux production systems
+- **No Limitations**: All Linux container features available
+- **Production Parity**: Development matches production environments exactly
+
+### 💡 **Operational Advantages**
+- **No sudo Required**: VM mode eliminates privilege escalation needs
+- **Clean Isolation**: VM restart cleans up all container state
+- **Resource Control**: Better resource management than native containers
+- **Consistent Development**: Same environment across all developer machines
 
 ## Technical Implementation
 

@@ -8,28 +8,45 @@ permalink: /installation/
 
 ## Quick Installation
 
-Choose your platform and follow the installation instructions:
+Choose your platform and follow the installation instructions. Servin automatically enables **VM mode** on Windows/macOS for universal containerization, while Linux uses **native mode** for maximum performance.
 
 <div class="feature-grid">
   <div class="feature-box">
     <div class="feature-icon">🪟</div>
     <h4>Windows</h4>
-    <p>Professional NSIS installer with service integration</p>
-    <span class="badge badge-success">Wizard installer</span>
+    <p>Professional NSIS installer with VM containerization</p>
+    <span class="badge badge-success">VM Mode (Universal)</span>
   </div>
   <div class="feature-box">
     <div class="feature-icon">🐧</div>
     <h4>Linux</h4>
-    <p>GUI installer with systemd integration</p>
-    <span class="badge badge-success">GUI installer</span>
+    <p>Native containerization with optional VM mode</p>
+    <span class="badge badge-success">Native + VM Mode</span>
   </div>
   <div class="feature-box">
     <div class="feature-icon">🍎</div>
     <h4>macOS</h4>
-    <p>Native installer following Apple HIG</p>
-    <span class="badge badge-success">Native installer</span>
+    <p>VM-based containerization via Virtualization.framework</p>
+    <span class="badge badge-success">VM Mode (Universal)</span>
   </div>
 </div>
+
+## 📦 Download Official Releases
+
+All platforms get **production-ready installers** from our GitHub Releases:
+
+### 🔗 **Download Links** 
+- **Latest Release**: [https://github.com/immyemperor/servin/releases/latest](https://github.com/immyemperor/servin/releases/latest)
+- **All Releases**: [https://github.com/immyemperor/servin/releases](https://github.com/immyemperor/servin/releases)
+
+### 📋 **Available Distributions**
+| Platform | File | Size | Features |
+|----------|------|------|----------|
+| **Windows** | `servin-windows-amd64-installer.exe` | ~15MB | NSIS Installer + VM Mode |
+| **macOS Intel** | `servin-macos-amd64-installer.pkg` | ~12MB | Native Installer + VM Mode |
+| **macOS Apple Silicon** | `servin-macos-arm64-installer.pkg` | ~12MB | Native Installer + VM Mode |
+| **Linux AMD64** | `servin-linux-amd64.tar.gz` | ~10MB | Binary + Service Files |
+| **Linux ARM64** | `servin-linux-arm64.tar.gz` | ~9MB | Binary + Service Files |
 
 ## Platform-Specific Instructions
 
@@ -39,8 +56,9 @@ Choose your platform and follow the installation instructions:
 
 1. **Download** the latest installer:
    ```
-   servin_1.0.0_windows_amd64_installer.exe
+   servin-windows-amd64-installer.exe
    ```
+   From: [GitHub Releases](https://github.com/immyemperor/servin/releases/latest)
 
 2. **Run as Administrator**:
    - Right-click the installer
@@ -51,14 +69,16 @@ Choose your platform and follow the installation instructions:
    - Select components to install
    - Configure service options
 
-4. **Launch from Start Menu**:
-   - Find "Servin Container Runtime" in Start Menu
-   - Or run `servin` from Command Prompt
+4. **Launch Servin**:
+   - VM mode initializes automatically on first run
+   - Use Start Menu: "Servin Container Runtime"
+   - Or run `servin` from Command Prompt/PowerShell
 
 #### What's Included:
 - ✅ Servin CLI (`servin.exe`)
-- ✅ Desktop GUI (`servin-gui.exe`)
-- ✅ Terminal UI (`servin-desktop.exe`)
+- ✅ Desktop GUI (`servin-gui.exe`) 
+- ✅ Terminal UI (`servin-tui.exe`)
+- ✅ VM containerization engine
 - ✅ Windows Service integration
 - ✅ Start Menu shortcuts
 - ✅ Add/Remove Programs entry
@@ -66,31 +86,31 @@ Choose your platform and follow the installation instructions:
 
 ### 🐧 Linux Installation
 
-#### Option 1: Using the GUI Installer (Recommended)
+#### Option 1: Using the Installer (Recommended)
 
 ```bash
-# Download installer
-wget https://github.com/immyemperor/servin/releases/latest/download/servin_1.0.0_linux_amd64.tar.gz
+# Download installer from GitHub Releases
+wget https://github.com/immyemperor/servin/releases/latest/download/servin-linux-amd64.tar.gz
 
 # Extract and run installer
-tar -xzf servin_1.0.0_linux_amd64.tar.gz
+tar -xzf servin-linux-amd64.tar.gz
 cd servin-linux-amd64
-sudo ./ServinInstaller.sh
+sudo ./install.sh
 ```
 
 #### Option 2: Manual Installation
 
 ```bash
-# Download binary package
-wget https://github.com/immyemperor/servin/releases/latest/download/servin_1.0.0_linux_amd64.tar.gz
+# Download binary package from GitHub Releases
+wget https://github.com/immyemperor/servin/releases/latest/download/servin-linux-amd64.tar.gz
 
 # Extract package
-tar -xzf servin_1.0.0_linux_amd64.tar.gz
+tar -xzf servin-linux-amd64.tar.gz
 
 # Move binaries to system path
 sudo cp servin* /usr/local/bin/
 
-# Create systemd service
+# Create systemd service (if included)
 sudo systemctl enable servin
 sudo systemctl start servin
 ```
@@ -105,35 +125,94 @@ sudo systemctl start servin
 
 ### 🍎 macOS Installation
 
-#### Option 1: Using the GUI Installer (Recommended)
+#### Option 1: Using the Native Installer (Recommended)
 
 ```bash
-# Download installer
-curl -O https://github.com/immyemperor/servin/releases/latest/download/servin_1.0.0_macos_universal.tar.gz
+# Download installer from GitHub Releases
+curl -L -O https://github.com/immyemperor/servin/releases/latest/download/servin-macos-universal-installer.pkg
 
-# Extract and run installer
-tar -xzf servin_1.0.0_macos_universal.tar.gz
-cd servin-macos-universal
-sudo ./ServinInstaller.command
+# Run installer (will prompt for admin password)
+sudo installer -pkg servin-macos-universal-installer.pkg -target /
+
+# Verify installation
+servin version
 ```
 
-#### Option 2: Using Homebrew
+#### Option 2: Manual Installation
 
 ```bash
-# Add tap
-brew tap immyemperor/servin
+# Download binary package from GitHub Releases  
+curl -L -O https://github.com/immyemperor/servin/releases/latest/download/servin-macos-universal.tar.gz
 
-# Install servin
-brew install servin
+# Extract and install
+tar -xzf servin-macos-universal.tar.gz
+sudo cp servin* /usr/local/bin/
 
-# Start service
-brew services start servin
+# Initialize VM mode
+servin init --vm
 ```
 
 #### Requirements:
 - ✅ macOS 10.15 (Catalina) or later
-- ✅ Python 3.8+ (for installer)
-- ✅ Command Line Tools for Xcode
+- ✅ 4GB+ RAM (recommended for VM operations)
+- ✅ Apple Silicon or Intel Mac support
+- ✅ Virtualization.framework access
+
+#### What's Included:
+- ✅ Servin CLI with VM mode
+- ✅ Desktop GUI with VM management
+- ✅ Terminal UI with real-time monitoring  
+- ✅ Automatic VM initialization
+- ✅ Homebrew-style installation
+
+## 🚀 Getting Started
+
+### Initial Setup
+
+After installation, initialize your containerization environment:
+
+#### Windows (VM Mode - Automatic)
+```powershell
+# VM mode initializes automatically
+servin version
+servin run hello-world
+```
+
+#### macOS (VM Mode - Automatic)  
+```bash
+# VM mode initializes automatically
+servin version
+servin init --vm  # Optional: explicit initialization
+servin run hello-world
+```
+
+#### Linux (Native Mode Default)
+```bash
+# Native mode (recommended)
+sudo servin version
+sudo servin run hello-world
+
+# Optional: Enable VM mode
+servin init --vm
+servin run --vm hello-world
+```
+
+### Verify Installation
+
+Test your installation with these commands:
+
+```bash
+# Check version and mode
+servin version
+servin vm status  # Shows VM mode status
+
+# Pull and run test container
+servin pull hello-world
+servin run hello-world
+
+# Launch GUI (optional)
+servin gui
+```
 
 ## Building from Source
 
@@ -253,11 +332,14 @@ go install ./...
 # Run tests
 go test ./...
 
-# Run with live reload
-go run main.go daemon --dev
+# Run development version
+go run main.go version
 
-# Build with debug information
+# Build with debug information  
 go build -gcflags="all=-N -l" -o servin-debug main.go
+
+# Test VM functionality (if available)
+go run main.go vm status
 ```
 
 ## Post-Installation Setup
@@ -268,7 +350,10 @@ go build -gcflags="all=-N -l" -o servin-debug main.go
 # Check version
 servin version
 
-# Verify daemon can start
+# Verify VM mode status (Windows/macOS)
+servin vm status
+
+# Test basic functionality
 servin daemon --dry-run
 
 # Test basic functionality

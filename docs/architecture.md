@@ -6,15 +6,36 @@ permalink: /architecture/
 
 # 🏗 Architecture
 
-## System Overview
+## Revolutionary Dual-Mode Architecture
 
-Servin Container Runtime follows a modular architecture design that separates concerns while maintaining high performance and reliability.
+Servin Container Runtime features a **revolutionary dual-mode architecture** that provides both native Linux containerization and universal VM-based containerization across all platforms.
+
+### 🎯 **Containerization Modes**
+
+1. **Native Mode** (Linux): Direct kernel integration for maximum performance
+2. **VM Mode** (Universal): Linux VM providing true containerization on any platform
 
 <div class="architecture-diagram">
 ┌─────────────────────────────────────────────────────────────┐
 │                    Servin Container Runtime                  │
 ├─────────────────────────────────────────────────────────────┤
-│  Interfaces                                                 │
+│  Dual-Mode Engine                                           │
+│  ┌─────────────────────┐ ┌─────────────────────────────────┐│
+│  │    Native Mode      │ │        VM Mode                  ││
+│  │   (Linux Only)      │ │   (Windows/macOS/Linux)         ││
+│  │                     │ │                                 ││
+│  │ ┌─────────────────┐ │ │ ┌─────────────────────────────┐ ││
+│  │ │ Direct Kernel   │ │ │ │    Linux VM Container       │ ││
+│  │ │ Namespaces     │ │ │ │      Engine                │ ││
+│  │ │ + cgroups      │ │ │ │                             │ ││
+│  │ └─────────────────┘ │ │ │ ┌─────────────────────────┐ │ ││
+│  └─────────────────────┘ │ │ │  KVM/Hyper-V/VMware    │ │ ││
+│                          │ │ │  Virtualization.framework│ │ ││
+│                          │ │ └─────────────────────────┘ │ ││
+│                          │ └─────────────────────────────┘ ││
+│                          └─────────────────────────────────┘│
+├─────────────────────────────────────────────────────────────┤
+│  User Interfaces (Common Across Both Modes)                 │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
 │  │    CLI      │ │     TUI     │ │      Desktop GUI        ││
 │  │  Command    │ │  Terminal   │ │   Flask + pywebview     ││
@@ -33,69 +54,114 @@ Servin Container Runtime follows a modular architecture design that separates co
 │  │ (gRPC)      │ │ (REST)      │ │   (Internal Comms)      ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 ├─────────────────────────────────────────────────────────────┤
-│  Storage & Runtime                                          │
+│  Platform Integration Layer                                 │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
-│  │ Container   │ │   Image     │ │      Configuration      ││
-│  │   Storage   │ │   Store     │ │       & Metadata        ││
+│  │   Linux     │ │   Windows   │ │        macOS            ││
+│  │   Native    │ │  VM Mode    │ │      VM Mode            ││
+│  │   + VM      │ │  (Hyper-V)  │ │ (Virtualization.fwk)    ││
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
 </div>
 
+## Platform-Specific Implementation
+
+### 🐧 **Linux**: Native + VM Modes
+- **Native Mode** (Default): Direct kernel namespaces, cgroups, capabilities
+- **VM Mode** (Optional): KVM/QEMU-based Linux VM for enhanced isolation
+- **Automatic Selection**: Native preferred, VM available for security
+
+### 🪟 **Windows**: VM Mode Only  
+- **VM Engine**: Hyper-V or WSL2-based Linux VM
+- **Automatic**: VM mode initializes seamlessly on first run
+- **Integration**: Native Windows GUI with Linux container engine
+
+### 🍎 **macOS**: VM Mode Only
+- **VM Engine**: Virtualization.framework-based Linux VM
+- **Universal**: Intel and Apple Silicon support
+- **Seamless**: Native macOS experience with Linux containers
+
 ## Component Architecture
 
-### 🎯 Core Components
+### 🎯 Dual-Mode Runtime Engine
 
-#### Runtime Engine
-- **Container Lifecycle Management**: Create, start, stop, pause, delete containers
-- **Process Management**: Handle container processes and signal forwarding
+#### Native Mode Engine (Linux)
+- **Direct Kernel Access**: Linux namespaces (PID, Network, Mount, UTS, IPC, User)
+- **Resource Control**: cgroups v1/v2 for CPU, memory, I/O limits
+- **Security**: Capabilities, SELinux/AppArmor integration
+- **Performance**: Zero virtualization overhead
+- **Compatibility**: Full Docker and OCI compatibility
+
+#### VM Mode Engine (Universal)
+- **Linux VM**: Lightweight Linux VM for universal containerization
+- **VM Backends**: 
+  - **Windows**: Hyper-V, WSL2
+  - **macOS**: Virtualization.framework, QEMU
+  - **Linux**: KVM/QEMU (optional for enhanced isolation)
+- **VM Management**: Automatic VM lifecycle, state persistence
+- **Bridge Integration**: Seamless host-VM communication
+- **Resource Efficiency**: Optimized VM with minimal overhead
+
+### 🔧 Container Management Core
+
+#### Container Lifecycle Management
+- **Create, Start, Stop, Delete**: Full container lifecycle control across both modes
+- **Process Management**: Handle container processes and signal forwarding  
 - **Resource Management**: CPU, memory, and I/O resource allocation
-- **Security**: Namespace isolation, capability management, SELinux/AppArmor
+- **State Persistence**: Container state maintained across VM restarts
+- **Security**: Mode-appropriate isolation (namespaces or VM boundaries)
 
 #### Image Manager
 - **OCI Image Support**: Full OCI image specification compliance
 - **Layer Management**: Efficient layer storage and deduplication
-- **Image Operations**: Pull, push, build, tag, inspect operations
-- **Multi-architecture**: Support for different CPU architectures
+- **Cross-Mode Sharing**: Images work identically in native and VM modes
+- **Multi-architecture**: Support for ARM64 and AMD64 architectures
+- **Registry Integration**: Pull/push from any OCI-compatible registry
 
 #### Volume Manager
-- **Persistent Storage**: Named volumes with lifecycle management
+- **Universal Volumes**: Consistent volume behavior across modes
 - **Bind Mounts**: Host directory mounting with proper permissions
-- **Tmpfs Mounts**: In-memory temporary storage
+- **Named Volumes**: Persistent volume creation and management
+- **VM Volume Bridge**: Seamless host-VM volume sharing in VM mode
 - **Storage Drivers**: Pluggable storage backend support
 
 #### Network Manager
-- **Bridge Networks**: Default container networking
-- **Custom Networks**: User-defined networks with isolation
-- **Port Management**: Port forwarding and publishing
-- **DNS Resolution**: Container name resolution
+- **Mode-Adaptive Networking**:
+  - **Native Mode**: Direct Linux bridge networks, namespaces
+  - **VM Mode**: VM-bridged networking with host integration
+- **Port Management**: Port forwarding and publishing across VM boundaries
+- **DNS Resolution**: Container name resolution in both modes
+- **Network Isolation**: Security through network segmentation
 
 #### Registry Client
 - **Authentication**: Registry login and credential management
 - **Push/Pull Operations**: Efficient image transfer
-- **Manifest Handling**: Image manifest processing
+- **Manifest Handling**: Image manifest processing  
 - **Mirror Support**: Registry mirror configuration
 
-### 🔌 Interface Layer
+### 🔌 Universal Interface Layer
 
-#### CLI Interface
+#### CLI Interface (Identical Across Modes)
 ```bash
+# These commands work identically in native and VM modes:
 servin run alpine:latest
 servin ps
-servin images
+servin images  
 servin networks ls
+servin vm status     # VM mode specific
+servin vm start      # VM mode specific  
 ```
 
 #### Terminal UI (TUI)
-- Interactive menu-driven interface
-- Real-time container monitoring
-- Visual network and volume management
-- Cross-platform terminal support
+- **Mode-Aware Interface**: Shows current mode (Native/VM)
+- **Real-time Monitoring**: Container status regardless of mode
+- **VM Management**: VM-specific controls when in VM mode
+- **Cross-platform**: Identical experience on all platforms
 
 #### Desktop GUI
-- Web-based application using Flask backend and pywebview frontend
-- Real-time container status updates and responsive design
-- Cross-platform binary distribution via PyInstaller
-- Native desktop integration with professional installers
+- **Universal Web Interface**: Flask backend + pywebview frontend
+- **Mode Indicator**: Clear indication of current containerization mode
+- **VM Controls**: VM start/stop/status when in VM mode
+- **Cross-platform Binary**: PyInstaller distribution for all platforms
 
 ### 🌐 API Layer
 
