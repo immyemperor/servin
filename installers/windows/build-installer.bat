@@ -19,6 +19,13 @@ if %errorlevel% neq 0 (
 echo [DEBUG] NSIS version information:
 makensis /VERSION 2>nul || echo NSIS version check failed
 
+echo [DEBUG] Testing NSIS with simple script...
+echo OutFile "test.exe" > test.nsi
+echo Section >> test.nsi
+echo SectionEnd >> test.nsi
+makensis test.nsi 2>nul && echo NSIS basic test passed || echo NSIS basic test failed
+del test.nsi test.exe 2>nul
+
 REM Check if executables exist
 if not exist "servin.exe" (
     echo [ERROR] servin.exe not found
@@ -67,7 +74,7 @@ dir
 
 echo [DEBUG] Running NSIS with command: makensis /NOCD servin-installer.nsi
 echo [DEBUG] NSIS output:
-makensis /NOCD servin-installer.nsi 2>&1 | tee build.log
+makensis /NOCD servin-installer.nsi > build.log 2>&1
 
 echo [DEBUG] NSIS exit code: %errorlevel%
 echo [DEBUG] Build log contents:

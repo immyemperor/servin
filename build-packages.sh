@@ -534,17 +534,57 @@ EOF
     print_info "Creating GitHub Actions compatible installer copies..."
     
     # Windows installer
-    if [[ -f "$release_dir/windows/Servin-Installer-$VERSION.exe" ]]; then
-        cp "$release_dir/windows/Servin-Installer-$VERSION.exe" "$dist_dir/servin_${VERSION}_installer.exe"
-        print_info "Windows installer copied to dist/servin_${VERSION}_installer.exe"
+    print_info "Looking for Windows installer..."
+    local windows_installer_found=false
+    
+    # Check multiple possible locations and names
+    for installer_path in \
+        "$release_dir/windows/Servin-Installer-$VERSION.exe" \
+        "$release_dir/windows/servin-installer-$VERSION.exe" \
+        "$SCRIPT_DIR/installers/windows/Servin-Installer-$VERSION.exe" \
+        "$SCRIPT_DIR/installers/windows/servin-installer-$VERSION.exe"; do
+        
+        if [[ -f "$installer_path" ]]; then
+            cp "$installer_path" "$dist_dir/servin_${VERSION}_installer.exe"
+            print_success "Windows installer copied from $installer_path to dist/servin_${VERSION}_installer.exe"
+            windows_installer_found=true
+            break
+        fi
+    done
+    
+    if [[ "$windows_installer_found" == "false" ]]; then
+        print_warning "Windows installer not found in expected locations"
+        print_info "Searched locations:"
+        print_info "  - $release_dir/windows/Servin-Installer-$VERSION.exe"
+        print_info "  - $release_dir/windows/servin-installer-$VERSION.exe"
+        print_info "  - $SCRIPT_DIR/installers/windows/Servin-Installer-$VERSION.exe"
+        print_info "  - $SCRIPT_DIR/installers/windows/servin-installer-$VERSION.exe"
     fi
     
     # Linux AppImage
-    if ls "$release_dir/linux/Servin-"*.AppImage >/dev/null 2>&1; then
-        APPIMAGE_FILE=$(ls "$release_dir/linux/Servin-"*.AppImage | head -1)
-        APPIMAGE_NAME=$(basename "$APPIMAGE_FILE")
-        cp "$APPIMAGE_FILE" "$dist_dir/servin_${VERSION}_installer.AppImage"
-        print_info "Linux AppImage copied to dist/servin_${VERSION}_installer.AppImage"
+    print_info "Looking for Linux AppImage..."
+    local appimage_found=false
+    
+    # Check multiple possible locations
+    for appimage_path in \
+        "$release_dir/linux/Servin-"*.AppImage \
+        "$SCRIPT_DIR/installers/linux/build/Servin-"*.AppImage; do
+        
+        if ls $appimage_path >/dev/null 2>&1; then
+            APPIMAGE_FILE=$(ls $appimage_path | head -1)
+            APPIMAGE_NAME=$(basename "$APPIMAGE_FILE")
+            cp "$APPIMAGE_FILE" "$dist_dir/servin_${VERSION}_installer.AppImage"
+            print_success "Linux AppImage copied from $APPIMAGE_FILE to dist/servin_${VERSION}_installer.AppImage"
+            appimage_found=true
+            break
+        fi
+    done
+    
+    if [[ "$appimage_found" == "false" ]]; then
+        print_warning "Linux AppImage not found in expected locations"
+        print_info "Searched locations:"
+        print_info "  - $release_dir/linux/Servin-*.AppImage"
+        print_info "  - $SCRIPT_DIR/installers/linux/build/Servin-*.AppImage"
     fi
     
     # macOS PKG
