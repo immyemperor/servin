@@ -16,6 +16,9 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+echo [DEBUG] NSIS version information:
+makensis /VERSION 2>nul || echo NSIS version check failed
+
 REM Check if executables exist
 if not exist "servin.exe" (
     echo [ERROR] servin.exe not found
@@ -24,16 +27,18 @@ if not exist "servin.exe" (
     exit /b 1
 )
 
-if not exist "servin-gui.exe" (
-    echo [WARNING] servin-gui.exe not found - GUI components will not be included
-    echo This is optional if building CLI-only version
-)
-
 if not exist "servin-tui.exe" (
     echo [ERROR] servin-tui.exe not found
     echo Please build the Servin TUI executable first
     pause
     exit /b 1
+)
+
+if not exist "servin-gui.exe" (
+    echo [WARNING] servin-gui.exe not found - GUI components will not be included
+    echo This is optional if building CLI-only version
+) else (
+    echo [INFO] servin-gui.exe found - GUI components will be included
 )
 
 REM Check for required files
@@ -56,32 +61,53 @@ if not exist "servin.ico" (
 )
 
 echo [INFO] Building installer with NSIS...
+echo [DEBUG] Current directory: %CD%
+echo [DEBUG] Available files:
+dir
+
+echo [DEBUG] Running NSIS with command: makensis /NOCD servin-installer.nsi
 makensis /NOCD servin-installer.nsi
+
+echo [DEBUG] NSIS exit code: %errorlevel%
 
 if %errorlevel% eq 0 (
     echo.
-    echo [SUCCESS] Installer built successfully: servin-installer-1.0.0.exe
+    echo [SUCCESS] NSIS compilation completed successfully
     
-    REM Copy to standardized name for workflow compatibility
+    REM Check if the installer file was actually created
     if exist "servin-installer-1.0.0.exe" (
+        echo [SUCCESS] Installer file created: servin-installer-1.0.0.exe
+        dir /b *installer*.exe
+        
+        REM Copy to standardized name for workflow compatibility
         copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
         echo [INFO] Created standardized installer name: Servin-Installer-1.0.0.exe
+        
+        echo.
+        echo The installer includes:
+        echo - Servin Container Runtime executables
+        echo - VM prerequisites installation (Chocolatey, Python, VM providers)
+        echo - Windows Service integration
+        echo - Desktop and Start Menu shortcuts
+        echo - File associations and context menus
+        echo.
+        echo To test the installer, run as Administrator:
+        echo Servin-Installer-1.0.0.exe
+    ) else (
+        echo [ERROR] NSIS compilation succeeded but installer file not found
+        echo [DEBUG] Expected file: servin-installer-1.0.0.exe
+        echo [DEBUG] Files matching pattern:
+        dir /b *installer*.exe 2>nul || echo No installer files found
+        exit /b 1
     )
-    
-    echo.
-    echo The installer includes:
-    echo - Servin Container Runtime executables
-    echo - VM prerequisites installation (Chocolatey, Python, VM providers)
-    echo - Windows Service integration
-    echo - Desktop and Start Menu shortcuts
-    echo - File associations and context menus
-    echo.
-    echo To test the installer, run as Administrator:
-    echo Servin-Installer-1.0.0.exe
 ) else (
     echo.
-    echo [ERROR] Installer build failed
-    echo Check the output above for errors
+    echo [ERROR] NSIS compilation failed with exit code %errorlevel%
+    echo [DEBUG] Check the NSIS output above for specific errors
+    echo [DEBUG] Common issues:
+    echo   - Missing required files (check servin.exe, servin-tui.exe)
+    echo   - Syntax errors in .nsi file
+    echo   - Missing NSIS plugins or includes
     pause
     exit /b 1
 )

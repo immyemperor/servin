@@ -596,12 +596,17 @@ Section "VM Prerequisites" SEC02
 SectionEnd
 
 Section "Desktop Integration" SEC03
-  # Create desktop shortcuts
-  CreateShortCut "$DESKTOP\Servin GUI.lnk" "$INSTDIR\servin-gui.exe" "" "$INSTDIR\servin.exe" 0
+  # Create desktop shortcuts - GUI only if available
+  IfFileExists "$INSTDIR\servin-gui.exe" 0 +2
+    CreateShortCut "$DESKTOP\Servin GUI.lnk" "$INSTDIR\servin-gui.exe" "" "$INSTDIR\servin.exe" 0
   
   # Create Start Menu folder
   CreateDirectory "$SMPROGRAMS\Servin"
-  CreateShortCut "$SMPROGRAMS\Servin\Servin GUI.lnk" "$INSTDIR\servin-gui.exe" "" "$INSTDIR\servin.exe" 0
+  
+  # Create GUI shortcut only if GUI is available
+  IfFileExists "$INSTDIR\servin-gui.exe" 0 +2
+    CreateShortCut "$SMPROGRAMS\Servin\Servin GUI.lnk" "$INSTDIR\servin-gui.exe" "" "$INSTDIR\servin.exe" 0
+  
   CreateShortCut "$SMPROGRAMS\Servin\Servin TUI.lnk" "$INSTDIR\servin-tui.exe" "" "$INSTDIR\servin.exe" 1
   CreateShortCut "$SMPROGRAMS\Servin\Command Prompt.lnk" "$SYSDIR\cmd.exe" "/k cd /d $\"$INSTDIR$\"" "$SYSDIR\cmd.exe" 0
   CreateShortCut "$SMPROGRAMS\Servin\Uninstall.lnk" "$INSTDIR\uninst.exe" "" "$INSTDIR\uninst.exe" 0

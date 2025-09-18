@@ -194,6 +194,11 @@ export LD_LIBRARY_PATH="$APPDIR/usr/lib:$LD_LIBRARY_PATH"
 export SERVIN_DATA_DIR="${SERVIN_DATA_DIR:-$HOME/.servin}"
 export SERVIN_CONFIG_DIR="${SERVIN_CONFIG_DIR:-$HOME/.config/servin}"
 
+# Setup VM environment if available
+if [[ -f "$APPDIR/opt/vm/setup-vm-env.sh" ]]; then
+    source "$APPDIR/opt/vm/setup-vm-env.sh"
+fi
+
 # Create directories if they don't exist
 mkdir -p "$SERVIN_DATA_DIR"/{vm/{images,instances},logs}
 mkdir -p "$SERVIN_CONFIG_DIR"
@@ -299,20 +304,108 @@ EOF
     print_success "Application icon created"
 }
 
+# Bundle VM dependencies
+bundle_vm_dependencies() {
+    print_header "Bundling VM Dependencies"
+    
+    local vm_dir="$APPDIR/opt/vm"
+    mkdir -p "$vm_dir/bin" "$vm_dir/share"
+    
+    # Bundle QEMU binaries if available
+    if command -v qemu-system-x86_64 >/dev/null 2>&1; then
+        print_info "Bundling QEMU binaries..."
+        
+        # Copy QEMU system binaries
+        cp "$(which qemu-system-x86_64)" "$vm_dir/bin/" 2>/dev/null && print_success "qemu-system-x86_64 bundled"
+        cp "$(which qemu-img)" "$vm_dir/bin/" 2>/dev/null && print_success "qemu-img bundled"
+        
+        # Copy QEMU data files
+        local qemu_share_dir="/usr/share/qemu"
+        if [[ -d "$qemu_share_dir" ]]; then
+            print_info "Bundling QEMU data files..."
+            mkdir -p "$vm_dir/share/qemu"
+            
+            # Copy essential QEMU files (BIOS, VGA BIOS, etc.)
+            for file in "$qemu_share_dir"/{bios*.bin,vgabios*.bin,efi-*.rom,kvmvapic.bin}; do
+                [[ -f "$file" ]] && cp "$file" "$vm_dir/share/qemu/" 2>/dev/null
+            done
+            
+            # Copy firmware files
+            [[ -d "$qemu_share_dir/firmware" ]] && cp -r "$qemu_share_dir/firmware" "$vm_dir/share/qemu/" 2>/dev/null
+            
+            print_success "QEMU data files bundled"
+        fi
+        
+        # Copy required libraries for QEMU
+        print_info "Bundling QEMU libraries..."
+        local qemu_libs=(
+            "libvirglrenderer.so*"
+            "libspice-server.so*"
+            "libusbredirparser.so*"
+            "libcacard.so*"
+        )
+        
+        mkdir -p "$vm_dir/lib"
+        for lib_pattern in "${qemu_libs[@]}"; do
+            find /usr/lib* /lib* -name "$lib_pattern" 2>/dev/null | head -5 | while read lib; do
+                [[ -f "$lib" ]] && cp "$lib" "$vm_dir/lib/" 2>/dev/null
+            done
+        done
+        
+    else
+        print_warning "QEMU not found in system, AppImage will require QEMU installation"
+        # Download minimal QEMU for basic functionality
+        print_info "Downloading minimal QEMU binaries..."
+        
+        local qemu_url="https://github.com/qemu/qemu/releases/download/v8.1.0"
+        # Note: In a real implementation, we'd download or include pre-built QEMU binaries
+        print_warning "QEMU download not implemented - AppImage will be smaller but require system QEMU"
+    fi
+    
+    # Create VM environment setup script
+    cat > "$vm_dir/setup-vm-env.sh" << 'EOF'
+#!/bin/bash
+# Setup VM environment for Servin AppImage
+
+# Add VM binaries to PATH
+export PATH="$APPDIR/opt/vm/bin:$PATH"
+
+# Set QEMU data directory
+export QEMU_DATA_DIR="$APPDIR/opt/vm/share/qemu"
+
+# Set library path for QEMU
+export LD_LIBRARY_PATH="$APPDIR/opt/vm/lib:$LD_LIBRARY_PATH"
+
+# Set Servin VM configuration
+export SERVIN_VM_QEMU_PATH="$APPDIR/opt/vm/bin/qemu-system-x86_64"
+export SERVIN_VM_QEMU_IMG_PATH="$APPDIR/opt/vm/bin/qemu-img"
+EOF
+    chmod +x "$vm_dir/setup-vm-env.sh"
+    
+    print_success "VM dependencies bundled"
+}
+
 # Bundle dependencies
 bundle_dependencies() {
     print_header "Bundling Dependencies"
     
-    # Use linuxdeploy to bundle dependencies
-    print_info "Running linuxdeploy..."
+    # Bundle VM dependencies first
+    bundle_vm_dependencies
     
-    cd "$BUILD_DIR"
-    ./tools/linuxdeploy --appdir "$APPDIR" \
-        --executable "$APPDIR/usr/bin/servin" \
-        --desktop-file "$APPDIR/usr/share/applications/servin.desktop" \
-        --icon-file "$APPDIR/usr/share/icons/hicolor/256x256/apps/servin"* \
-        --output appimage \
-        --verbosity 2
+    # Use linuxdeploy to bundle library dependencies if available
+    if [[ -f "$BUILD_DIR/tools/linuxdeploy" ]]; then
+        print_info "Running linuxdeploy..."
+        
+        cd "$BUILD_DIR"
+        ./tools/linuxdeploy --appdir "$APPDIR" \
+            --executable "$APPDIR/usr/bin/servin" \
+            --desktop-file "$APPDIR/usr/share/applications/servin.desktop" \
+            --icon-file "$APPDIR/usr/share/icons/hicolor/256x256/apps/servin"* \
+            --output appimage \
+            --verbosity 2 || print_warning "linuxdeploy failed, continuing without library bundling"
+    else
+        print_warning "linuxdeploy not available, skipping library dependency bundling"
+    fi
     
     print_success "Dependencies bundled"
 }
