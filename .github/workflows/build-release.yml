@@ -135,11 +135,11 @@ jobs:
         python3 --version || echo "Python3 not found"
         
         # Ensure pip is up to date
-        python3 -m pip install --upgrade pip
+        python3 -m pip install --upgrade pip --break-system-packages
         
         # Install WebView and PyInstaller dependencies
         echo "Installing Python WebView dependencies..."
-        python3 -m pip install pywebview flask flask-cors flask-socketio eventlet pyinstaller
+        python3 -m pip install --break-system-packages pywebview flask flask-cors flask-socketio eventlet pyinstaller
         
         # Check tkinter availability
         python3 -c "import tkinter; print('tkinter available')" || echo "tkinter not available"

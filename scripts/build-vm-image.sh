@@ -5,7 +5,7 @@ set -e
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE_SIZE="2G"
+IMAGE_SIZE="4G"  # Increased from 2G to avoid shrinking Ubuntu cloud images
 MEMORY="512M"
 
 # Colors
@@ -157,8 +157,11 @@ build_ubuntu_image() {
     fi
     
     # Copy and resize the cloud image
-    print_info "Copying and resizing cloud image..."
+    print_info "Copying cloud image..."
     cp "$cloud_img" "$output"
+    
+    # Expand image to ensure adequate space (only expand, never shrink)
+    print_info "Expanding image to $IMAGE_SIZE for container space..."
     qemu-img resize "$output" "$IMAGE_SIZE"
     
     # Create cloud-init configuration
