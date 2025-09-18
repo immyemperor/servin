@@ -1,0 +1,513 @@
+#!/bin/bash
+
+# Servin Container Runtime - Cross-Platform Package Builder
+# Builds complete installer packages for Windows, Linux, and macOS with embedded VM dependencies
+
+set -e
+
+# Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSION="1.0.0"
+BUILD_DATE=$(date +"%Y%m%d")
+BUILD_TIME=$(date +"%H%M%S")
+
+# Color output functions
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+print_success() { echo -e "${GREEN}✓ $1${NC}"; }
+print_warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
+print_error() { echo -e "${RED}✗ $1${NC}"; }
+print_info() { echo -e "${BLUE}→ $1${NC}"; }
+print_header() { echo -e "\n${CYAN}${BOLD}$1${NC}"; }
+print_platform() { echo -e "${MAGENTA}${BOLD}$1${NC}"; }
+
+print_banner() {
+    echo -e "${CYAN}${BOLD}"
+    echo "╔══════════════════════════════════════════════════════════════════════╗"
+    echo "║              Servin Container Runtime - Package Builder             ║"
+    echo "║                     Cross-Platform Installer Creator                ║"
+    echo "╚══════════════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}\n"
+}
+
+# Detect current platform
+detect_platform() {
+    case "$(uname -s)" in
+        Linux*)     PLATFORM="linux";;
+        Darwin*)    PLATFORM="macos";;
+        CYGWIN*|MINGW*|MSYS*) PLATFORM="windows";;
+        *)          PLATFORM="unknown";;
+    esac
+    
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64|amd64) ARCH="amd64";;
+        aarch64|arm64) ARCH="arm64";;
+        armv7l) ARCH="arm";;
+        i386|i686) ARCH="386";;
+    esac
+}
+
+# Check prerequisites
+check_prerequisites() {
+    print_header "Checking Prerequisites"
+    
+    # Check if Servin is built
+    if [[ ! -f "$SCRIPT_DIR/../servin" ]]; then
+        print_error "Servin executable not found. Building..."
+        cd "$SCRIPT_DIR/.."
+        
+        # Build for current platform
+        if [[ -f "Makefile" ]]; then
+            make build
+        elif [[ -f "build.sh" ]]; then
+            ./build.sh
+        else
+            go build -o servin main.go
+        fi
+        
+        if [[ ! -f "servin" ]]; then
+            print_error "Failed to build Servin"
+            exit 1
+        fi
+        print_success "Servin built successfully"
+    fi
+    
+    print_success "Prerequisites check passed"
+}
+
+# Build cross-platform executables
+build_executables() {
+    print_header "Building Cross-Platform Executables"
+    
+    cd "$SCRIPT_DIR/.."
+    
+    local targets=(
+        "windows/amd64"
+        "linux/amd64"
+        "linux/arm64"
+        "darwin/amd64"
+        "darwin/arm64"
+    )
+    
+    for target in "${targets[@]}"; do
+        local goos=$(echo "$target" | cut -d'/' -f1)
+        local goarch=$(echo "$target" | cut -d'/' -f2)
+        local output_dir="build/${goos}-${goarch}"
+        local binary_name="servin"
+        
+        if [[ "$goos" == "windows" ]]; then
+            binary_name="servin.exe"
+        fi
+        
+        print_info "Building for $goos/$goarch..."
+        
+        mkdir -p "$output_dir"
+        
+        # Build main executable
+        GOOS="$goos" GOARCH="$goarch" go build -ldflags="-s -w" -o "$output_dir/$binary_name" main.go
+        
+        # Build TUI if cmd/servin-tui exists
+        if [[ -d "cmd/servin-tui" ]]; then
+            local tui_name="servin-tui"
+            if [[ "$goos" == "windows" ]]; then
+                tui_name="servin-tui.exe"
+            fi
+            GOOS="$goos" GOARCH="$goarch" go build -ldflags="-s -w" -o "$output_dir/$tui_name" ./cmd/servin-tui/
+        fi
+        
+        print_success "Built $goos/$goarch"
+    done
+    
+    print_success "Cross-platform executables built"
+}
+
+# Build Windows installer
+build_windows_installer() {
+    print_platform "Building Windows Installer (NSIS)"
+    
+    local windows_dir="$SCRIPT_DIR/windows"
+    
+    # Copy Windows executables
+    cp "$SCRIPT_DIR/../build/windows-amd64/servin.exe" "$windows_dir/"
+    cp "$SCRIPT_DIR/../build/windows-amd64/servin-tui.exe" "$windows_dir/" 2>/dev/null || true
+    
+    # Check if we can build on this platform
+    if [[ "$PLATFORM" == "windows" ]] && command -v makensis >/dev/null 2>&1; then
+        print_info "Building NSIS installer natively..."
+        cd "$windows_dir"
+        ./build-installer.bat
+        print_success "Windows installer built"
+    elif command -v docker >/dev/null 2>&1; then
+        print_info "Building NSIS installer using Docker..."
+        
+        # Create Dockerfile for NSIS build
+        cat > "$windows_dir/Dockerfile.nsis" << 'EOF'
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y \
+    nsis \
+    nsis-pluginapi \
+    wine \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY . .
+
+CMD ["makensis", "/DVERSION=1.0.0", "servin-installer.nsi"]
+EOF
+        
+        cd "$windows_dir"
+        docker build -f Dockerfile.nsis -t servin-nsis-builder .
+        docker run --rm -v "$(pwd):/build" servin-nsis-builder
+        
+        if [[ -f "Servin-Installer-1.0.0.exe" ]]; then
+            print_success "Windows installer built using Docker"
+        else
+            print_warning "Windows installer build failed"
+        fi
+    else
+        print_warning "Cannot build Windows installer on this platform (NSIS not available)"
+        print_info "Windows installer files prepared in: $windows_dir"
+    fi
+}
+
+# Build Linux AppImage
+build_linux_appimage() {
+    print_platform "Building Linux AppImage"
+    
+    local linux_dir="$SCRIPT_DIR/linux"
+    
+    # Copy Linux executables
+    cp "$SCRIPT_DIR/../build/linux-amd64/servin" "$linux_dir/"
+    cp "$SCRIPT_DIR/../build/linux-amd64/servin-tui" "$linux_dir/" 2>/dev/null || true
+    
+    if [[ "$PLATFORM" == "linux" ]]; then
+        print_info "Building AppImage natively..."
+        cd "$linux_dir"
+        chmod +x build-appimage.sh
+        ./build-appimage.sh
+        print_success "Linux AppImage built"
+    elif command -v docker >/dev/null 2>&1; then
+        print_info "Building AppImage using Docker..."
+        
+        # Create Dockerfile for AppImage build
+        cat > "$linux_dir/Dockerfile.appimage" << 'EOF'
+FROM ubuntu:20.04
+
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    tar \
+    file \
+    desktop-file-utils \
+    imagemagick \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY . .
+
+CMD ["./build-appimage.sh"]
+EOF
+        
+        cd "$linux_dir"
+        docker build -f Dockerfile.appimage -t servin-appimage-builder .
+        docker run --rm -v "$(pwd):/build" servin-appimage-builder
+        
+        if ls build/Servin-*.AppImage >/dev/null 2>&1; then
+            print_success "Linux AppImage built using Docker"
+        else
+            print_warning "Linux AppImage build failed"
+        fi
+    else
+        print_warning "Cannot build Linux AppImage on this platform"
+        print_info "Linux AppImage files prepared in: $linux_dir"
+    fi
+}
+
+# Build macOS package
+build_macos_package() {
+    print_platform "Building macOS Package"
+    
+    local macos_dir="$SCRIPT_DIR/macos"
+    
+    # Copy macOS executables
+    if [[ "$ARCH" == "arm64" ]]; then
+        cp "$SCRIPT_DIR/../build/darwin-arm64/servin" "$macos_dir/"
+        cp "$SCRIPT_DIR/../build/darwin-arm64/servin-tui" "$macos_dir/" 2>/dev/null || true
+    else
+        cp "$SCRIPT_DIR/../build/darwin-amd64/servin" "$macos_dir/"
+        cp "$SCRIPT_DIR/../build/darwin-amd64/servin-tui" "$macos_dir/" 2>/dev/null || true
+    fi
+    
+    if [[ "$PLATFORM" == "macos" ]]; then
+        print_info "Building macOS package natively..."
+        cd "$macos_dir"
+        chmod +x build-package.sh
+        ./build-package.sh
+        print_success "macOS package built"
+    else
+        print_warning "Cannot build macOS package on this platform (requires macOS)"
+        print_info "macOS package files prepared in: $macos_dir"
+    fi
+}
+
+# Create unified distribution package
+create_distribution() {
+    print_header "Creating Distribution Package"
+    
+    local dist_dir="$SCRIPT_DIR/dist"
+    local release_dir="$dist_dir/servin-$VERSION-$BUILD_DATE"
+    
+    rm -rf "$dist_dir"
+    mkdir -p "$release_dir"/{windows,linux,macos,docs}
+    
+    # Copy installers
+    print_info "Collecting installer packages..."
+    
+    # Windows
+    if [[ -f "$SCRIPT_DIR/windows/Servin-Installer-$VERSION.exe" ]]; then
+        cp "$SCRIPT_DIR/windows/Servin-Installer-$VERSION.exe" "$release_dir/windows/"
+        print_success "Windows installer included"
+    fi
+    
+    # Linux
+    if ls "$SCRIPT_DIR/linux/build/Servin-"*.AppImage >/dev/null 2>&1; then
+        cp "$SCRIPT_DIR/linux/build/Servin-"*.AppImage "$release_dir/linux/"
+        cp "$SCRIPT_DIR/linux/build/install-servin-appimage.sh" "$release_dir/linux/" 2>/dev/null || true
+        print_success "Linux AppImage included"
+    fi
+    
+    # macOS
+    if ls "$SCRIPT_DIR/macos/build/Servin-"*.pkg >/dev/null 2>&1; then
+        cp "$SCRIPT_DIR/macos/build/Servin-"*.pkg "$release_dir/macos/"
+        cp "$SCRIPT_DIR/macos/build/Servin-"*.dmg "$release_dir/macos/" 2>/dev/null || true
+        print_success "macOS package included"
+    fi
+    
+    # Copy documentation
+    print_info "Including documentation..."
+    cp "$SCRIPT_DIR/../README.md" "$release_dir/docs/"
+    cp "$SCRIPT_DIR/../LICENSE" "$release_dir/docs/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/../INSTALL.md" "$release_dir/docs/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/../VM_PREREQUISITES.md" "$release_dir/docs/" 2>/dev/null || true
+    
+    # Create installation guide
+    cat > "$release_dir/INSTALLATION_GUIDE.md" << EOF
+# Servin Container Runtime - Installation Guide
+
+## Platform-Specific Installers
+
+### Windows
+- **Installer**: \`windows/Servin-Installer-$VERSION.exe\`
+- **Requirements**: Windows 10/11 (64-bit)
+- **Installation**: Run the installer as Administrator
+- **Features**: 
+  - Automatic VM provider installation (Hyper-V/VirtualBox/WSL2)
+  - Desktop integration and Start Menu shortcuts
+  - Automatic dependency management
+  - Windows Service configuration
+
+### Linux
+- **AppImage**: \`linux/Servin-$VERSION-x86_64.AppImage\`
+- **Requirements**: Linux with GLIBC 2.28+ (Ubuntu 20.04+, CentOS 8+)
+- **Installation**: 
+  \`\`\`bash
+  chmod +x Servin-$VERSION-x86_64.AppImage
+  ./linux/install-servin-appimage.sh
+  \`\`\`
+- **Features**:
+  - Portable executable with all dependencies
+  - Automatic QEMU/KVM installation
+  - Desktop integration
+  - No system-wide installation required
+
+### macOS
+- **Package**: \`macos/Servin-$VERSION-arm64.pkg\` (Apple Silicon) or \`macos/Servin-$VERSION-amd64.pkg\` (Intel)
+- **Requirements**: macOS 10.15+ (Catalina or later)
+- **Installation**: 
+  \`\`\`bash
+  sudo installer -pkg Servin-$VERSION-*.pkg -target /
+  \`\`\`
+- **Features**:
+  - Native macOS app bundle
+  - Automatic QEMU installation via Homebrew
+  - Virtualization.framework support
+  - LaunchDaemons integration
+
+## Quick Start
+
+After installation:
+
+1. **Verify Installation**:
+   \`\`\`bash
+   servin version
+   \`\`\`
+
+2. **Initialize Servin**:
+   \`\`\`bash
+   servin init
+   \`\`\`
+
+3. **Start a Container**:
+   \`\`\`bash
+   servin run -it ubuntu:latest /bin/bash
+   \`\`\`
+
+4. **Launch GUI** (if available):
+   - Windows: Start Menu → Servin Container Runtime
+   - Linux: Applications → Servin or \`servin gui\`
+   - macOS: Applications → Servin.app
+
+## VM Prerequisites
+
+All installers include automatic VM dependency installation:
+
+- **Windows**: Hyper-V, VirtualBox, or WSL2
+- **Linux**: QEMU/KVM with hardware acceleration
+- **macOS**: QEMU with Virtualization.framework
+
+## Troubleshooting
+
+- **VM Issues**: Run \`servin vm status\` to check VM provider
+- **Logs**: Check \`~/.servin/logs/\` for detailed logs
+- **Support**: See docs/README.md for comprehensive documentation
+
+## Build Information
+
+- Version: $VERSION
+- Build Date: $(date)
+- Platforms: Windows (amd64), Linux (amd64/arm64), macOS (amd64/arm64)
+
+EOF
+    
+    # Create checksums
+    print_info "Generating checksums..."
+    cd "$release_dir"
+    find . -type f -name "*.exe" -o -name "*.AppImage" -o -name "*.pkg" -o -name "*.dmg" | xargs sha256sum > checksums.txt 2>/dev/null || true
+    
+    # Create archive
+    print_info "Creating distribution archive..."
+    cd "$dist_dir"
+    tar -czf "servin-$VERSION-$BUILD_DATE-complete.tar.gz" "servin-$VERSION-$BUILD_DATE"
+    
+    print_success "Distribution package created"
+    
+    # Show summary
+    print_header "Distribution Summary"
+    echo
+    print_info "Distribution directory: $release_dir"
+    print_info "Archive: $dist_dir/servin-$VERSION-$BUILD_DATE-complete.tar.gz"
+    echo
+    print_info "Contents:"
+    find "$release_dir" -type f | sort | sed 's/^/  • /'
+    echo
+    
+    if [[ -f "$release_dir/checksums.txt" ]]; then
+        print_info "Checksums (SHA256):"
+        cat "$release_dir/checksums.txt" | sed 's/^/  /'
+    fi
+}
+
+# Show build summary
+show_summary() {
+    print_header "Build Summary"
+    echo
+    print_success "Cross-platform package build completed!"
+    echo
+    
+    local built_packages=()
+    
+    # Check what was built
+    if [[ -f "$SCRIPT_DIR/windows/Servin-Installer-$VERSION.exe" ]]; then
+        built_packages+=("✓ Windows NSIS Installer")
+    else
+        built_packages+=("⚠ Windows NSIS Installer (files prepared)")
+    fi
+    
+    if ls "$SCRIPT_DIR/linux/build/Servin-"*.AppImage >/dev/null 2>&1; then
+        built_packages+=("✓ Linux AppImage")
+    else
+        built_packages+=("⚠ Linux AppImage (files prepared)")
+    fi
+    
+    if ls "$SCRIPT_DIR/macos/build/Servin-"*.pkg >/dev/null 2>&1; then
+        built_packages+=("✓ macOS Package")
+    else
+        built_packages+=("⚠ macOS Package (files prepared)")
+    fi
+    
+    print_info "Built packages:"
+    for package in "${built_packages[@]}"; do
+        echo "  $package"
+    done
+    echo
+    
+    print_info "Current platform: $PLATFORM/$ARCH"
+    print_info "To build missing packages, run this script on the target platform"
+    echo
+    
+    if [[ -d "$SCRIPT_DIR/dist" ]]; then
+        print_info "Distribution package available in: $SCRIPT_DIR/dist/"
+    fi
+}
+
+# Main execution
+main() {
+    print_banner
+    
+    # Parse command line arguments
+    local build_all=true
+    local build_windows=false
+    local build_linux=false
+    local build_macos=false
+    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --windows) build_windows=true; build_all=false; shift ;;
+            --linux) build_linux=true; build_all=false; shift ;;
+            --macos) build_macos=true; build_all=false; shift ;;
+            --help) 
+                echo "Usage: $0 [--windows] [--linux] [--macos]"
+                echo "  --windows   Build only Windows installer"
+                echo "  --linux     Build only Linux AppImage"
+                echo "  --macos     Build only macOS package"
+                echo "  (no args)   Build all platforms"
+                exit 0
+                ;;
+            *) 
+                print_error "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+    
+    detect_platform
+    check_prerequisites
+    build_executables
+    
+    if [[ "$build_all" == "true" || "$build_windows" == "true" ]]; then
+        build_windows_installer
+    fi
+    
+    if [[ "$build_all" == "true" || "$build_linux" == "true" ]]; then
+        build_linux_appimage
+    fi
+    
+    if [[ "$build_all" == "true" || "$build_macos" == "true" ]]; then
+        build_macos_package
+    fi
+    
+    create_distribution
+    show_summary
+}
+
+# Run main function
+main "$@"

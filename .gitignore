@@ -161,9 +161,12 @@ cloud-init.iso
 *.rej
 
 # Platform specific build artifacts
-build-*
-dist-*
+build-*/
+dist-*/
 packages/
+
+# Build script backups (but allow actual scripts)
+build-*.sh.bak
 
 # Installation artifacts
 install.log
