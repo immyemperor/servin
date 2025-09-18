@@ -3,13 +3,33 @@
 # Servin Container Runtime - Cross-Platform Package Builder
 # Builds complete installer packages for Windows, Linux, and macOS with embedded VM dependencies
 
-set -e
+# Enhanced error handling
+set -euo pipefail
+IFS=$'\n\t'
+
+# Error trap for debugging
+error_exit() {
+    local line_no=$1
+    local error_code=$2
+    print_error "Script failed at line $line_no with exit code $error_code"
+    print_error "Command: ${BASH_COMMAND}"
+    print_error "Working directory: $(pwd)"
+    print_error "Available files:"
+    ls -la 2>/dev/null || echo "Cannot list files"
+    exit $error_code
+}
+
+trap 'error_exit ${LINENO} $?' ERR
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VERSION="1.0.0"
 BUILD_DATE=$(date +"%Y%m%d")
 BUILD_TIME=$(date +"%H%M%S")
+
+print_info "Build started at $(date)"
+print_info "Script directory: $SCRIPT_DIR"
+print_info "Working directory: $(pwd)"
 
 # Color output functions
 RED='\033[0;31m'
@@ -195,9 +215,22 @@ build_windows_installer() {
     
     local windows_dir="$SCRIPT_DIR/installers/windows"
     
+    # Ensure Windows executables exist
+    if [[ ! -f "$SCRIPT_DIR/build/windows-amd64/servin.exe" ]]; then
+        print_error "servin.exe not found - build executables first"
+        return 1
+    fi
+    
     # Copy Windows executables
+    print_info "Copying Windows executables..."
     cp "$SCRIPT_DIR/build/windows-amd64/servin.exe" "$windows_dir/"
-    cp "$SCRIPT_DIR/build/windows-amd64/servin-tui.exe" "$windows_dir/" 2>/dev/null || true
+    
+    if [[ -f "$SCRIPT_DIR/build/windows-amd64/servin-tui.exe" ]]; then
+        cp "$SCRIPT_DIR/build/windows-amd64/servin-tui.exe" "$windows_dir/"
+        print_success "TUI executable copied"
+    else
+        print_warning "servin-tui.exe not found - installer will be CLI-only"
+    fi
     
     # Copy GUI executable if it was built
     if [[ -f "$SCRIPT_DIR/build/windows-amd64/servin-gui.exe" ]]; then
@@ -208,30 +241,52 @@ build_windows_installer() {
         print_info "Windows installer will work without GUI components"
     fi
     
+    # Copy required files
+    print_info "Copying configuration files..."
+    [[ -f "$SCRIPT_DIR/LICENSE" ]] && cp "$SCRIPT_DIR/LICENSE" "$windows_dir/LICENSE.txt"
+    
+    cd "$windows_dir"
+    
     # Check if we can build on this platform
     if [[ "$PLATFORM" == "windows" ]] && command -v makensis >/dev/null 2>&1; then
         print_info "Building NSIS installer natively..."
-        cd "$windows_dir"
         
-        # Use proper Windows command execution
+        # Enhanced Windows command execution with better debugging
         if [[ "$OS" == "Windows_NT" ]] || command -v cmd.exe >/dev/null 2>&1; then
-            cmd.exe /c "build-installer.bat"
+            print_info "Running Windows batch file via cmd.exe..."
+            cmd.exe /c "build-installer.bat" 2>&1 | tee build.log || {
+                print_error "Windows installer build failed"
+                echo "Build log contents:"
+                cat build.log 2>/dev/null || echo "No build log available"
+                return 1
+            }
         else
+            print_info "Running batch file directly..."
             chmod +x build-installer.bat
-            ./build-installer.bat
+            ./build-installer.bat 2>&1 | tee build.log || {
+                print_error "Windows installer build failed"
+                echo "Build log contents:"
+                cat build.log 2>/dev/null || echo "No build log available"
+                return 1
+            }
         fi
         
-        if [[ $? -eq 0 ]]; then
-            print_success "Windows installer built"
+        # Verify installer was created
+        if [[ -f "Servin-Installer-1.0.0.exe" ]] || [[ -f "servin-installer-1.0.0.exe" ]]; then
+            print_success "Windows installer built successfully"
+            ls -la *installer*.exe
         else
-            print_error "Windows installer build failed"
+            print_error "Windows installer was not created"
+            echo "Directory contents:"
+            ls -la
             return 1
         fi
+        
     elif command -v docker >/dev/null 2>&1; then
         print_info "Building NSIS installer using Docker..."
         
         # Create Dockerfile for NSIS build
-        cat > "$windows_dir/Dockerfile.nsis" << 'EOF'
+        cat > "Dockerfile.nsis" << 'EOF'
 FROM ubuntu:22.04
 
 RUN apt-get update && apt-get install -y \

@@ -61,6 +61,13 @@ makensis /NOCD servin-installer.nsi
 if %errorlevel% eq 0 (
     echo.
     echo [SUCCESS] Installer built successfully: servin-installer-1.0.0.exe
+    
+    REM Copy to standardized name for workflow compatibility
+    if exist "servin-installer-1.0.0.exe" (
+        copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
+        echo [INFO] Created standardized installer name: Servin-Installer-1.0.0.exe
+    )
+    
     echo.
     echo The installer includes:
     echo - Servin Container Runtime executables
@@ -70,7 +77,7 @@ if %errorlevel% eq 0 (
     echo - File associations and context menus
     echo.
     echo To test the installer, run as Administrator:
-    echo servin-installer-1.0.0.exe
+    echo Servin-Installer-1.0.0.exe
 ) else (
     echo.
     echo [ERROR] Installer build failed

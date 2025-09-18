@@ -159,7 +159,6 @@ main,
   margin-left: var(--sidebar-width);
   padding: 2rem;
   max-width: calc(100vw - var(--sidebar-width));
-  margin-top: 56px;
 }
 
 .wrapper {

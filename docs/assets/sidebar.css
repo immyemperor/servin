@@ -130,8 +130,8 @@
 /* Main Content */
 .page-content {
   margin-left: var(--sidebar-width);
-  margin-top: 56px;
-  padding: 40px;
+  /* margin-top: 56px; */
+  padding: 0px 40px 0 40px;
   width: calc(100% - var(--sidebar-width));
   min-height: calc(100vh - 56px);
 }

@@ -3,7 +3,23 @@
 # Servin Container Runtime - Linux AppImage Builder
 # Creates a portable Linux application with all VM dependencies included
 
-set -e
+# Enhanced error handling
+set -euo pipefail
+IFS=$'\n\t'
+
+# Error trap for debugging
+error_exit() {
+    local line_no=$1
+    local error_code=$2
+    echo -e "\033[0;31m✗ AppImage build failed at line $line_no with exit code $error_code\033[0m"
+    echo -e "\033[0;31m✗ Command: ${BASH_COMMAND}\033[0m"
+    echo -e "\033[0;31m✗ Working directory: $(pwd)\033[0m"
+    echo -e "\033[0;31m✗ Available files:\033[0m"
+    ls -la 2>/dev/null || echo "Cannot list files"
+    exit $error_code
+}
+
+trap 'error_exit ${LINENO} $?' ERR
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,16 +53,59 @@ print_banner() {
 
 # Check prerequisites
 check_prerequisites() {
-    print_header "Checking Prerequisites"
+    print_header "Checking Prerequisites and Environment"
+    
+    # Debug environment information
+    print_info "Environment Details:"
+    echo "  OS: $(uname -s)"
+    echo "  Kernel: $(uname -r)"
+    echo "  Architecture: $(uname -m)"
+    echo "  User: $(whoami)"
+    echo "  Working Directory: $(pwd)"
+    echo "  Script Directory: $SCRIPT_DIR"
+    echo "  Build Directory: $BUILD_DIR"
     
     # Check for required tools
     local missing_tools=()
+    local available_tools=()
     
     for tool in wget curl tar; do
-        if ! command -v "$tool" >/dev/null 2>&1; then
+        if command -v "$tool" >/dev/null 2>&1; then
+            available_tools+=("$tool")
+        else
             missing_tools+=("$tool")
         fi
     done
+    
+    # FUSE and extraction tool availability
+    print_info "Virtualization and Extraction Tools:"
+    if command -v fusermount >/dev/null 2>&1; then
+        echo "  ✓ fusermount: $(which fusermount)"
+    else
+        echo "  ✗ fusermount: not available"
+    fi
+    
+    if [[ -c "/dev/fuse" ]]; then
+        echo "  ✓ /dev/fuse: exists"
+    else
+        echo "  ✗ /dev/fuse: not available"
+    fi
+    
+    if command -v unsquashfs >/dev/null 2>&1; then
+        echo "  ✓ unsquashfs: $(which unsquashfs)"
+    else
+        echo "  ✗ unsquashfs: not available (install squashfs-tools)"
+    fi
+    
+    # Report available tools
+    if [[ ${#available_tools[@]} -gt 0 ]]; then
+        echo "  ✓ Available tools: ${available_tools[*]}"
+    fi
+    
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
+        print_warning "Missing optional tools: ${missing_tools[*]}"
+        print_info "AppImage creation may still work with available alternatives"
+    fi
     
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
         print_error "Missing required tools: ${missing_tools[*]}"
@@ -303,67 +362,84 @@ create_appimage() {
     print_info "AppDir contents:"
     ls -la "$APPDIR" || true
     
-    # Check if FUSE is available, if not extract appimagetool
-    if command -v fusermount >/dev/null 2>&1 || [[ -c "/dev/fuse" ]]; then
-        # FUSE is available, run appimagetool normally
-        print_info "FUSE detected, using standard appimagetool execution"
-        if ARCH="$ARCH" ./tools/appimagetool "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage"; then
-            print_success "AppImage created with FUSE"
-        else
-            print_error "AppImage creation failed with FUSE"
-            return 1
-        fi
+    # Enhanced FUSE detection and AppImage creation with multiple fallbacks
+    local fuse_available=false
+    local create_success=false
+    
+    # Check for FUSE availability
+    if command -v fusermount >/dev/null 2>&1 && [[ -c "/dev/fuse" ]]; then
+        fuse_available=true
+        print_info "FUSE detected: fusermount available and /dev/fuse exists"
+    elif [[ -c "/dev/fuse" ]]; then
+        print_info "FUSE device exists but fusermount not found"
+        fuse_available=true
     else
-        # No FUSE, extract and run appimagetool
-        print_warning "FUSE not available, extracting appimagetool..."
+        print_warning "FUSE not available - will use extraction method"
+        fuse_available=false
+    fi
+    
+    # Try FUSE method first if available
+    if [[ "$fuse_available" == "true" ]]; then
+        print_info "Attempting AppImage creation with FUSE..."
+        cd tools || { print_error "Failed to enter tools directory"; return 1; }
         
-        # Extract appimagetool
-        cd tools
+        if ARCH="$ARCH" ./appimagetool "$BUILD_DIR/Servin.AppDir" "../Servin-${VERSION}-${ARCH}.AppImage" 2>&1; then
+            print_success "AppImage created successfully with FUSE"
+            create_success=true
+            cd ..
+        else
+            print_warning "FUSE method failed, trying extraction fallback..."
+            cd ..
+        fi
+    fi
+    
+    # If FUSE failed or not available, use extraction method
+    if [[ "$create_success" == "false" ]]; then
+        print_info "Using appimagetool extraction method..."
+        cd tools || { print_error "Failed to enter tools directory"; return 1; }
+        
         chmod +x appimagetool
         
-        print_info "Attempting appimagetool extraction..."
-        
-        # Try extraction with error handling
+        # Try extraction methods in order of preference
         if ./appimagetool --appimage-extract >/dev/null 2>&1; then
-            print_info "appimagetool extracted successfully"
+            print_info "appimagetool extracted with --appimage-extract"
+        elif command -v unsquashfs >/dev/null 2>&1 && unsquashfs -d squashfs-root appimagetool >/dev/null 2>&1; then
+            print_info "appimagetool extracted with unsquashfs"
         else
-            print_warning "Standard extraction failed, trying alternative method..."
-            # Alternative extraction method for environments without FUSE
-            if command -v unsquashfs >/dev/null 2>&1; then
-                print_info "Using unsquashfs for extraction..."
-                if unsquashfs -d squashfs-root appimagetool >/dev/null 2>&1; then
-                    print_success "Unsquashfs extraction successful"
-                else
-                    print_error "Unsquashfs extraction failed"
-                    cd ..
-                    return 1
-                fi
-            else
-                print_error "No extraction method available - install squashfs-tools or enable FUSE"
-                cd ..
-                return 1
-            fi
-        fi
-        
-        if [[ -d "squashfs-root" ]]; then
-            # Run the extracted appimagetool
-            cd ..
-            print_info "Running extracted appimagetool..."
-            if ARCH="$ARCH" ./tools/squashfs-root/AppRun "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage"; then
-                print_success "AppImage created with extracted appimagetool"
-            else
-                print_error "AppImage creation failed with extracted appimagetool"
-                rm -rf tools/squashfs-root
-                return 1
-            fi
-            
-            # Clean up
-            rm -rf tools/squashfs-root
-        else
-            print_error "Failed to extract appimagetool"
+            print_error "All extraction methods failed. Available tools:"
+            command -v unsquashfs && echo "  - unsquashfs: available" || echo "  - unsquashfs: missing"
+            command -v fusermount && echo "  - fusermount: available" || echo "  - fusermount: missing"
+            [[ -c "/dev/fuse" ]] && echo "  - /dev/fuse: exists" || echo "  - /dev/fuse: missing"
             cd ..
             return 1
         fi
+        
+        # Verify extraction succeeded
+        if [[ -d "squashfs-root" ]] && [[ -x "squashfs-root/AppRun" ]]; then
+            print_info "Running extracted appimagetool..."
+            cd .. # Return to build directory
+            
+            # Use the extracted appimagetool
+            if ARCH="$ARCH" ./tools/squashfs-root/AppRun "$APPDIR" "Servin-${VERSION}-${ARCH}.AppImage" 2>&1; then
+                print_success "AppImage created with extracted appimagetool"
+                create_success=true
+            else
+                print_error "Extracted appimagetool execution failed"
+            fi
+            
+            # Clean up extraction
+            rm -rf tools/squashfs-root
+        else
+            print_error "appimagetool extraction verification failed"
+            cd ..
+            return 1
+        fi
+    fi
+    
+    # Final verification
+    if [[ "$create_success" == "false" ]]; then
+        print_error "All AppImage creation methods failed"
+        return 1
     fi
     
     if [[ -f "Servin-${VERSION}-${ARCH}.AppImage" ]]; then
