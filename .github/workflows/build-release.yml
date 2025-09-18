@@ -42,22 +42,49 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for git describe
 
     - name: Extract version from tag or commit
       id: version
       shell: bash
       run: |
+        echo "Debug: github.ref = ${{ github.ref }}"
+        echo "Debug: github.ref_name = ${{ github.ref_name }}"
+        echo "Debug: github.ref_type = ${{ github.ref_type }}"
+        
         if [[ "${{ github.ref }}" == refs/tags/* ]]; then
           # Extract version from tag (remove 'v' prefix if present)
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "Tag build - using version: $VERSION"
         else
-          # Use git describe for non-tag builds
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev-$(git rev-parse --short HEAD)")
+          # For non-tag builds, try git describe first, fallback to commit-based version
+          if VERSION=$(git describe --tags --always --dirty 2>/dev/null); then
+            # Remove 'v' prefix if present from git describe output
+            VERSION="${VERSION#v}"
+            echo "Git describe successful - using version: $VERSION"
+          else
+            # Fallback for shallow clones or repos without tags
+            COMMIT_SHORT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+            VERSION="dev-${COMMIT_SHORT}"
+            echo "Fallback to commit-based version: $VERSION"
+          fi
         fi
+        
+        # Ensure version doesn't start with 'v' and sanitize for filenames
+        VERSION="${VERSION#v}"
+        VERSION=$(echo "$VERSION" | tr '/' '-' | tr ' ' '-')
+        
+        # Validate version is not empty
+        if [ -z "$VERSION" ]; then
+          echo "Error: Version extraction failed, using fallback"
+          VERSION="unknown-$(date +%Y%m%d%H%M%S)"
+        fi
+        
+        echo "Final version: $VERSION"
         echo "APP_VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "VM_VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Using version: $VERSION"
 
     - name: Set up Go
       uses: actions/setup-go@v5
@@ -368,21 +395,48 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for git describe
 
     - name: Extract version from tag or commit
       id: version
       shell: bash
       run: |
+        echo "Debug: github.ref = ${{ github.ref }}"
+        echo "Debug: github.ref_name = ${{ github.ref_name }}"
+        echo "Debug: github.ref_type = ${{ github.ref_type }}"
+        
         if [[ "${{ github.ref }}" == refs/tags/* ]]; then
           # Extract version from tag (remove 'v' prefix if present)
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "Tag build - using version: $VERSION"
         else
-          # Use git describe for non-tag builds
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev-$(git rev-parse --short HEAD)")
+          # For non-tag builds, try git describe first, fallback to commit-based version
+          if VERSION=$(git describe --tags --always --dirty 2>/dev/null); then
+            # Remove 'v' prefix if present from git describe output
+            VERSION="${VERSION#v}"
+            echo "Git describe successful - using version: $VERSION"
+          else
+            # Fallback for shallow clones or repos without tags
+            COMMIT_SHORT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+            VERSION="dev-${COMMIT_SHORT}"
+            echo "Fallback to commit-based version: $VERSION"
+          fi
         fi
+        
+        # Ensure version doesn't start with 'v' and sanitize for filenames
+        VERSION="${VERSION#v}"
+        VERSION=$(echo "$VERSION" | tr '/' '-' | tr ' ' '-')
+        
+        # Validate version is not empty
+        if [ -z "$VERSION" ]; then
+          echo "Error: Version extraction failed, using fallback"
+          VERSION="unknown-$(date +%Y%m%d%H%M%S)"
+        fi
+        
+        echo "Final VM version: $VERSION"
         echo "VM_VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Using VM version: $VERSION"
 
     - name: Install VM build dependencies
       run: |
@@ -425,22 +479,43 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for git describe
 
     - name: Extract version from tag or commit
       id: version
       shell: bash
       run: |
+        echo "Debug: github.ref = ${{ github.ref }}"
+        echo "Debug: github.ref_name = ${{ github.ref_name }}"
+        echo "Debug: github.ref_type = ${{ github.ref_type }}"
+        
         if [[ "${{ github.ref }}" == refs/tags/* ]]; then
           # Extract version from tag (remove 'v' prefix if present)
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "Tag build - using version: $VERSION"
         else
-          # Use git describe for non-tag builds
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev-$(git rev-parse --short HEAD)")
+          # For non-tag builds, try git describe first, fallback to commit-based version
+          if VERSION=$(git describe --tags --always --dirty 2>/dev/null); then
+            # Remove 'v' prefix if present from git describe output
+            VERSION="${VERSION#v}"
+            echo "Git describe successful - using version: $VERSION"
+          else
+            # Fallback for shallow clones or repos without tags
+            COMMIT_SHORT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+            VERSION="dev-${COMMIT_SHORT}"
+            echo "Fallback to commit-based version: $VERSION"
+          fi
         fi
+        
+        # Ensure version doesn't start with 'v' and sanitize for filenames
+        VERSION="${VERSION#v}"
+        VERSION=$(echo "$VERSION" | tr '/' '-' | tr ' ' '-')
+        
+        echo "Final version: $VERSION"
         echo "APP_VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "VM_VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Using version: $VERSION"
 
     - name: Download all artifacts
       uses: actions/download-artifact@v4
@@ -658,50 +733,93 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for git describe
 
     - name: Extract version information
       id: version
       shell: bash
       run: |
-        # Get APP_VERSION from git tag or commit
-        if [ -n "${{ github.ref_name }}" ] && [[ "${{ github.ref_name }}" =~ ^v[0-9] ]]; then
-          APP_VERSION="${{ github.ref_name }}"
+        echo "Debug: github.ref = ${{ github.ref }}"
+        echo "Debug: github.ref_name = ${{ github.ref_name }}"
+        echo "Debug: github.ref_type = ${{ github.ref_type }}"
+        
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          # Extract version from tag (remove 'v' prefix if present)
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "Tag build - using version: $VERSION"
         else
-          APP_VERSION="v1.0.0-dev-$(git rev-parse --short HEAD)"
+          # For non-tag builds, try git describe first, fallback to commit-based version
+          if VERSION=$(git describe --tags --always --dirty 2>/dev/null); then
+            # Remove 'v' prefix if present from git describe output
+            VERSION="${VERSION#v}"
+            echo "Git describe successful - using version: $VERSION"
+          else
+            # Fallback for shallow clones or repos without tags
+            COMMIT_SHORT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+            VERSION="dev-${COMMIT_SHORT}"
+            echo "Fallback to commit-based version: $VERSION"
+          fi
         fi
         
-        # Get VM_VERSION (independent versioning for VM images)
-        VM_VERSION="v1.0.0"
+        # Ensure version doesn't start with 'v' and sanitize for filenames
+        VERSION="${VERSION#v}"
+        VERSION=$(echo "$VERSION" | tr '/' '-' | tr ' ' '-')
         
-        # Remove 'v' prefix for file naming
-        APP_VERSION_CLEAN="${APP_VERSION#v}"
-        VM_VERSION_CLEAN="${VM_VERSION#v}"
-        
-        echo "APP_VERSION=${APP_VERSION_CLEAN}" >> $GITHUB_OUTPUT
-        echo "VM_VERSION=${VM_VERSION_CLEAN}" >> $GITHUB_OUTPUT
-        echo "Using APP_VERSION: ${APP_VERSION_CLEAN}"
-        echo "Using VM_VERSION: ${VM_VERSION_CLEAN}"
+        echo "Final version: $VERSION"
+        echo "APP_VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "VM_VERSION=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: servin-${{ matrix.platform }}-${{ steps.version.outputs.APP_VERSION }}
-
-    - name: Extract distribution archive
+      continue-on-error: true
+      
+    - name: Debug artifact download
       shell: bash
       run: |
+        echo "Expected artifact name: servin-${{ matrix.platform }}-${{ steps.version.outputs.APP_VERSION }}"
+        echo "Downloaded files:"
+        ls -la . || echo "No files downloaded"
+        
+        # If artifact download failed, the build job likely failed
+        if [ ! -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" ] && 
+           [ ! -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip" ]; then
+          echo "❌ No distribution archives found. Build job likely failed."
+          echo "This is expected if the build job encountered errors."
+          exit 1
+        fi
+
+    - name: Extract distribution archive
+      id: extract
+      shell: bash
+      run: |
+        success=false
         if [ "${{ matrix.platform }}" = "windows" ]; then
           if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip" ]; then
             powershell -Command "Expand-Archive -Path 'servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip' -DestinationPath 'test-install'"
+            success=true
           fi
         else
           if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" ]; then
             mkdir -p test-install
             tar -xzf "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" -C test-install --strip-components=1
+            success=true
           fi
+        fi
+        
+        echo "extraction_success=$success" >> $GITHUB_OUTPUT
+        if [ "$success" = "false" ]; then
+          echo "❌ Failed to extract distribution archive"
+          exit 1
+        else
+          echo "✅ Successfully extracted distribution archive"
         fi
 
     - name: Test CLI binary
+      if: steps.extract.outputs.extraction_success == 'true'
       shell: bash
       run: |
         echo "Testing CLI binary..."
@@ -723,6 +841,7 @@ jobs:
         fi
 
     - name: Test Desktop TUI binary
+      if: steps.extract.outputs.extraction_success == 'true'
       shell: bash
       run: |
         echo "Testing Desktop TUI binary..."
@@ -744,6 +863,7 @@ jobs:
         fi
 
     - name: Test GUI launcher
+      if: steps.extract.outputs.extraction_success == 'true'
       shell: bash
       run: |
         echo "Testing GUI launcher..."
@@ -763,6 +883,7 @@ jobs:
         fi
 
     - name: Verify wizard installers
+      if: steps.extract.outputs.extraction_success == 'true'
       shell: bash
       run: |
         echo "Verifying wizard installers:"
