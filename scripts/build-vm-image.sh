@@ -151,10 +151,14 @@ build_ubuntu_image() {
     local cloud_img="$TEMP_DIR/ubuntu-cloud.img"
     
     print_info "Downloading Ubuntu cloud image..."
-    curl -L "$cloud_img_url" -o "$cloud_img"
+    if ! curl -L "$cloud_img_url" -o "$cloud_img"; then
+        print_error "Failed to download Ubuntu cloud image"
+        return 1
+    fi
     
-    # Resize and convert to qcow2
-    qemu-img convert -f qcow2 -O qcow2 "$cloud_img" "$output"
+    # Copy and resize the cloud image
+    print_info "Copying and resizing cloud image..."
+    cp "$cloud_img" "$output"
     qemu-img resize "$output" "$IMAGE_SIZE"
     
     # Create cloud-init configuration

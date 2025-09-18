@@ -194,9 +194,14 @@ build_webview_gui() {
     # Install dependencies including PyInstaller
     echo -e "${YELLOW}  📦 Installing dependencies...${NC}"
     if ! pip install -r requirements.txt >/dev/null 2>&1; then
-        echo -e "${RED}  ❌ Failed to install dependencies, skipping WebView GUI build...${NC}"
-        cd "$SCRIPT_DIR"
-        return
+        echo -e "${YELLOW}  ⚠️ Requirements.txt installation failed, trying individual packages...${NC}"
+        # Try installing packages individually as fallback
+        if ! pip install flask flask-cors flask-socketio eventlet pywebview pyinstaller >/dev/null 2>&1; then
+            echo -e "${RED}  ❌ Failed to install dependencies, skipping WebView GUI build...${NC}"
+            cd "$SCRIPT_DIR"
+            return
+        fi
+        echo -e "${GREEN}  ✅ Individual package installation succeeded${NC}"
     fi
     
     # Build with PyInstaller using spec file

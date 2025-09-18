@@ -109,16 +109,18 @@ jobs:
           qemu-utils \
           genisoimage \
           xvfb \
-          libwebkit2gtk-4.0-dev \
+          libwebkit2gtk-4.1-dev \
           libgtk-3-dev \
           libgtk-3-0 \
-          libwebkit2gtk-4.0-37 \
           xfonts-base \
-          xauth
+          xauth \
+          pkg-config \
+          libcairo2-dev \
+          libgirepository1.0-dev
         
         # Install Python WebView dependencies
         python3 -m pip install --upgrade pip
-        python3 -m pip install pywebview[gtk] flask
+        python3 -m pip install pywebview[gtk] flask flask-cors flask-socketio eventlet pyinstaller
         
         echo "Checking installations..."
         python3 --version
@@ -131,11 +133,27 @@ jobs:
       run: |
         echo "Checking existing dependencies..."
         python3 --version || echo "Python3 not found"
+        
+        # Ensure pip is up to date
+        python3 -m pip install --upgrade pip
+        
+        # Install WebView and PyInstaller dependencies
+        echo "Installing Python WebView dependencies..."
+        python3 -m pip install pywebview flask flask-cors flask-socketio eventlet pyinstaller
+        
+        # Check tkinter availability
         python3 -c "import tkinter; print('tkinter available')" || echo "tkinter not available"
         if ! python3 -c "import tkinter" 2>/dev/null; then
           echo "Installing python-tk..."
           brew install python-tk --quiet || echo "python-tk installation skipped"
         fi
+        
+        # Verify installations
+        echo "Verifying installations..."
+        python3 -c "import webview; print('✓ pywebview available')" || echo "✗ pywebview not available"
+        python3 -c "import flask; print('✓ flask available')" || echo "✗ flask not available"
+        python3 -c "import flask_socketio; print('✓ flask-socketio available')" || echo "✗ flask-socketio not available"
+        python3 -c "import PyInstaller; print('✓ PyInstaller available')" || echo "✗ PyInstaller not available"
 
     # Make build script executable
     - name: Make build script executable
