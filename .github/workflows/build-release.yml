@@ -135,16 +135,18 @@ jobs:
           unzip
         
         # Install Packer for VM image building
-        echo "Installing Packer..."
+        echo "Installing HashiCorp Packer..."
         PACKER_VERSION="1.10.0"
         wget -q "https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip"
-        sudo unzip -q packer_${PACKER_VERSION}_linux_amd64.zip -d /usr/local/bin/
-        sudo chmod +x /usr/local/bin/packer
+        unzip -q packer_${PACKER_VERSION}_linux_amd64.zip
+        sudo mv packer /usr/local/bin/hc-packer
+        sudo chmod +x /usr/local/bin/hc-packer
+        sudo ln -sf /usr/local/bin/hc-packer /usr/local/bin/packer
         rm packer_${PACKER_VERSION}_linux_amd64.zip
         
         # Install Packer QEMU plugin
         echo "Installing Packer QEMU plugin..."
-        packer plugins install github.com/hashicorp/qemu || echo "Packer QEMU plugin installation failed"
+        /usr/local/bin/hc-packer plugins install github.com/hashicorp/qemu || echo "Packer QEMU plugin installation failed"
         
         # Install Python WebView dependencies
         python3 -m pip install --upgrade pip
@@ -154,7 +156,7 @@ jobs:
         python3 --version
         qemu-system-x86_64 --version
         genisoimage --version
-        packer version || echo "Packer not available"
+        /usr/local/bin/hc-packer version || echo "Packer not available"
         python3 -c "import webview; print('webview available')" || echo "webview not available"
 
     - name: Install macOS dependencies
@@ -249,6 +251,18 @@ jobs:
       shell: powershell
       continue-on-error: true
       run: |
+        # Ensure installer directory exists
+        if (-not (Test-Path "dist/${{ matrix.platform }}/installer")) {
+          Write-Host "Creating installer directory..."
+          New-Item -ItemType Directory -Path "dist/${{ matrix.platform }}/installer" -Force
+          
+          # Look for installer files in other locations
+          if (Test-Path "installers/windows") {
+            Write-Host "Copying installer files from installers/windows..."
+            Copy-Item -Path "installers/windows/*" -Destination "dist/${{ matrix.platform }}/installer/" -Recurse -Force
+          }
+        }
+        
         cd dist/${{ matrix.platform }}/installer
         
         # Find NSIS makensis.exe
@@ -277,6 +291,22 @@ jobs:
     - name: Create distribution archive
       shell: bash
       run: |
+        # Ensure dist directory exists
+        if [ ! -d "dist/${{ matrix.platform }}" ]; then
+          echo "Creating dist/${{ matrix.platform }} directory..."
+          mkdir -p "dist/${{ matrix.platform }}"
+          
+          # If dist directory is empty, something went wrong with the build
+          echo "Warning: dist/${{ matrix.platform }} was missing. Checking if build created files elsewhere..."
+          find . -name "servin*" -type f | head -10
+          
+          # Try to copy from build directory if it exists
+          if [ -d "build/${{ matrix.platform }}" ]; then
+            echo "Copying from build/${{ matrix.platform }} to dist/${{ matrix.platform }}..."
+            cp -r build/${{ matrix.platform }}/* dist/${{ matrix.platform }}/ || echo "Failed to copy from build directory"
+          fi
+        fi
+        
         cd dist/${{ matrix.platform }}
         
         # Create the main distribution archive
