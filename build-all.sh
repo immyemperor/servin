@@ -137,7 +137,7 @@ build_for_arch() {
 
     # Build TUI component
     print_info "Building TUI for ${target_platform}..."
-    GOOS=${goos} GOARCH=${target_arch} go build -ldflags="-s -w" -o "${arch_build_dir}/servin-tui${exe_ext}" ./cmd/servin-tui    return 0
+    GOOS=${goos} GOARCH=${target_arch} go build -ldflags="-s -w" -o "${arch_build_dir}/servin-tui${exe_ext}" ./cmd/servin-tui
 }
 
 # Function to build WebView GUI (architecture-independent)
