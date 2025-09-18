@@ -8,45 +8,52 @@ permalink: /installation/
 
 ## Quick Installation
 
-Choose your platform and follow the installation instructions. Servin automatically enables **VM mode** on Windows/macOS for universal containerization, while Linux uses **native mode** for maximum performance.
+Choose your platform and follow the installation instructions. Servin provides **enterprise-grade installer packages** with embedded VM dependencies for immediate containerization capabilities.
 
 <div class="feature-grid">
   <div class="feature-box">
     <div class="feature-icon">🪟</div>
     <h4>Windows</h4>
-    <p>Professional NSIS installer with VM containerization</p>
-    <span class="badge badge-success">VM Mode (Universal)</span>
+    <p>Professional NSIS installer with embedded VM dependencies</p>
+    <span class="badge badge-success">VM Mode + QEMU/Hyper-V</span>
   </div>
   <div class="feature-box">
     <div class="feature-icon">🐧</div>
     <h4>Linux</h4>
-    <p>Native containerization with optional VM mode</p>
+    <p>AppImage with embedded QEMU/KVM support</p>
     <span class="badge badge-success">Native + VM Mode</span>
   </div>
   <div class="feature-box">
     <div class="feature-icon">🍎</div>
     <h4>macOS</h4>
-    <p>VM-based containerization via Virtualization.framework</p>
-    <span class="badge badge-success">VM Mode (Universal)</span>
+    <p>PKG installer with Virtualization.framework integration</p>
+    <span class="badge badge-success">VM Mode + HVF</span>
   </div>
 </div>
 
-## 📦 Download Official Releases
+## 📦 Download Enterprise-Grade Installers
 
-All platforms get **production-ready installers** from our GitHub Releases:
+All platforms get **complete installer packages** with embedded VM dependencies:
 
 ### 🔗 **Download Links** 
 - **Latest Release**: [https://github.com/immyemperor/servin/releases/latest](https://github.com/immyemperor/servin/releases/latest)
 - **All Releases**: [https://github.com/immyemperor/servin/releases](https://github.com/immyemperor/servin/releases)
 
-### 📋 **Available Distributions**
-| Platform | File | Size | Features |
-|----------|------|------|----------|
-| **Windows** | `servin-windows-amd64-installer.exe` | ~15MB | NSIS Installer + VM Mode |
-| **macOS Intel** | `servin-macos-amd64-installer.pkg` | ~12MB | Native Installer + VM Mode |
-| **macOS Apple Silicon** | `servin-macos-arm64-installer.pkg` | ~12MB | Native Installer + VM Mode |
-| **Linux AMD64** | `servin-linux-amd64.tar.gz` | ~10MB | Binary + Service Files |
-| **Linux ARM64** | `servin-linux-arm64.tar.gz` | ~9MB | Binary + Service Files |
+### 📋 **Complete Installer Packages**
+| Platform | Installer File | Size | Features |
+|----------|----------------|------|----------|
+| **Windows** | `servin_*_windows_*_installer.exe` | ~50MB+ | NSIS + VM Dependencies |
+| **Linux** | `servin_*_linux_*_appimage` | ~30MB+ | AppImage + QEMU/KVM |
+| **macOS** | `servin_*_macos_*_installer.pkg` | ~20MB+ | PKG + QEMU/HVF |
+| **Cross-Platform** | `servin-cross-platform-*.zip` | ~150MB+ | All Platforms + VM Images |
+
+### 🎯 **Installer Features**
+- ✅ **Embedded VM Dependencies**: QEMU, KVM, platform-specific virtualization
+- ✅ **Automatic Prerequisites**: Detects and configures system requirements
+- ✅ **System Integration**: PATH configuration, desktop shortcuts, uninstall support
+- ✅ **Hardware Acceleration**: Optimal VM performance configuration
+- ✅ **Code Signing**: Verified and trusted installation experience
+- ✅ **Quality Assured**: 3-tier verification (package validation, integrity testing, VM dependencies)
 
 ## Platform-Specific Instructions
 

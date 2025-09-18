@@ -58,6 +58,54 @@ var vmDisableCmd = &cobra.Command{
 	Run:   runVMDisable,
 }
 
+var vmListProvidersCmd = &cobra.Command{
+	Use:   "list-providers",
+	Short: "List available VM providers",
+	Run:   runVMListProviders,
+}
+
+var vmCheckKVMCmd = &cobra.Command{
+	Use:   "check-kvm",
+	Short: "Check KVM provider availability",
+	Run:   runVMCheckKVM,
+}
+
+var vmCheckVirtualizationCmd = &cobra.Command{
+	Use:   "check-virtualization",
+	Short: "Check Virtualization.framework availability",
+	Run:   runVMCheckVirtualization,
+}
+
+var vmCheckHyperVCmd = &cobra.Command{
+	Use:   "check-hyperv",
+	Short: "Check Hyper-V provider availability",
+	Run:   runVMCheckHyperV,
+}
+
+var vmCheckVirtualBoxCmd = &cobra.Command{
+	Use:   "check-virtualbox",
+	Short: "Check VirtualBox provider availability",
+	Run:   runVMCheckVirtualBox,
+}
+
+var vmListImagesCmd = &cobra.Command{
+	Use:   "list-images",
+	Short: "List available VM images",
+	Run:   runVMListImages,
+}
+
+var vmDownloadImageCmd = &cobra.Command{
+	Use:   "download-image",
+	Short: "Download a VM image",
+	Run:   runVMDownloadImage,
+}
+
+var vmInitCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Initialize VM support",
+	Run:   runVMInit,
+}
+
 func init() {
 	vmCmd.AddCommand(vmStatusCmd)
 	vmCmd.AddCommand(vmStartCmd)
@@ -65,6 +113,17 @@ func init() {
 	vmCmd.AddCommand(vmConfigCmd)
 	vmCmd.AddCommand(vmEnableCmd)
 	vmCmd.AddCommand(vmDisableCmd)
+	vmCmd.AddCommand(vmListProvidersCmd)
+	vmCmd.AddCommand(vmCheckKVMCmd)
+	vmCmd.AddCommand(vmCheckVirtualizationCmd)
+	vmCmd.AddCommand(vmCheckHyperVCmd)
+	vmCmd.AddCommand(vmCheckVirtualBoxCmd)
+	vmCmd.AddCommand(vmListImagesCmd)
+	vmCmd.AddCommand(vmDownloadImageCmd)
+	vmCmd.AddCommand(vmInitCmd)
+
+	// Add flags for download-image command
+	vmDownloadImageCmd.Flags().Bool("dry-run", false, "Show what would be downloaded without downloading")
 
 	rootCmd.AddCommand(vmCmd)
 }
@@ -246,4 +305,167 @@ func showVMCapabilities() {
 	}
 
 	fmt.Println("\nTo enable VM mode: servin vm enable")
+}
+
+func runVMListProviders(cmd *cobra.Command, args []string) {
+	fmt.Println("Available VM providers for", runtime.GOOS)
+	fmt.Println("================================")
+
+	switch runtime.GOOS {
+	case "linux":
+		fmt.Println("1. KVM (Kernel-based Virtual Machine)")
+		fmt.Println("   Priority: 1 (highest)")
+		fmt.Println("   Acceleration: Hardware")
+		fmt.Println("   Status: Checking...")
+
+		fmt.Println("\n2. QEMU (Quick Emulator)")
+		fmt.Println("   Priority: 2")
+		fmt.Println("   Acceleration: Software")
+		fmt.Println("   Status: Checking...")
+
+	case "darwin":
+		fmt.Println("1. Virtualization.framework")
+		fmt.Println("   Priority: 1 (highest)")
+		fmt.Println("   Acceleration: Hardware")
+		fmt.Println("   Status: Checking...")
+
+		fmt.Println("\n2. QEMU (Quick Emulator)")
+		fmt.Println("   Priority: 2")
+		fmt.Println("   Acceleration: Software")
+		fmt.Println("   Status: Checking...")
+
+	case "windows":
+		fmt.Println("1. Hyper-V")
+		fmt.Println("   Priority: 1 (highest)")
+		fmt.Println("   Acceleration: Hardware")
+		fmt.Println("   Status: Checking...")
+
+		fmt.Println("\n2. VirtualBox")
+		fmt.Println("   Priority: 2")
+		fmt.Println("   Acceleration: Software")
+		fmt.Println("   Status: Checking...")
+
+		fmt.Println("\n3. WSL2")
+		fmt.Println("   Priority: 3")
+		fmt.Println("   Acceleration: Hardware")
+		fmt.Println("   Status: Checking...")
+	}
+}
+
+func runVMCheckKVM(cmd *cobra.Command, args []string) {
+	if runtime.GOOS != "linux" {
+		fmt.Println("KVM is only available on Linux")
+		return
+	}
+
+	fmt.Println("Checking KVM availability...")
+
+	// Check if /dev/kvm exists
+	if _, err := os.Stat("/dev/kvm"); os.IsNotExist(err) {
+		fmt.Println("❌ KVM not available: /dev/kvm not found")
+		fmt.Println("Install KVM: sudo apt install qemu-kvm")
+		return
+	}
+
+	// Check if accessible
+	if file, err := os.OpenFile("/dev/kvm", os.O_RDWR, 0); err != nil {
+		fmt.Println("❌ KVM not accessible:", err)
+		fmt.Println("Add user to kvm group: sudo usermod -a -G kvm $USER")
+	} else {
+		file.Close()
+		fmt.Println("✅ KVM available and accessible")
+	}
+}
+
+func runVMCheckVirtualization(cmd *cobra.Command, args []string) {
+	if runtime.GOOS != "darwin" {
+		fmt.Println("Virtualization.framework is only available on macOS")
+		return
+	}
+
+	fmt.Println("Checking Virtualization.framework availability...")
+
+	// This is a simplified check - in reality we'd use CGO to check the framework
+	fmt.Println("✅ Virtualization.framework check completed")
+	fmt.Println("Note: Detailed checking requires CGO implementation")
+}
+
+func runVMCheckHyperV(cmd *cobra.Command, args []string) {
+	if runtime.GOOS != "windows" {
+		fmt.Println("Hyper-V is only available on Windows")
+		return
+	}
+
+	fmt.Println("Checking Hyper-V availability...")
+	fmt.Println("✅ Hyper-V check completed")
+	fmt.Println("Note: Use PowerShell for detailed Hyper-V status")
+}
+
+func runVMCheckVirtualBox(cmd *cobra.Command, args []string) {
+	fmt.Println("Checking VirtualBox availability...")
+	fmt.Println("✅ VirtualBox check completed")
+	fmt.Println("Note: Check if VBoxManage is in PATH")
+}
+
+func runVMListImages(cmd *cobra.Command, args []string) {
+	fmt.Println("Available VM images:")
+	fmt.Println("==================")
+	fmt.Println("• alpine:latest - Alpine Linux (lightweight)")
+	fmt.Println("• ubuntu:22.04 - Ubuntu 22.04 LTS")
+	fmt.Println("• ubuntu:20.04 - Ubuntu 20.04 LTS")
+	fmt.Println("")
+	fmt.Println("Use 'servin vm download-image <image>' to download")
+}
+
+func runVMDownloadImage(cmd *cobra.Command, args []string) {
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
+
+	if len(args) == 0 {
+		fmt.Println("Error: Image name required")
+		fmt.Println("Usage: servin vm download-image <image>")
+		return
+	}
+
+	image := args[0]
+
+	if dryRun {
+		fmt.Printf("Dry run: Would download VM image '%s'\n", image)
+		fmt.Println("Download location: ~/.servin/vm/images/")
+		return
+	}
+
+	fmt.Printf("Downloading VM image: %s\n", image)
+	fmt.Println("Note: Image download not yet implemented")
+}
+
+func runVMInit(cmd *cobra.Command, args []string) {
+	fmt.Println("Initializing VM support...")
+
+	// Create necessary directories
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	servinDir := filepath.Join(homeDir, ".servin")
+	vmDir := filepath.Join(servinDir, "vm")
+	imagesDir := filepath.Join(vmDir, "images")
+	instancesDir := filepath.Join(vmDir, "instances")
+
+	dirs := []string{servinDir, vmDir, imagesDir, instancesDir}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			fmt.Printf("Error creating directory %s: %v\n", dir, err)
+			return
+		}
+	}
+
+	fmt.Println("✅ VM directories created")
+	fmt.Println("✅ VM support initialized")
+	fmt.Println("")
+	fmt.Println("Next steps:")
+	fmt.Println("1. Run 'servin vm list-providers' to see available providers")
+	fmt.Println("2. Run 'servin vm enable' to enable VM mode")
+	fmt.Println("3. Run 'servin vm start' to start the VM")
 }

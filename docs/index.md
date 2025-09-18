@@ -6,7 +6,7 @@ permalink: /
 
 # 🚀 Servin Container Runtime
 
-**Revolutionary dual-mode container runtime with universal cross-platform containerization through VM-based Linux containers.**
+**Revolutionary dual-mode container runtime with universal cross-platform containerization through VM-based Linux containers and enterprise-grade installer packages.**
 
 <div class="badges-container" style="text-align: center; margin: 20px 0;">
   <img src="https://img.shields.io/github/contributors/immyemperor/servin?style=for-the-badge&logo=github" alt="Contributors" />
@@ -18,19 +18,29 @@ permalink: /
 
 <div class="feature-grid">
   <div class="feature-box">
+    <div class="feature-icon">📦</div>
+    <h4>Enterprise Installers</h4>
+    <p>Professional NSIS, AppImage, and PKG installers with embedded VM dependencies and 3-tier verification.</p>
+  </div>
+  <div class="feature-box">
     <div class="feature-icon">🔓</div>
     <h4>Open Source</h4>
     <p>Free and open-source with full transparency, community-driven development, and no vendor lock-in.</p>
   </div>
   <div class="feature-box">
-    <div class="feature-icon">🐳</div>
-    <h4>Docker Compatible</h4>
-    <p>Seamless migration from Docker workflows with full API compatibility.</p>
+    <div class="feature-icon">🌐</div>
+    <h4>Universal VM Mode</h4>
+    <p>Identical Linux containerization across Windows, macOS, and Linux through VM technology.</p>
   </div>
   <div class="feature-box">
     <div class="feature-icon">☸️</div>
     <h4>Kubernetes CRI</h4>
     <p>Full Container Runtime Interface v1alpha2 implementation for Kubernetes clusters.</p>
+  </div>
+  <div class="feature-box">
+    <div class="feature-icon">🤖</div>
+    <h4>Automated CI/CD</h4>
+    <p>GitHub Actions pipeline with comprehensive verification and automated release distribution.</p>
   </div>
   <div class="feature-box">
     <div class="feature-icon">🖥️</div>
@@ -39,7 +49,20 @@ permalink: /
   </div>
 </div>
 
-## Key Capabilities
+## 🎯 Revolutionary Features
+
+### 📦 **Enterprise-Grade Installer System**
+- <span class="badge badge-success">✓</span> **Windows NSIS**: Complete installer with embedded QEMU/Hyper-V (50MB+)
+- <span class="badge badge-success">✓</span> **Linux AppImage**: Self-contained with QEMU/KVM dependencies (30MB+)
+- <span class="badge badge-success">✓</span> **macOS PKG**: Native installer with Virtualization.framework (20MB+)
+- <span class="badge badge-success">✓</span> **3-Tier Verification**: Package validation, integrity testing, VM dependencies
+- <span class="badge badge-success">✓</span> **Automated CI/CD**: GitHub Actions with comprehensive quality gates
+
+### 🚀 **Universal VM Containerization**
+- <span class="badge badge-success">✓</span> **Cross-Platform Consistency**: Identical container behavior on all platforms
+- <span class="badge badge-success">✓</span> **Hardware-Level Isolation**: VM boundaries exceed process-level container security
+- <span class="badge badge-success">✓</span> **Complete Linux Environment**: Full namespaces, cgroups, and security features everywhere
+- <span class="badge badge-success">✓</span> **Production Parity**: Development containers match Linux production exactly
 
 ### 🎯 Core Runtime Features
 - <span class="badge badge-success">✓</span> Container lifecycle management

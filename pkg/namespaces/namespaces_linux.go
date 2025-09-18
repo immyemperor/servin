@@ -43,6 +43,7 @@ type ContainerConfig struct {
 	LogDir      string            // Directory to store container logs
 	RootFS      string            // RootFS path for the container
 	Environment map[string]string // Environment variables
+	OnExit      func(error)       // Callback when process exits
 
 	// User namespace configuration
 	UserNamespace *UserNamespaceConfig

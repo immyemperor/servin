@@ -6,7 +6,7 @@ permalink: /development/
 
 # Development Guide
 
-Complete guide for developing, contributing, and extending Servin Container Runtime.
+Complete guide for developing, contributing, and extending Servin Container Runtime, including our enterprise-grade CI/CD pipeline and installer system.
 
 ## Development Environment
 
@@ -22,6 +22,12 @@ Set up development environment:
 - Docker/Podman (for testing)
 - Protocol Buffers compiler (protoc)
 - gRPC tools
+
+# Installer development tools
+- NSIS 3.0+ (Windows installer development)
+- AppImageKit (Linux AppImage creation)
+- pkgbuild (macOS package creation)
+- QEMU 6.0+ (VM dependencies testing)
 
 # Development tools
 - golangci-lint (code linting)
@@ -45,8 +51,11 @@ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 # Clone repository
-git clone https://github.com/servin-dev/servin.git
+git clone https://github.com/immyemperor/servin.git
 cd servin
+
+# Build cross-platform installer packages
+./build-packages.sh --help
 
 # Install dependencies
 go mod download
@@ -102,6 +111,126 @@ servin/
 ├── go.sum                # Go dependencies
 ├── Dockerfile            # Container build
 └── README.md             # Project documentation
+```
+
+## 🔄 CI/CD Pipeline & Installer System
+
+### **Enterprise-Grade Build Pipeline**
+
+Servin includes a comprehensive GitHub Actions CI/CD pipeline that produces enterprise-quality installer packages with embedded VM dependencies.
+
+#### **Build Matrix**
+```yaml
+strategy:
+  matrix:
+    include:
+      - platform: windows
+        os: windows-latest
+        installer: NSIS (.exe)
+        vm_provider: QEMU/Hyper-V
+      - platform: linux  
+        os: ubuntu-latest
+        installer: AppImage
+        vm_provider: QEMU/KVM
+      - platform: mac
+        os: macos-latest
+        installer: PKG
+        vm_provider: QEMU/HVF
+```
+
+#### **3-Tier Verification System**
+```bash
+# 1. Package Validation
+✓ Platform-specific detection (NSIS/AppImage/PKG)
+✓ Size validation (50MB+ Windows, 30MB+ Linux, 20MB+ macOS)  
+✓ File structure verification (PE32/ELF/PKG metadata)
+
+# 2. Integrity Testing
+✓ Binary header validation (PE/ELF magic bytes)
+✓ Cryptographic checksums (SHA256)
+✓ Content validation (component strings)
+
+# 3. VM Dependencies Verification  
+✓ Embedded component detection (QEMU, VM images)
+✓ Platform virtualization support verification
+✓ Payload inspection and validation
+```
+
+#### **Cross-Platform Package Building**
+```bash
+# Build complete installer packages
+./build-packages.sh --windows    # Windows NSIS installer
+./build-packages.sh --linux      # Linux AppImage  
+./build-packages.sh --macos      # macOS PKG installer
+./build-packages.sh --all        # All platforms
+
+# Validate installer packages
+./validate-github-actions.sh     # Comprehensive validation
+```
+
+#### **Release Automation**
+- ✅ **Automated Builds**: Triggered on tags and commits
+- ✅ **Quality Gates**: 15+ verification points per platform
+- ✅ **Security Validation**: Cryptographic verification and binary integrity
+- ✅ **Professional Distribution**: Organized releases with complete installers
+
+### **Installer Package Development**
+
+#### **Windows NSIS Installer**
+```nsis
+# installers/windows/servin-installer.nsi
+!include "MUI2.nsh"
+!include "WinVer.nsh"
+
+Name "Servin Container Runtime"
+OutFile "Servin-Installer-${VERSION}.exe"
+InstallDir "$PROGRAMFILES64\Servin"
+
+# VM Dependencies Section
+Section "VM Dependencies" SecVM
+  # Install QEMU and VM components
+  SetOutPath "$INSTDIR\vm"
+  File /r "vm\*.*"
+  
+  # Configure Hyper-V if available
+  Call ConfigureHyperV
+SectionEnd
+```
+
+#### **Linux AppImage Creation**
+```bash
+# installers/linux/build-appimage.sh
+#!/bin/bash
+
+# Build AppImage with embedded QEMU
+linuxdeploy \
+  --appdir AppDir \
+  --executable servin \
+  --desktop-file servin.desktop \
+  --icon-file servin.png \
+  --plugin qt \
+  --output appimage
+
+# Embed VM dependencies
+mkdir -p AppDir/usr/lib/qemu
+cp -r /usr/lib/qemu/* AppDir/usr/lib/qemu/
+```
+
+#### **macOS PKG Creation**
+```bash
+# installers/macos/build-package.sh
+#!/bin/bash
+
+# Create package with embedded QEMU
+pkgbuild \
+  --root "./package-root" \
+  --identifier "com.servin.runtime" \
+  --version "${VERSION}" \
+  --install-location "/usr/local" \
+  "Servin-${VERSION}.pkg"
+
+# Include VM dependencies
+cp -r /opt/homebrew/bin/qemu* package-root/usr/local/bin/
 ```
 
 ### Core Components

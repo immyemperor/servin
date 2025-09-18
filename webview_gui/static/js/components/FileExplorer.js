@@ -18,8 +18,19 @@ class FileExplorer {
 
     setupControls() {
         const refreshBtn = document.getElementById('refreshFilesBtn');
+        const goBackBtn = document.getElementById('goBackBtn');
+        const goToRootBtn = document.getElementById('goToRootBtn');
+        
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => this.refresh());
+        }
+        
+        if (goBackBtn) {
+            goBackBtn.addEventListener('click', () => this.goBack());
+        }
+        
+        if (goToRootBtn) {
+            goToRootBtn.addEventListener('click', () => this.goToRoot());
         }
     }
 
@@ -30,50 +41,81 @@ class FileExplorer {
         this.currentPath = path;
         
         const filesContent = document.getElementById('filesContent');
-        const currentPathElement = document.getElementById('currentPath');
         
         if (!filesContent) return;
         
         filesContent.innerHTML = '<div class="loading">Loading files...</div>';
         
-        if (currentPathElement) {
-            currentPathElement.textContent = path;
-        }
-
-        // Setup file controls
-        this.setupFileControls();
+        // Update breadcrumb navigation
+        this.updateBreadcrumb(path);
+        
+        // Update navigation buttons state
+        this.updateNavigationButtons();
 
         try {
             const files = await this.apiClient.getContainerFiles(containerId, path);
             this.renderFiles(files, path);
         } catch (error) {
             console.error('Failed to load files:', error);
-            filesContent.innerHTML = '<div class="error">Failed to load files</div>';
+            filesContent.innerHTML = `
+                <div class="error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Failed to load files</p>
+                    <small>${error.message || 'Unknown error'}</small>
+                </div>
+            `;
         }
     }
 
-    setupFileControls() {
-        const filesHeader = document.querySelector('.files-header');
-        if (!filesHeader) return;
-
-        filesHeader.innerHTML = `
-            <div class="files-toolbar">
-                <div class="files-navigation">
-                    <div class="files-path">
-                        <i class="fas fa-folder"></i>
-                        <span id="currentPath">${this.currentPath}</span>
-                    </div>
-                    <button class="btn btn-secondary btn-sm" id="refreshFilesBtn">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-            </div>
-        `;
-
-        // Re-setup refresh button
-        const refreshBtn = document.getElementById('refreshFilesBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.refresh());
+    updateBreadcrumb(path) {
+        const breadcrumbPath = document.getElementById('breadcrumbPath');
+        if (!breadcrumbPath) return;
+        
+        // Clear existing breadcrumb
+        breadcrumbPath.innerHTML = '';
+        
+        // Split path into segments
+        const segments = path.split('/').filter(segment => segment !== '');
+        
+        // Add root segment
+        const rootSegment = document.createElement('span');
+        rootSegment.className = 'path-segment root';
+        rootSegment.dataset.path = '/';
+        rootSegment.innerHTML = '<i class="fas fa-home"></i>';
+        rootSegment.addEventListener('click', () => this.navigateToPath('/'));
+        breadcrumbPath.appendChild(rootSegment);
+        
+        // Add path segments
+        let currentPath = '';
+        segments.forEach((segment, index) => {
+            currentPath += '/' + segment;
+            
+            // Add separator
+            const separator = document.createElement('span');
+            separator.className = 'path-separator';
+            separator.textContent = '/';
+            breadcrumbPath.appendChild(separator);
+            
+            // Add segment
+            const segmentElement = document.createElement('span');
+            segmentElement.className = 'path-segment';
+            segmentElement.dataset.path = currentPath;
+            segmentElement.textContent = segment;
+            segmentElement.addEventListener('click', () => this.navigateToPath(currentPath));
+            breadcrumbPath.appendChild(segmentElement);
+        });
+    }
+    
+    updateNavigationButtons() {
+        const goBackBtn = document.getElementById('goBackBtn');
+        const goToRootBtn = document.getElementById('goToRootBtn');
+        
+        if (goBackBtn) {
+            goBackBtn.disabled = this.currentPath === '/';
+        }
+        
+        if (goToRootBtn) {
+            goToRootBtn.disabled = this.currentPath === '/';
         }
     }
 
@@ -88,15 +130,25 @@ class FileExplorer {
             const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
             html += `
                 <div class="file-item parent-dir" onclick="window.fileExplorer.navigateToPath('${parentPath}')">
-                    <i class="fas fa-level-up-alt"></i>
-                    <span>.. (Parent Directory)</span>
-                    <span class="file-size"></span>
+                    <div class="file-icon">
+                        <i class="fas fa-level-up-alt"></i>
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name">.. (Parent Directory)</div>
+                        <div class="file-meta">Go up one level</div>
+                    </div>
+                    <div class="file-actions"></div>
                 </div>
             `;
         }
 
         if (!files || files.length === 0) {
-            html += '<div class="empty">No files found in this directory</div>';
+            html += `
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <p>This directory is empty</p>
+                </div>
+            `;
         } else {
             // Sort files: directories first, then files
             const sortedFiles = [...files].sort((a, b) => {
@@ -107,16 +159,51 @@ class FileExplorer {
 
             sortedFiles.forEach(file => {
                 const isDirectory = file.type === 'directory';
-                const icon = isDirectory ? 'fa-folder' : 'fa-file';
+                const isSymlink = file.type === 'symlink';
+                
+                let icon = 'fa-file';
+                if (isDirectory) {
+                    icon = 'fa-folder';
+                } else if (isSymlink) {
+                    icon = 'fa-link';
+                } else {
+                    // Set specific icons based on file extension
+                    const ext = file.name.toLowerCase().split('.').pop();
+                    switch (ext) {
+                        case 'js': case 'json': icon = 'fa-file-code'; break;
+                        case 'py': icon = 'fa-file-code'; break;
+                        case 'html': case 'htm': icon = 'fa-file-code'; break;
+                        case 'css': icon = 'fa-file-code'; break;
+                        case 'txt': case 'md': case 'log': icon = 'fa-file-alt'; break;
+                        case 'jpg': case 'jpeg': case 'png': case 'gif': icon = 'fa-file-image'; break;
+                        case 'pdf': icon = 'fa-file-pdf'; break;
+                        case 'zip': case 'tar': case 'gz': icon = 'fa-file-archive'; break;
+                        default: icon = 'fa-file';
+                    }
+                }
+                
                 const clickHandler = isDirectory ? 
                     `onclick="window.fileExplorer.navigateToPath('${this.joinPath(currentPath, file.name)}')"` : 
                     '';
                 
+                const fileSize = isDirectory ? '-' : UIHelpers.formatFileSize(file.size || 0);
+                const permissions = file.permissions || '-';
+                
                 html += `
-                    <div class="file-item ${isDirectory ? 'directory' : 'file'}" ${clickHandler}>
-                        <i class="fas ${icon}"></i>
-                        <span class="file-name">${file.name}</span>
-                        <span class="file-size">${isDirectory ? '-' : UIHelpers.formatFileSize(file.size || 0)}</span>
+                    <div class="file-item ${file.type}" ${clickHandler}>
+                        <div class="file-icon">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div class="file-info">
+                            <div class="file-name">${this.escapeHtml(file.name)}</div>
+                            <div class="file-meta">
+                                <span class="file-permissions">${permissions}</span>
+                                <span class="file-size">${fileSize}</span>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            ${isDirectory ? '<i class="fas fa-chevron-right"></i>' : ''}
+                        </div>
                     </div>
                 `;
             });
@@ -136,6 +223,12 @@ class FileExplorer {
             return '/' + fileName;
         }
         return basePath + '/' + fileName;
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     refresh() {

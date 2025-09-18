@@ -1,43 +1,372 @@
-# Servin Container Runtime - Cross-Platform Installers
+# Servin Container Runtime - Cross-Pl## Platform-Specific Enhanced Installers
 
-Comprehensive installation packages for Servin Container Runtime with service integration and GUI support.
+If you prefer to run the enhanced installers directly (or the wizard detects missing prerequisites):
 
-## 🚀 Quick Start
+### 🐧 Linux - `linux/install-with-vm.sh`orm Installation Guide
 
-### Windows
-1. Download `servin-windows-1.0.0.zip`
-2. Extract the archive
-3. Right-click PowerShell → "Run as Administrator"
-4. Navigate to extracted folder: `cd path\to\servin-windows-1.0.0`
-5. Run installer: `.\install.ps1`
+This directory contains enhanced installers for all supported platforms with automatic VM prerequisite installation.
 
-### Linux
-1. Download `servin-linux-1.0.0.tar.gz`
-2. Extract: `tar -xzf servin-linux-1.0.0.tar.gz`
-3. Install: `cd servin-linux-1.0.0 && sudo ./install.sh`
+## 🚀 Quick Installation (Recommended)
 
-### macOS
-1. Download `servin-macos-1.0.0.tar.gz`
-2. Extract: `tar -xzf servin-macos-1.0.0.tar.gz`
-3. Install: `cd servin-macos-1.0.0 && sudo ./install.sh`
+### Smart Wizard Installers
+The easiest way to install Servin is using our smart wizard installers that automatically detect prerequisites and install them if needed:
 
-## 📦 What's Included
+**🐧 Linux & 🍎 macOS:**
+```bash
+# Download and run universal installer
+curl -sSL https://install.servin.dev | bash
 
-Each platform package contains:
-- **Servin Runtime** (`servin`/`servin.exe`) - Core container management
-- **GUI Application** (`servin-gui`/`servin-gui.exe`) - Desktop interface  
-- **System Service** - Automatic startup integration
-- **Installation Script** - Automated setup with permissions
-- **Uninstaller** - Clean removal capability
+# Or download wizard manually
+wget https://github.com/immyemperor/servin/releases/latest/download/install-wizard.sh
+chmod +x install-wizard.sh
+./install-wizard.sh
+```
 
-## 🛠 Build from Source
-
-### Prerequisites
-- Go 1.24+ with CGO support
-- Platform-specific GUI libraries (for GUI builds)
-
-### Windows (PowerShell)
+**🪟 Windows:**
 ```powershell
+# Download and run wizard (as Administrator)
+Invoke-WebRequest -Uri "https://github.com/immyemperor/servin/releases/latest/download/install-wizard.ps1" -OutFile "install-wizard.ps1"
+Set-ExecutionPolicy Bypass -Scope Process -Force
+.\install-wizard.ps1
+```
+
+### Smart Wizard Features
+- ✅ **Auto-detection**: Automatically detects your platform and existing installations
+- ✅ **Prerequisite checking**: Verifies VM requirements and system resources
+- ✅ **Smart installation**: Runs enhanced installers only if prerequisites are missing
+- ✅ **Interactive or automated**: Supports both interactive and unattended installation
+- ✅ **Comprehensive verification**: Tests installation and provides troubleshooting guidance
+
+---
+
+## Platform-Specific Installers
+
+### � Linux - `linux/install-with-vm.sh`
+**Features:**
+- Automatic distribution detection (Ubuntu, Debian, Fedora, CentOS, Arch)
+- KVM/QEMU installation and configuration
+- libvirt setup with default network
+- Python WebView dependencies
+- Development tools (Packer, Python packages)
+- Systemd service creation
+- Comprehensive hardware checking
+
+**Requirements:**
+- Root access (sudo)
+- 4GB+ RAM (8GB+ recommended)
+- 5GB+ free disk space
+- CPU with virtualization support
+
+**Installation:**
+```bash
+sudo chmod +x linux/install-with-vm.sh
+sudo ./linux/install-with-vm.sh
+```
+
+**Supported Distributions:**
+- Ubuntu 18.04+ / Debian 9+
+- Fedora 32+ / CentOS 8+ / RHEL 8+
+- Arch Linux (current)
+
+---
+
+### 🍎 macOS - `macos/install-with-vm.sh`
+**Features:**
+- Homebrew automatic installation
+- QEMU virtualization setup
+- Virtualization.framework support (macOS 11+)
+- Python WebView with Cocoa backend
+- Development tools via Homebrew
+- Launchd service configuration
+- Apple Silicon and Intel support
+
+**Requirements:**
+- macOS 10.15+ (Catalina or later)
+- Xcode Command Line Tools
+- 8GB+ RAM (16GB+ recommended)
+- 10GB+ free disk space
+- Admin access
+
+**Installation:**
+```bash
+chmod +x macos/install-with-vm.sh
+./macos/install-with-vm.sh
+```
+
+**Architecture Support:**
+- Apple Silicon (M1/M2/M3) - Native Virtualization.framework
+- Intel x86_64 - QEMU with HVF acceleration
+
+---
+
+### 🪟 Windows - `windows/install-with-vm.ps1`
+**Features:**
+- Chocolatey package manager setup
+- Multi-provider VM support (Hyper-V, VirtualBox, WSL2)
+- Python WebView with tkinter backend
+- Automatic Windows feature enabling
+- Development tools installation
+- Windows Service creation
+- PowerShell 5.1+ and PowerShell Core support
+
+**Requirements:**
+- Windows 10/11 (Build 1903+)
+- Administrator privileges
+- 8GB+ RAM (16GB+ recommended)
+- 10GB+ free disk space
+- PowerShell 5.1+ or PowerShell Core
+
+**Installation:**
+```powershell
+# Run as Administrator
+Set-ExecutionPolicy Bypass -Scope Process -Force
+.\windows\install-with-vm.ps1
+```
+
+**VM Provider Options:**
+- **Hyper-V** (Windows Pro/Enterprise/Education)
+- **VirtualBox** (All Windows editions)
+- **WSL2** (Windows 10 2004+/Windows 11)
+
+## Wizard Installer Options
+
+All wizard installers support automated installation modes:
+
+**Linux/macOS:**
+```bash
+# Automated full installation
+./install-wizard.sh --auto
+
+# Install VM prerequisites only
+./install-wizard.sh --vm-only
+
+# Skip VM setup
+./install-wizard.sh --no-vm
+```
+
+**Windows:**
+```powershell
+# Automated full installation
+.\install-wizard.ps1 -Auto
+
+# Install VM prerequisites only
+.\install-wizard.ps1 -VmOnly
+
+# Skip VM setup  
+.\install-wizard.ps1 -NoVm
+
+# Skip confirmation prompts
+.\install-wizard.ps1 -Auto -Force
+```
+
+---
+
+## Common Installation Flow
+
+All installers follow a similar comprehensive installation process:
+
+### 1. **System Prerequisites Check**
+- Hardware virtualization support
+- Available memory and disk space
+- Operating system compatibility
+- Network connectivity
+- Required permissions
+
+### 2. **Package Manager Setup**
+- **Linux**: Native package managers (apt, yum, dnf, pacman)
+- **macOS**: Homebrew installation and configuration
+- **Windows**: Chocolatey installation and setup
+
+### 3. **Virtualization Prerequisites**
+- **Linux**: KVM, QEMU, libvirt installation and configuration
+- **macOS**: QEMU and Virtualization.framework setup
+- **Windows**: Hyper-V, VirtualBox, or WSL2 installation
+
+### 4. **Development Tools Installation**
+- Python 3.8+ with GUI frameworks
+- HashiCorp Packer for VM image building
+- Essential development utilities
+
+### 5. **Servin Installation**
+- Binary installation to system directories
+- Configuration file creation
+- VM provider configuration
+- Service registration
+
+### 6. **System Integration**
+- **Linux**: systemd service setup
+- **macOS**: launchd service configuration  
+- **Windows**: Windows Service installation
+
+### 7. **Verification & Testing**
+- VM provider functionality testing
+- Basic CLI command verification
+- Hardware acceleration validation
+
+---
+
+## Post-Installation Steps
+
+After running any installer:
+
+### 1. **Environment Setup**
+```bash
+# Linux/macOS: Logout and login for group membership
+# Windows: Restart PowerShell session
+
+# Test basic functionality
+servin version
+servin vm status
+```
+
+### 2. **VM Initialization**
+```bash
+# Initialize VM support
+servin vm init
+
+# Enable VM mode
+servin vm enable
+
+# List available providers
+servin vm list-providers
+```
+
+### 3. **Test VM Functionality**
+```bash
+# Test with a simple container
+servin run --vm alpine echo "Hello from VM!"
+
+# Test with interactive container
+servin run --vm -it alpine sh
+```
+
+### 4. **GUI Access** (if installed)
+```bash
+# Launch graphical interface
+servin-gui
+
+# Or use terminal interface
+servin-tui
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**VM Provider Not Available:**
+- Ensure virtualization is enabled in BIOS/UEFI
+- Check that hardware acceleration is working
+- Verify user permissions (groups on Linux, admin on Windows)
+
+**Installation Permissions:**
+- **Linux**: Run with `sudo`
+- **macOS**: Run as normal user (will prompt for admin when needed)
+- **Windows**: Run PowerShell as Administrator
+
+**Missing Dependencies:**
+- Run the installer again - it will detect and install missing components
+- Check internet connectivity for package downloads
+- Verify system meets minimum requirements
+
+### Platform-Specific Troubleshooting
+
+#### Linux
+```bash
+# Check KVM device
+ls -la /dev/kvm
+
+# Verify libvirt service
+systemctl status libvirtd
+
+# Test QEMU
+qemu-system-x86_64 --version
+```
+
+#### macOS
+```bash
+# Check Homebrew
+brew doctor
+
+# Verify QEMU
+qemu-system-x86_64 --version
+
+# Check Virtualization.framework (macOS 11+)
+servin vm check-virtualization
+```
+
+#### Windows
+```powershell
+# Check Hyper-V status
+Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V
+
+# Verify VirtualBox
+VBoxManage --version
+
+# Check WSL2
+wsl --status
+```
+
+---
+
+## Advanced Configuration
+
+### Custom Installation Directories
+
+**Linux:**
+```bash
+export INSTALL_DIR="/opt/servin"
+export DATA_DIR="/opt/servin/data"
+sudo ./install-with-vm.sh
+```
+
+**macOS:**
+```bash
+# Edit installer script to modify directories
+# Default: /usr/local/bin, /usr/local/var/lib/servin
+```
+
+**Windows:**
+```powershell
+# Use parameters
+.\install-with-vm.ps1 -InstallPath "C:\Tools\Servin" -DataPath "C:\Data\Servin"
+```
+
+### Skip Components
+
+All installers support skipping certain components:
+
+```bash
+# Linux
+sudo ./install-with-vm.sh --no-service --no-vm
+
+# macOS  
+./install-with-vm.sh --no-service --no-gui
+
+# Windows
+.\install-with-vm.ps1 -SkipService -SkipVM
+```
+
+---
+
+## Documentation References
+
+- **Complete Setup Guide**: [VM_PREREQUISITES.md](../VM_PREREQUISITES.md)
+- **CLI Documentation**: [docs/cli.md](../docs/cli.md)
+- **VM Integration**: [docs/VM_INTEGRATION.md](../docs/VM_INTEGRATION.md)
+- **Troubleshooting**: [docs/troubleshooting.md](../docs/troubleshooting.md)
+
+---
+
+## Support & Contributing
+
+For issues with the installers:
+1. Check the troubleshooting section above
+2. Review the detailed prerequisites in `VM_PREREQUISITES.md`
+3. Submit issues with full system information and installer logs
+
+The installers are designed to be idempotent - you can run them multiple times safely to fix issues or update components.
 # Build all platforms
 .\build.ps1
 
@@ -130,11 +459,7 @@ Get-Content "C:\ProgramData\Servin\logs\servin.log" -Tail 50
 sudo systemctl enable servin
 sudo systemctl start servin
 
-# Check status
-sudo systemctl status servin
-
-# View logs
-sudo journalctl -u servin -f
+The installers are designed to be idempotent - you can run them multiple times safely to fix issues or update components.
 ```
 
 ### macOS (launchd)

@@ -31,12 +31,12 @@ class Terminal {
         const execTerminal = document.getElementById('execTerminal');
         if (!execTerminal) return;
 
-        // Don't replace the HTML, just ensure the placeholder content is correct
+        // Simple placeholder for direct connection
         if (!execTerminal.querySelector('.terminal-placeholder')) {
             execTerminal.innerHTML = `
                 <div class="terminal-placeholder">
                     <i class="fas fa-terminal"></i>
-                    <p>Connecting to terminal session...</p>
+                    <p>Connecting to container shell...</p>
                 </div>
             `;
         }
@@ -59,7 +59,7 @@ class Terminal {
     connect() {
         if (!this.currentContainerId) return;
 
-        // Use default shell (try bash first, fallback to sh)
+        // Use bash as default shell for running containers
         const shell = '/bin/bash';
 
         // Update placeholder to show connecting status
@@ -67,7 +67,7 @@ class Terminal {
         if (placeholder) {
             placeholder.innerHTML = `
                 <i class="fas fa-spinner fa-spin"></i>
-                <p>Connecting to terminal session...</p>
+                <p>Connecting to container shell...</p>
             `;
         }
 
@@ -108,7 +108,8 @@ class Terminal {
             terminalInput.focus();
         }
 
-        this.addTerminalLine('system', 'Terminal session started. Type commands and press Enter.');
+        // Simple welcome message
+        this.addTerminalLine('system', 'Shell session started. Type commands and press Enter.');
     }
 
     handleExecStopped(data) {
@@ -123,7 +124,7 @@ class Terminal {
             terminalPlaceholder.style.display = 'block';
             terminalPlaceholder.innerHTML = `
                 <i class="fas fa-exclamation-triangle"></i>
-                <p>Terminal session ended. Please reconnect if needed.</p>
+                <p>Terminal session ended</p>
             `;
         }
 

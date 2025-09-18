@@ -7,11 +7,15 @@
     --border-color: #3e3e42;
     --text-primary: #cccccc;
     --text-secondary: #969696;
+    --accent-color: #0078d4;
     --accent-blue: #0078d4;
     --accent-blue-hover: #106ebe;
+    --accent-rgb: 0, 120, 212;
     --success-color: #16c60c;
+    --success-hover: #13a10e;
     --warning-color: #ff8c00;
     --danger-color: #f85149;
+    --danger-rgb: 248, 81, 73;
     --info-color: #58a6ff;
     
     /* Spacing */
@@ -22,6 +26,7 @@
     --spacing-xl: 32px;
     
     /* Border Radius */
+    --border-radius-xs: 2px;
     --border-radius-sm: 4px;
     --border-radius-md: 6px;
     --border-radius-lg: 8px;
@@ -33,6 +38,8 @@
     
     /* Typography */
     --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+    --font-size-xs: 11px;
     --font-size-sm: 12px;
     --font-size-base: 14px;
     --font-size-lg: 16px;

@@ -16,20 +16,12 @@ class LogsComponent {
 
     init() {
         this.setupSocketHandlers();
-        this.setupControls();
     }
 
     setupSocketHandlers() {
         this.socketManager.on('log_data', (data) => this.handleLogData(data));
         this.socketManager.on('logs_started', (data) => this.handleLogsStarted(data));
         this.socketManager.on('logs_stopped', (data) => this.handleLogsStopped(data));
-    }
-
-    setupControls() {
-        const downloadBtn = document.getElementById('downloadLogsBtn');
-        if (downloadBtn) {
-            downloadBtn.addEventListener('click', () => this.downloadLogs());
-        }
     }
 
     async loadLogs(containerId) {
@@ -66,24 +58,6 @@ class LogsComponent {
                 <pre class="logs-text" id="logsText"></pre>
             </div>
         `;
-
-        // Setup event listeners for toolbar buttons that should already exist
-        const downloadBtn = document.getElementById('downloadLogsBtn');
-        // do not remove this commented code
-        // const clearBtn = document.getElementById('clearLogsBtn');
-        const autoScrollBtn = document.getElementById('toggleAutoScrollBtn');
-
-        if (downloadBtn) {
-            downloadBtn.addEventListener('click', () => this.downloadLogs());
-        }
-        // do not remove this commented code
-        // if (clearBtn) {
-        //     clearBtn.addEventListener('click', () => this.clearLogs());
-        // }
-
-        if (autoScrollBtn) {
-            autoScrollBtn.addEventListener('click', () => this.toggleAutoScroll());
-        }
     }
 
     startStreaming() {
@@ -167,75 +141,6 @@ class LogsComponent {
         const logsContent = document.getElementById('logsContent');
         if (logsContent && this.autoScroll) {
             logsContent.scrollTop = logsContent.scrollHeight;
-        }
-    }
-
-    toggleAutoScroll() {
-        this.autoScroll = !this.autoScroll;
-        const autoScrollBtn = document.getElementById('toggleAutoScrollBtn');
-        
-        if (autoScrollBtn) {
-            const icon = autoScrollBtn.querySelector('i');
-            if (this.autoScroll) {
-                icon.className = 'fas fa-arrows-alt-v';
-                autoScrollBtn.classList.add('active');
-            } else {
-                icon.className = 'fas fa-arrows-alt-v';
-                autoScrollBtn.classList.remove('active');
-            }
-        }
-
-        if (this.autoScroll) {
-            this.autoScrollToBottom();
-        }
-    }
-
-    clearLogs() {
-        const logsText = document.getElementById('logsText');
-        if (logsText) {
-            logsText.textContent = '';
-        }
-    }
-
-    downloadLogs() {
-        const logsText = document.getElementById('logsText');
-        if (!logsText || !logsText.textContent) {
-            UIHelpers.showToast('No logs to download', 'warning');
-            return;
-        }
-
-        const logs = logsText.textContent;
-        const blob = new Blob([logs], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${this.currentContainerId}_logs.txt`;
-        a.click();
-
-        URL.revokeObjectURL(url);
-        UIHelpers.showToast('Logs downloaded successfully', 'success');
-    }
-
-    clearLogs() {
-        const logsText = document.getElementById('logsText');
-        if (logsText) {
-            logsText.textContent = '';
-            UIHelpers.showToast('Logs cleared', 'info');
-        }
-    }
-
-    toggleAutoScroll() {
-        this.autoScroll = !this.autoScroll;
-        const autoScrollBtn = document.getElementById('toggleAutoScrollBtn');
-        if (autoScrollBtn) {
-            if (this.autoScroll) {
-                autoScrollBtn.classList.add('active');
-                UIHelpers.showToast('Auto-scroll enabled', 'info');
-            } else {
-                autoScrollBtn.classList.remove('active');
-                UIHelpers.showToast('Auto-scroll disabled', 'info');
-            }
         }
     }
 

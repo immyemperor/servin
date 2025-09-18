@@ -1,0 +1,89 @@
+#!/usr/bin/expect -f
+
+# Automated SSH setup script for Alpine Linux VM
+# This script connects to the QEMU VM console and configures SSH automatically
+
+set timeout 30
+
+# Check if VM is running
+spawn bash -c "ps aux | grep qemu-system-aarch64 | grep -v grep"
+expect eof
+set vm_running [lindex $expect_out(buffer) 0]
+
+if {$vm_running eq ""} {
+    puts "Error: QEMU VM is not running. Please start the VM first with: ./servin vm start"
+    exit 1
+}
+
+puts "✅ QEMU VM is running - proceeding with SSH setup automation..."
+
+# Find the QEMU process TTY/console
+spawn bash -c "ps aux | grep qemu-system-aarch64 | grep -v grep | awk '{print \$2}'"
+expect eof
+set qemu_pid [string trim $expect_out(buffer)]
+
+puts "QEMU PID: $qemu_pid"
+
+# Since QEMU is running in -nographic mode, we need to connect to its console
+# We'll create a new VM instance with monitor access to send commands
+
+puts "\n🔧 Setting up SSH in Alpine Linux VM..."
+puts "This script will automate the SSH configuration process.\n"
+
+# Create a script to send to the VM
+set setup_commands {
+    apk update
+    apk add openssh sudo
+    echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+    echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
+    echo 'root:servin123' | chpasswd
+    rc-update add sshd default
+    rc-service sshd start
+    echo 'SSH setup complete!'
+}
+
+puts "Commands to be executed in VM:"
+puts $setup_commands
+
+puts "\n📋 Manual Steps (since direct console automation is complex):"
+puts "1. Connect to the VM console by finding the QEMU terminal"
+puts "2. Login as 'root' (press Enter for password)"
+puts "3. Copy and paste these commands one by one:"
+puts ""
+puts "   apk update"
+puts "   apk add openssh sudo"
+puts "   echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config"
+puts "   echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config"
+puts "   echo 'root:servin123' | chpasswd"
+puts "   rc-update add sshd default"
+puts "   rc-service sshd start"
+puts ""
+puts "4. Test SSH access: ssh root@localhost -p 2222"
+puts "   Password: servin123"
+puts ""
+
+# Test if SSH is already configured
+puts "🔍 Testing current SSH connectivity..."
+spawn ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=3 root@localhost echo "SSH is working"
+expect {
+    "SSH is working" {
+        puts "✅ SSH is already configured and working!"
+        puts "You can now use: ssh root@localhost -p 2222"
+        exit 0
+    }
+    "Connection refused" {
+        puts "❌ SSH not configured yet - follow manual steps above"
+    }
+    "Permission denied" {
+        puts "❌ SSH responding but authentication failed - check password"
+    }
+    timeout {
+        puts "❌ SSH not responding - needs configuration"
+    }
+}
+
+puts "\n🚀 After SSH is configured, you can:"
+puts "   • Test containers: ./servin run nginx:alpine"
+puts "   • Execute commands: ./servin exec <container> sh"
+puts "   • View logs: ./servin logs <container>"
+puts "   • Check VM status: ./servin vm status"

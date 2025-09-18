@@ -168,16 +168,6 @@
                                     <!-- Logs Tab -->
                                     <div class="tab-pane active" id="logsTab">
                                         <div class="logs-container">
-                                            <div class="logs-toolbar">
-                                                <button class="action-btn secondary" id="downloadLogsBtn">
-                                                    <i class="fas fa-download"></i>
-                                                    Download
-                                                </button>
-                                                <button class="action-btn secondary active" id="toggleAutoScrollBtn">
-                                                    <i class="fas fa-arrows-alt-v"></i>
-                                                    Auto-scroll
-                                                </button>
-                                            </div>
                                             <div class="logs-content" id="logsContent">
                                                 <div class="loading">Loading logs...</div>
                                             </div>
@@ -188,9 +178,18 @@
                                     <div class="tab-pane" id="filesTab">
                                         <div class="files-container">
                                             <div class="files-toolbar">
-                                                <div class="files-path">
-                                                    <span>Path: </span>
-                                                    <span id="currentPath">/</span>
+                                                <div class="breadcrumb-nav">
+                                                    <button class="nav-btn" id="goToRootBtn" title="Go to Root">
+                                                        <i class="fas fa-home"></i>
+                                                    </button>
+                                                    <button class="nav-btn" id="goBackBtn" title="Go Back">
+                                                        <i class="fas fa-arrow-left"></i>
+                                                    </button>
+                                                    <div class="breadcrumb-path" id="breadcrumbPath">
+                                                        <span class="path-segment root" data-path="/">
+                                                            <i class="fas fa-home"></i>
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <button class="action-btn secondary" id="refreshFilesBtn">
                                                     <i class="fas fa-sync"></i>

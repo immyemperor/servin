@@ -35,12 +35,12 @@ Get the latest release from: **[GitHub Releases](https://github.com/immyemperor/
 
 #### 🍎 macOS
 ```bash
-# Download and install via DMG (Recommended)
-# 1. Download Servin-Container-Runtime.dmg from releases
-# 2. Double-click to mount
-# 3. Drag Servin.app to Applications
+# Download complete PKG installer (Recommended)
+# 1. Download servin_*_macos_*_installer.pkg from releases
+# 2. Double-click to run installer wizard
+# 3. Follows macOS installation standards with proper code signing
 
-# Or use the installer wizard
+# Or download traditional archive
 curl -O https://github.com/immyemperor/servin/releases/latest/download/servin-macos-universal.tar.gz
 tar -xzf servin-macos-universal.tar.gz
 cd servin-macos-universal
@@ -49,21 +49,54 @@ sudo ./ServinInstaller.command
 
 #### 🐧 Linux
 ```bash
-# Download and extract
+# Download complete AppImage (Recommended - Self-contained)
+wget https://github.com/immyemperor/servin/releases/latest/download/servin_*_linux_*_appimage
+chmod +x servin_*_linux_*_appimage
+./servin_*_linux_*_appimage --install  # Install system-wide
+
+# Or download traditional archive
 wget https://github.com/immyemperor/servin/releases/latest/download/servin-linux-amd64.tar.gz
 tar -xzf servin-linux-amd64.tar.gz
 cd servin-linux-amd64
-
-# Run installer wizard
 sudo ./ServinInstaller.sh
 ```
 
 #### 🪟 Windows
 ```powershell
+# Download complete NSIS installer (Recommended)
+# 1. Download servin_*_windows_*_installer.exe from releases
+# 2. Run installer with administrative privileges
+# 3. Automatically handles VM dependencies and system integration
+
+# Or download traditional archive
 # Download servin-windows-amd64.zip from releases
 # Extract and run installer
 .\ServinSetup.exe
 ```
+
+### 🎯 Installer Features
+
+Our professional installer packages provide:
+
+#### **Complete VM Integration**
+- ✅ **Embedded VM Dependencies**: QEMU, KVM, and platform-specific virtualization components
+- ✅ **Automatic Prerequisites**: Detects and installs required system components
+- ✅ **Hardware Acceleration**: Configures optimal VM performance for each platform
+
+#### **Enterprise-Quality Installation**
+- ✅ **Code-Signed Packages**: Verified and trusted installation experience
+- ✅ **System Integration**: Proper PATH configuration and desktop shortcuts
+- ✅ **Uninstall Support**: Clean removal with system restoration
+
+#### **Cross-Platform Consistency**
+- ✅ **Unified Experience**: Identical installer behavior across Windows, Linux, macOS
+- ✅ **Smart Detection**: Automatically detects platform capabilities and optimizes accordingly
+- ✅ **VM Mode Ready**: Pre-configured for immediate VM-based containerization
+
+#### **Quality Assurance**
+- ✅ **3-Tier Verification**: Package validation, integrity testing, VM dependencies verification
+- ✅ **Cryptographic Validation**: SHA256 checksums and binary integrity verification
+- ✅ **Automated CI/CD**: Comprehensive GitHub Actions pipeline ensures quality
 
 ## �📚 Documentation
 
@@ -123,11 +156,13 @@ The documentation includes:
 - **CRI Support**: Kubernetes Container Runtime Interface compatible
 
 ### 🚀 Recent Improvements
-- **Binary Distribution**: Desktop GUI now ships as a compiled binary for better performance
-- **Professional Installers**: Cross-platform installer wizards with proper privilege handling
-- **macOS .dmg Support**: Professional disk image distribution for macOS
-- **Enhanced Security**: Improved privilege escalation and user consent flows
-- **Better Error Handling**: Comprehensive timeout mechanisms and UI responsiveness
+- **Enterprise-Grade Installer Packages**: Complete NSIS (Windows), AppImage (Linux), and PKG (macOS) installers with embedded VM dependencies
+- **Comprehensive CI/CD Pipeline**: GitHub Actions workflow with 3-tier installer verification system (package validation, integrity testing, VM dependencies)
+- **Automated Build & Distribution**: Cross-platform package building with `build-packages.sh` and automated release creation
+- **Professional Installation Experience**: Smart wizard installers that detect prerequisites and handle VM setup automatically
+- **Binary Distribution**: Desktop GUI ships as compiled binary for optimal performance
+- **Enhanced Security**: VM-level isolation with proper privilege escalation and user consent flows
+- **Quality Assurance**: Cryptographic verification, file integrity checking, and component validation for all installer packages
 
 ### Desktop Interface
 - **Terminal User Interface (TUI)**: Full-featured text-based interface for all Servin operations

@@ -81,16 +81,14 @@ main,
   margin-top: 0 !important; /* Remove any top margin since body has padding */
 }
 
-/* GitHub Pages Header Fix - Force visibility */
-body > .site-header,
-html body .site-header,
+/* GitHub Pages Header Fix - Clean implementation */
 .site-header {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
   z-index: 9999 !important;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+  background: linear-gradient(135deg, #2563eb, #6b7280) !important;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
   height: 56px !important;
   display: flex !important;
@@ -170,6 +168,12 @@ html body .site-header,
 }
 
 /* Sidebar styles */
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--light-border);
+  background: var(--light-surface);
+}
+
 .sidebar-header h2 {
   color: var(--primary-color);
   margin: 0 0 0.5rem 0;

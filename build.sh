@@ -749,6 +749,170 @@ main() {
     show_summary
 }
 
+# VM Automation Functions
+build_with_vm() {
+    print_header
+    print_info "🚀 Building Servin with VM Automation"
+    echo ""
+    
+    # Check if we're in the right directory
+    if [[ ! -f "go.mod" ]]; then
+        print_error "This script must be run from the project root directory"
+        exit 1
+    fi
+    
+    # Check Go installation
+    if ! command -v go >/dev/null 2>&1; then
+        print_error "Go is not installed or not in PATH"
+        exit 1
+    fi
+    
+    # Build only the binary we need for VM testing
+    print_info "📦 Building Servin binary..."
+    go build -o servin main.go
+    print_success "✅ Servin binary built successfully"
+    echo ""
+    
+    # Clean any existing VM to start fresh
+    print_info "🧹 Cleaning existing VM data..."
+    rm -rf ~/.servin/vms/servin-vm 2>/dev/null || true
+    print_success "✅ VM data cleaned"
+    echo ""
+    
+    # Start VM with automated SSH setup
+    print_info "🚀 Starting VM with automated SSH configuration..."
+    print_info "This will:"
+    print_info "  • Download Alpine Linux kernel if needed"
+    print_info "  • Create cloud-init ISO with SSH automation"
+    print_info "  • Start QEMU VM with Hypervisor.framework acceleration"
+    print_info "  • Automatically configure SSH access"
+    print_info "  • Deploy Servin binary to VM"
+    echo ""
+    
+    ./servin vm start
+    
+    echo ""
+    print_info "⏳ Monitoring SSH setup progress..."
+    
+    SSH_READY=false
+    MAX_WAIT=90
+    
+    for i in $(seq 1 $MAX_WAIT); do
+        if ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=2 -o BatchMode=yes root@localhost 'echo "SSH_WORKING"' 2>/dev/null | grep -q "SSH_WORKING"; then
+            SSH_READY=true
+            print_success "✅ SSH is ready after $i seconds!"
+            break
+        fi
+        
+        # Show progress every 10 seconds
+        if [ $((i % 10)) -eq 0 ]; then
+            print_info "   Waiting for SSH... ($i/$MAX_WAIT seconds)"
+        fi
+        
+        sleep 1
+    done
+    
+    if [ "$SSH_READY" = true ]; then
+        echo ""
+        print_success "🎯 VM Setup Complete!"
+        print_success "===================="
+        echo ""
+        
+        # Get VM information
+        print_info "📊 VM Information:"
+        VM_STATUS=$(./servin vm status | grep "VM Status" | awk '{print $3}' || echo "Unknown")
+        echo "   Status: $VM_STATUS"
+        echo "   SSH: ssh root@localhost -p 2222"
+        echo "   Password: servin123"
+        echo ""
+        
+        # Test VM connectivity and get system info
+        print_info "🔍 Testing VM connectivity..."
+        VM_KERNEL=$(ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost 'uname -r' 2>/dev/null || echo "Unknown")
+        VM_DISTRO=$(ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost 'cat /etc/alpine-release' 2>/dev/null || echo "Unknown")
+        echo "   Kernel: $VM_KERNEL"
+        echo "   Distribution: Alpine Linux $VM_DISTRO"
+        echo ""
+        
+        # Deploy Servin to VM
+        print_info "📦 Deploying Servin to VM..."
+        if scp -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ./servin root@localhost:/usr/local/bin/ 2>/dev/null; then
+            ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost 'chmod +x /usr/local/bin/servin' 2>/dev/null
+            print_success "✅ Servin deployed to VM successfully"
+        else
+            print_warning "⚠️  Failed to deploy Servin to VM (manual deployment may be needed)"
+        fi
+        
+        echo ""
+        print_info "🧪 Testing Container Functionality..."
+        print_info "===================================="
+        echo ""
+        
+        # Test container operations
+        print_info "1. Testing hello-world container:"
+        if ./servin run --name test-hello hello-world 2>/dev/null; then
+            print_success "✅ Container run successful"
+        else
+            print_warning "❌ Container run failed (may need manual configuration)"
+        fi
+        
+        echo ""
+        print_info "2. Listing containers:"
+        ./servin list 2>/dev/null || print_warning "❌ Container list failed"
+        
+        echo ""
+        print_info "3. Testing container logs:"
+        ./servin logs test-hello 2>/dev/null || print_warning "❌ Container logs failed"
+        
+        echo ""
+        print_success "🎉 Build and VM Setup Complete!"
+        print_success "==============================="
+        echo ""
+        print_info "🎯 Ready for Development:"
+        echo "   • VM Status: Running with SSH"
+        echo "   • Container Runtime: Native Linux (not Docker simulation)"
+        echo "   • SSH Access: ssh root@localhost -p 2222"
+        echo "   • Servin Commands: ./servin run, ./servin exec, ./servin logs"
+        echo ""
+        print_info "📚 Example Commands:"
+        echo "   ./servin run nginx:alpine"
+        echo "   ./servin run --name web -p 8080:80 nginx:alpine"
+        echo "   ./servin exec web sh"
+        echo "   ./servin logs web"
+        echo ""
+        
+    else
+        echo ""
+        print_warning "⚠️  SSH Auto-Setup Incomplete"
+        print_warning "============================="
+        echo ""
+        print_info "The VM is running but SSH auto-setup didn't complete within $MAX_WAIT seconds."
+        echo ""
+        print_info "Manual setup required:"
+        echo "1. Connect to VM console"
+        echo "2. Login as root (no password needed)"
+        echo "3. Mount and run setup script:"
+        echo "   mount /dev/sr0 /mnt 2>/dev/null || true"
+        echo "   /mnt/autosetup.sh"
+        echo ""
+        print_info "Alternative manual commands:"
+        echo "   apk update && apk add openssh"
+        echo "   echo 'root:servin123' | chpasswd"
+        echo "   echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config"
+        echo "   rc-update add sshd default && rc-service sshd start"
+        echo ""
+        echo "Then test: ssh root@localhost -p 2222"
+        echo ""
+    fi
+    
+    print_info "🏁 Build script completed!"
+    echo ""
+    VM_STATUS=$(./servin vm status | grep "VM Status" | awk '{print $3}' || echo "Unknown")
+    QEMU_PID=$(ps aux | grep qemu-system-aarch64 | grep -v grep | awk '{print $2}' | head -1 || echo "Not found")
+    echo "VM Status: $VM_STATUS"
+    echo "QEMU Process: PID $QEMU_PID"
+}
+
 # Handle command line arguments
 case "${1:-}" in
     clean)
@@ -773,6 +937,9 @@ case "${1:-}" in
     docker)
         build_binaries "linux" "amd64" ""
         build_docker_images
+        ;;
+    vm)
+        build_with_vm
         ;;
     *)
         main

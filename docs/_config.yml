@@ -1,6 +1,6 @@
 # Jekyll Configuration for Servin Documentation
 title: "Servin Container Runtime"
-description: "A Docker-compatible container runtime with Kubernetes CRI support and professional desktop interface"
+description: "Revolutionary dual-mode container runtime with enterprise-grade installers, comprehensive CI/CD pipeline, and universal cross-platform containerization"
 url: "https://immyemperor.github.io"
 baseurl: "/servin"
 

@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/signal"
-	"syscall"
-	"time"
+	"path/filepath"
 )
 
 // NamespaceFlags represents the Linux namespace types (placeholder for non-Linux)
@@ -34,6 +32,7 @@ type ContainerConfig struct {
 	LogDir      string            // Directory to store container logs
 	RootFS      string            // RootFS path for the container
 	Environment map[string]string // Environment variables
+	OnExit      func(error)       // Callback when process exits
 
 	// User namespace configuration
 	UserNamespace *UserNamespaceConfig
@@ -45,9 +44,6 @@ func CreateContainer(config *ContainerConfig) error {
 
 	// Create a simple command execution without namespaces
 	cmd := exec.Command(config.Command, config.Args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
 	// Set working directory if specified
 	if config.WorkDir != "" {
@@ -63,51 +59,54 @@ func CreateContainer(config *ContainerConfig) error {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
 
+	// Set up logging if log directory is specified
+	if config.LogDir != "" {
+		// Create log directory if it doesn't exist
+		if err := os.MkdirAll(config.LogDir, 0755); err != nil {
+			fmt.Printf("Warning: failed to create log directory: %v\n", err)
+		} else {
+			// Create log files for stdout and stderr
+			stdoutFile, err := os.Create(filepath.Join(config.LogDir, "stdout.log"))
+			if err != nil {
+				fmt.Printf("Warning: failed to create stdout log: %v\n", err)
+			} else {
+				cmd.Stdout = stdoutFile
+			}
+
+			stderrFile, err := os.Create(filepath.Join(config.LogDir, "stderr.log"))
+			if err != nil {
+				fmt.Printf("Warning: failed to create stderr log: %v\n", err)
+			} else {
+				cmd.Stderr = stderrFile
+			}
+		}
+	}
+
 	// Start the command
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start command: %v", err)
 	}
 
-	// Set up signal handling for graceful shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(sigChan)
+	// Return immediately - don't wait for the command to finish
+	// This allows the container to be in "running" state while the command executes
+	fmt.Printf("Command started with PID %d, returning to allow container to run\n", cmd.Process.Pid)
 
-	// Wait for the process to complete or signal
-	done := make(chan error, 1)
+	// Start a goroutine to wait for the process and handle cleanup
 	go func() {
-		done <- cmd.Wait()
+		err := cmd.Wait()
+		if err != nil {
+			fmt.Printf("Container command exited with error: %v\n", err)
+		} else {
+			fmt.Printf("Container command completed successfully\n")
+		}
+
+		// Call the exit callback if provided
+		if config.OnExit != nil {
+			config.OnExit(err)
+		}
 	}()
 
-	select {
-	case err := <-done:
-		// Process completed normally
-		return err
-	case sig := <-sigChan:
-		// Received signal, terminate the process
-		fmt.Printf("\nReceived signal %v, terminating process...\n", sig)
-
-		// First try graceful termination
-		if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
-			fmt.Printf("Failed to send SIGTERM: %v\n", err)
-		}
-
-		// Wait a bit for graceful shutdown
-		timeout := time.After(2 * time.Second)
-		select {
-		case err := <-done:
-			fmt.Println("Process terminated gracefully")
-			return err
-		case <-timeout:
-			// Force kill if it doesn't respond
-			fmt.Println("Process didn't respond to SIGTERM, force killing...")
-			if err := cmd.Process.Kill(); err != nil {
-				fmt.Printf("Failed to kill process: %v\n", err)
-			}
-			<-done // Wait for the process to actually exit
-			return fmt.Errorf("process forcefully terminated")
-		}
-	}
+	return nil
 }
 
 // SetupNamespace returns an error on non-Linux platforms

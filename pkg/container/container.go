@@ -172,6 +172,15 @@ func (c *Container) Run() error {
 		LogDir:      logDir,
 		RootFS:      c.RootPath + "/rootfs", // Pass the rootfs path
 		Environment: c.Config.Env,           // Pass environment variables
+		OnExit: func(err error) {
+			// Update container status when process exits
+			c.UpdateStatus("exited")
+			if err != nil {
+				fmt.Printf("Container %s exited with error: %v\n", c.Config.Name, err)
+			} else {
+				fmt.Printf("Container %s exited successfully\n", c.Config.Name)
+			}
+		},
 		Namespaces: []namespaces.NamespaceFlags{
 			namespaces.CLONE_NEWPID, // New PID namespace
 			namespaces.CLONE_NEWUTS, // New UTS namespace (hostname)
@@ -191,7 +200,8 @@ func (c *Container) Run() error {
 		return fmt.Errorf("container failed: %v", err)
 	}
 
-	c.UpdateStatus("exited")
+	// Don't set to "exited" immediately - the container is now running
+	// The status will be updated to "exited" when the process actually terminates
 	return nil
 }
 

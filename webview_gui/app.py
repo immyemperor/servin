@@ -219,16 +219,86 @@ def get_container_logs(container_id):
 
 @app.route('/api/containers/<container_id>/files', methods=['GET'])
 def get_container_files(container_id):
-    """Get container filesystem listing"""
+    """Get container filesystem listing using exec"""
     if not servin_client:
         return jsonify({'error': 'Servin runtime not available'}), 500
     
     try:
         path = request.args.get('path', '/')
-        files = servin_client.list_files(container_id, path)
+        
+        # Use exec to run ls command inside the container for real filesystem access
+        # Try ls -la first, fallback to ls -l, then just ls
+        ls_commands = [
+            f"ls -la '{path}' 2>/dev/null",
+            f"ls -l '{path}' 2>/dev/null", 
+            f"ls '{path}' 2>/dev/null"
+        ]
+        
+        result = None
+        for cmd in ls_commands:
+            try:
+                result = servin_client.exec_command(container_id, cmd)
+                if result and result.strip():
+                    break
+            except:
+                continue
+        
+        if not result or not result.strip():
+            return jsonify([])
+        
+        # Parse the ls output to create file listing
+        files = []
+        lines = result.strip().split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('total '):
+                continue
+                
+            # Skip . and .. entries from ls -la
+            if line.endswith(' .') or line.endswith(' ..'):
+                continue
+            
+            # Parse ls -la output: permissions links owner group size month day time/year name
+            parts = line.split()
+            if len(parts) >= 9:
+                permissions = parts[0]
+                size = parts[4] if parts[4].isdigit() else 0
+                name = ' '.join(parts[8:])  # Handle names with spaces
+                
+                is_directory = permissions.startswith('d')
+                is_symlink = permissions.startswith('l')
+                
+                files.append({
+                    'name': name,
+                    'type': 'directory' if is_directory else 'symlink' if is_symlink else 'file',
+                    'size': int(size) if str(size).isdigit() else 0,
+                    'permissions': permissions,
+                    'path': path
+                })
+            elif len(parts) >= 1:
+                # Fallback for simple ls output
+                name = ' '.join(parts)
+                # Try to determine if it's a directory by attempting to list it
+                try:
+                    test_result = servin_client.exec_command(container_id, f"test -d '{path.rstrip('/')}/{name}' && echo 'dir'")
+                    is_directory = 'dir' in test_result
+                except:
+                    is_directory = False
+                
+                files.append({
+                    'name': name,
+                    'type': 'directory' if is_directory else 'file',
+                    'size': 0,
+                    'permissions': '-',
+                    'path': path
+                })
+        
         return jsonify(files)
-    except ServinError as e:
-        return jsonify({'error': str(e)}), 500
+        
+    except Exception as e:
+        print(f"Error listing files: {e}")
+        return jsonify({'error': f'Failed to list files: {str(e)}'}), 500
 
 @app.route('/api/containers/<container_id>/exec', methods=['POST'])
 def exec_container_command(container_id):
@@ -872,9 +942,34 @@ def cleanup_client_streams(client_sid):
         if session_key in active_exec_sessions:
             del active_exec_sessions[session_key]
 
+def find_available_port(start_port=5555, max_attempts=10):
+    """Find an available port starting from start_port"""
+    import socket
+    
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('127.0.0.1', port))
+                return port
+        except OSError:
+            continue
+    
+    # If no port found in range, return None
+    return None
+
 def run_flask_app():
     """Run the Flask application with SocketIO support"""
-    socketio.run(app, host='127.0.0.1', port=5555, debug=False, use_reloader=False)
+    port = find_available_port()
+    
+    if port is None:
+        print("Error: Could not find an available port in range 5555-5564")
+        return
+    
+    if port != 5555:
+        print(f"Port 5555 is in use, using port {port} instead")
+    
+    print(f"Starting Servin GUI on http://127.0.0.1:{port}")
+    socketio.run(app, host='127.0.0.1', port=port, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     run_flask_app()

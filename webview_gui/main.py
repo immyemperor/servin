@@ -80,6 +80,22 @@ class ServinDesktopGUI:
         self.flask_running = False
         self.webview_window = None
         self.root = None
+        self.server_port = None
+        
+    def find_available_port(self, start_port=5555, max_attempts=10):
+        """Find an available port starting from start_port"""
+        import socket
+        
+        for port in range(start_port, start_port + max_attempts):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind(('127.0.0.1', port))
+                    return port
+            except OSError:
+                continue
+        
+        # If no port found in range, return None
+        return None
         
     def check_servin_installed(self):
         """Check if Servin is installed and accessible"""
@@ -146,11 +162,22 @@ class ServinDesktopGUI:
     
     def start_flask_server(self):
         """Start the Flask server in a separate thread"""
+        # Find an available port
+        self.server_port = self.find_available_port()
+        
+        if self.server_port is None:
+            print("Error: Could not find an available port in range 5555-5564")
+            return False
+        
+        if self.server_port != 5555:
+            print(f"Port 5555 is in use, using port {self.server_port} instead")
+        
         def run_server():
             try:
                 self.flask_running = True
-                # Run Flask app on localhost:5555
-                app.run(host='127.0.0.1', port=5555, debug=False, use_reloader=False)
+                # Run Flask app on the found port
+                print(f"Starting Servin GUI on http://127.0.0.1:{self.server_port}")
+                app.run(host='127.0.0.1', port=self.server_port, debug=False, use_reloader=False)
             except Exception as e:
                 print(f"Flask server error: {e}")
                 self.flask_running = False
@@ -160,14 +187,20 @@ class ServinDesktopGUI:
         
         # Wait a moment for the server to start
         time.sleep(2)
+        return True
     
     def create_webview_window(self):
         """Create the webview window with the Servin GUI"""
         try:
+            # Make sure we have a valid port
+            if not self.server_port:
+                print("Error: No server port available")
+                return
+            
             # Try to create the webview window
             self.webview_window = webview.create_window(
                 title='Servin Desktop GUI',
-                url='http://127.0.0.1:5555',
+                url=f'http://127.0.0.1:{self.server_port}',
                 width=1200,
                 height=800,
                 min_size=(900, 600),
@@ -277,7 +310,10 @@ class ServinDesktopGUI:
     
     def open_in_browser(self):
         """Open the GUI in the default web browser"""
-        webbrowser.open('http://127.0.0.1:5555')
+        if self.server_port:
+            webbrowser.open(f'http://127.0.0.1:{self.server_port}')
+        else:
+            print("Error: No server port available to open in browser")
     
     def refresh_status(self):
         """Refresh the application status"""
@@ -296,7 +332,9 @@ class ServinDesktopGUI:
         
         # Start Flask server
         print("Starting Flask server...")
-        self.start_flask_server()
+        if not self.start_flask_server():
+            messagebox.showerror("Error", "Failed to start Flask server - no available ports")
+            return
         
         if not self.flask_running:
             messagebox.showerror("Error", "Failed to start Flask server")
