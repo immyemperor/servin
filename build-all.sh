@@ -13,6 +13,13 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Print functions for consistent output
+print_success() { echo -e "${GREEN}✓ $1${NC}"; }
+print_warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
+print_error() { echo -e "${RED}✗ $1${NC}"; }
+print_info() { echo -e "${BLUE}→ $1${NC}"; }
+print_header() { echo -e "\n${BLUE}$1${NC}"; }
+
 # Check for help or clean options
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
     echo "🐳 Servin Build System"
