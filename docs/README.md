@@ -2,6 +2,11 @@
 
 This directory contains the complete documentation for Servin Container Runtime, built with Jekyll and hosted on GitHub Pages.
 
+[![Contributors](https://img.shields.io/github/contributors/immyemperor/servin?style=flat-square&logo=github)](https://github.com/immyemperor/servin/graphs/contributors)
+[![Documentation](https://img.shields.io/badge/docs-live-brightgreen?style=flat-square&logo=github-pages)](https://immyemperor.github.io/servin)
+[![Issues](https://img.shields.io/github/issues/immyemperor/servin?style=flat-square&logo=github)](https://github.com/immyemperor/servin/issues)
+[![License](https://img.shields.io/github/license/immyemperor/servin?style=flat-square)](https://github.com/immyemperor/servin/blob/master/LICENSE)
+
 ## 🌐 Live Documentation
 
 Visit the live documentation at: **https://immyemperor.github.io/servin**
@@ -372,7 +377,36 @@ DocumentRoot /path/to/docs
 DirectoryIndex wiki.html
 ```
 
-## 📝 License
+## � Contributors
+
+Servin Container Runtime is built and maintained by an amazing community of developers:
+
+### **Core Team**
+- **[Brijesh Kumar](https://github.com/immyemperor)** - Project Lead & Architecture
+- **[Abhishek Kumar](https://github.com/abhishek-kumar3)** - Core Development & Features
+
+### **Community Contributions**
+We welcome contributions from developers worldwide! Here's how you can contribute:
+
+- **📖 Documentation**: Improve guides, fix typos, add examples
+- **🐛 Bug Reports**: Help us identify and fix issues
+- **💡 Feature Requests**: Suggest new capabilities and improvements
+- **💻 Code Contributions**: Implement features, optimize performance
+- **🧪 Testing**: Test on different platforms and report compatibility
+- **🌍 Translations**: Help make Servin accessible globally
+
+### **Special Thanks**
+- All community members who report issues and provide feedback
+- Beta testers helping validate VM mode across different platforms
+- Documentation contributors improving our guides and examples
+
+### **Contributing Guidelines**
+Ready to contribute? Check out our:
+- [Contributing Guide]({{ '/development' | relative_url }}) - Development setup and guidelines
+- [GitHub Issues](https://github.com/immyemperor/servin/issues) - Bug reports and feature requests
+- [GitHub Discussions](https://github.com/immyemperor/servin/discussions) - Community discussions
+
+## �📝 License
 
 This documentation is part of the Servin Container Runtime project and is licensed under the Apache License 2.0.
 

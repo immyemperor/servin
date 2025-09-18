@@ -4,9 +4,30 @@
 
 Servin is a **free and open-source** lightweight container runtime built from scratch in Go that provides comprehensive containerization capabilities with cross-platform support for development and production environments. As an open-source project, Servin includes advanced security features such as user namespaces, rootless containers, and local registry support, with full transparency and community-driven development.
 
-**🔓 Open Source License**: Servin is released under an open-source license, allowing free use, modification, and distribution for both personal and commercial projects.
+**🔓 Open Source License**: Servin is released under an open-source license, allowing free use, modification, and distribution for both personal and commercial projects- ✅ **Distribution**: Share modified versions with the community
 
-## � Quick Installation
+## 👥 Contributors
+
+Servin Container Runtime is built by an amazing community of developers committed to revolutionizing cross-platform containerization.
+
+### **🏆 Core Team**
+- **[Brijesh Kumar](https://github.com/immyemperor)** - Project Founder & Lead Architect
+- **[Abhishek Kumar](https://github.com/abhishek-kumar3)** - Lead Developer & Feature Implementation
+
+### **🤝 Join Our Community**
+We welcome contributors of all skill levels! Check out our [CONTRIBUTORS.md](CONTRIBUTORS.md) for:
+- 🚀 **Getting Started** - How to set up your development environment
+- 💡 **Contribution Types** - Ways to contribute (code, docs, testing, design)
+- 🏅 **Recognition** - How we celebrate contributor achievements
+- 📋 **Guidelines** - Best practices for contributions
+
+### **📊 Project Stats**
+![Contributors](https://img.shields.io/github/contributors/immyemperor/servin?style=for-the-badge&logo=github)
+![Commits](https://img.shields.io/github/commit-activity/m/immyemperor/servin?style=for-the-badge&logo=git)
+![Issues](https://img.shields.io/github/issues/immyemperor/servin?style=for-the-badge&logo=github)
+![Pull Requests](https://img.shields.io/github/issues-pr/immyemperor/servin?style=for-the-badge&logo=github)
+
+## 📚 Learn More## � Quick Installation
 
 ### Download from GitHub Releases
 

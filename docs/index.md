@@ -8,6 +8,14 @@ permalink: /
 
 **Revolutionary dual-mode container runtime with universal cross-platform containerization through VM-based Linux containers.**
 
+<div class="badges-container" style="text-align: center; margin: 20px 0;">
+  <img src="https://img.shields.io/github/contributors/immyemperor/servin?style=for-the-badge&logo=github" alt="Contributors" />
+  <img src="https://img.shields.io/github/stars/immyemperor/servin?style=for-the-badge&logo=github" alt="Stars" />
+  <img src="https://img.shields.io/github/forks/immyemperor/servin?style=for-the-badge&logo=github" alt="Forks" />
+  <img src="https://img.shields.io/github/issues/immyemperor/servin?style=for-the-badge&logo=github" alt="Issues" />
+  <img src="https://img.shields.io/github/license/immyemperor/servin?style=for-the-badge" alt="License" />
+</div>
+
 <div class="feature-grid">
   <div class="feature-box">
     <div class="feature-icon">🔓</div>

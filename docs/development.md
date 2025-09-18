@@ -1296,4 +1296,39 @@ release:
   prerelease: auto
 ```
 
+## 🤝 Contributing to Servin
+
+### **Join Our Developer Community**
+
+We welcome contributions from developers of all experience levels! Whether you're fixing a typo, implementing a new feature, or improving performance, every contribution matters.
+
+#### **👥 Current Contributors**
+- **[Brijesh Kumar](https://github.com/immyemperor)** - Project Founder & Lead Architect
+- **[Abhishek Kumar](https://github.com/abhishek-kumar3)** - Lead Developer & Feature Implementation
+
+#### **🚀 How to Get Started**
+1. **Read our [CONTRIBUTORS.md](../CONTRIBUTORS.md)** - Comprehensive contributor guide
+2. **Check [open issues](https://github.com/immyemperor/servin/issues)** - Find tasks to work on
+3. **Join [discussions](https://github.com/immyemperor/servin/discussions)** - Connect with the community
+4. **Follow this development guide** - Set up your environment
+
+#### **💡 Contribution Areas**
+- **🛠️ Core Runtime**: Container lifecycle, VM integration, performance
+- **🎨 User Interfaces**: CLI, TUI, GUI improvements
+- **📚 Documentation**: Guides, examples, API docs
+- **🧪 Testing**: Unit tests, integration tests, platform testing
+- **🔧 DevOps**: Build system, CI/CD, releases
+
+#### **🏅 Recognition**
+We recognize contributors through:
+- **GitHub contributor graphs** and commit history
+- **Documentation acknowledgments** in guides and README
+- **Release notes** highlighting major contributions
+- **Contributor badges** for different contribution types
+
+### **📞 Get Help**
+- **GitHub Discussions** - Ask questions and get help
+- **GitHub Issues** - Report bugs or request features  
+- **Email** - Contact core team for private inquiries
+
 This comprehensive development guide covers all aspects of contributing to and extending Servin Container Runtime, from initial setup to production releases.

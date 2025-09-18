@@ -196,7 +196,18 @@ Servin Container Runtime is a **revolutionary dual-mode container management sol
 
 ---
 
-## 📚 Next Steps
+## � Built by Amazing Contributors
+
+Servin Container Runtime is developed by a passionate community committed to revolutionizing cross-platform containerization:
+
+- **[Brijesh Kumar](https://github.com/immyemperor)** - Project visionary and lead architect
+- **[Abhishek Kumar](https://github.com/abhishek-kumar3)** - Core developer and feature implementation
+
+**Want to contribute?** Check out our [CONTRIBUTORS.md](../CONTRIBUTORS.md) to learn how you can help make Servin even better!
+
+---
+
+## �📚 Next Steps
 
 Ready to explore Servin Container Runtime? Here's how to get started:
 
