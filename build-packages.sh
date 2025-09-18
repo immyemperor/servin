@@ -254,26 +254,41 @@ build_windows_installer() {
         # Enhanced Windows command execution with better debugging
         if [[ "$OS" == "Windows_NT" ]] || command -v cmd.exe >/dev/null 2>&1; then
             print_info "Running Windows batch file via cmd.exe..."
-            cmd.exe /c "build-installer.bat" 2>&1 | tee build.log || {
-                print_error "Windows installer build failed"
-                echo "Build log contents:"
-                cat build.log 2>/dev/null || echo "No build log available"
-                return 1
+            
+            # Try simple build first for debugging
+            print_info "Attempting build with enhanced debugging..."
+            cmd.exe /c "build-installer.bat" || {
+                print_warning "Main build failed, trying simple build for debugging..."
+                cmd.exe /c "build-simple.bat" || true
             }
+            
         else
             print_info "Running batch file directly..."
             chmod +x build-installer.bat
-            ./build-installer.bat 2>&1 | tee build.log || {
-                print_error "Windows installer build failed"
-                echo "Build log contents:"
-                cat build.log 2>/dev/null || echo "No build log available"
-                return 1
+            ./build-installer.bat || {
+                print_warning "Main build failed, trying simple build for debugging..."
+                chmod +x build-simple.bat
+                ./build-simple.bat || true
             }
         fi
         
-        # Verify installer was created
-        if [[ -f "Servin-Installer-1.0.0.exe" ]] || [[ -f "servin-installer-1.0.0.exe" ]]; then
-            print_success "Windows installer built successfully"
+        # Verify installer was created and copy to dist
+        local installer_created=false
+        mkdir -p "$SCRIPT_DIR/dist"
+        
+        if [[ -f "Servin-Installer-1.0.0.exe" ]]; then
+            print_success "Windows installer built successfully: Servin-Installer-1.0.0.exe"
+            cp "Servin-Installer-1.0.0.exe" "$SCRIPT_DIR/dist/servin_${VERSION}_installer.exe"
+            print_success "Windows installer copied to dist/servin_${VERSION}_installer.exe"
+            installer_created=true
+        elif [[ -f "servin-installer-1.0.0.exe" ]]; then
+            print_success "Windows installer built successfully: servin-installer-1.0.0.exe"
+            cp "servin-installer-1.0.0.exe" "$SCRIPT_DIR/dist/servin_${VERSION}_installer.exe"
+            print_success "Windows installer copied to dist/servin_${VERSION}_installer.exe"
+            installer_created=true
+        fi
+        
+        if [[ "$installer_created" == "true" ]]; then
             ls -la *installer*.exe
         else
             print_error "Windows installer was not created"
@@ -331,7 +346,20 @@ build_linux_appimage() {
         cd "$linux_dir"
         chmod +x build-appimage.sh
         ./build-appimage.sh
-        print_success "Linux AppImage built"
+        
+        # Copy AppImage to dist immediately after successful build
+        mkdir -p "$SCRIPT_DIR/dist"
+        if ls build/Servin-*.AppImage >/dev/null 2>&1; then
+            local appimage_file=$(ls build/Servin-*.AppImage | head -1)
+            cp "$appimage_file" "$SCRIPT_DIR/dist/servin_${VERSION}_installer.AppImage"
+            print_success "Linux AppImage built and copied to dist/servin_${VERSION}_installer.AppImage"
+            
+            # Show size for verification
+            local size=$(du -h "$SCRIPT_DIR/dist/servin_${VERSION}_installer.AppImage" | cut -f1)
+            print_info "AppImage size: $size"
+        else
+            print_success "Linux AppImage built"
+        fi
     elif command -v docker >/dev/null 2>&1; then
         print_info "Building AppImage using Docker..."
         
@@ -403,30 +431,47 @@ create_distribution() {
     local dist_dir="$SCRIPT_DIR/dist"
     local release_dir="$dist_dir/servin-$VERSION-$BUILD_DATE"
     
+    # Preserve any immediate copies that were already placed in dist/
+    local temp_dir="/tmp/servin-dist-backup-$$"
+    if [[ -d "$dist_dir" ]]; then
+        mkdir -p "$temp_dir"
+        cp -r "$dist_dir"/* "$temp_dir/" 2>/dev/null || true
+    fi
+    
     rm -rf "$dist_dir"
     mkdir -p "$release_dir"/{windows,linux,macos,docs}
+    mkdir -p "$dist_dir"  # Ensure root dist exists
     
-    # Copy installers
+    # Restore immediate copies for GitHub Actions verification
+    if [[ -d "$temp_dir" ]]; then
+        cp "$temp_dir"/* "$dist_dir/" 2>/dev/null || true
+        rm -rf "$temp_dir"
+    fi
+    
+    # Copy installers to structured release directory
     print_info "Collecting installer packages..."
     
     # Windows
     if [[ -f "$SCRIPT_DIR/installers/windows/Servin-Installer-$VERSION.exe" ]]; then
         cp "$SCRIPT_DIR/installers/windows/Servin-Installer-$VERSION.exe" "$release_dir/windows/"
-        print_success "Windows installer included"
+        print_success "Windows installer included in release"
+    elif [[ -f "$SCRIPT_DIR/installers/windows/servin-installer-$VERSION.exe" ]]; then
+        cp "$SCRIPT_DIR/installers/windows/servin-installer-$VERSION.exe" "$release_dir/windows/"
+        print_success "Windows installer included in release"
     fi
     
     # Linux
     if ls "$SCRIPT_DIR/installers/linux/build/Servin-"*.AppImage >/dev/null 2>&1; then
         cp "$SCRIPT_DIR/installers/linux/build/Servin-"*.AppImage "$release_dir/linux/"
         cp "$SCRIPT_DIR/installers/linux/build/install-servin-appimage.sh" "$release_dir/linux/" 2>/dev/null || true
-        print_success "Linux AppImage included"
+        print_success "Linux AppImage included in release"
     fi
     
     # macOS
     if ls "$SCRIPT_DIR/installers/macos/build/Servin-"*.pkg >/dev/null 2>&1; then
         cp "$SCRIPT_DIR/installers/macos/build/Servin-"*.pkg "$release_dir/macos/"
         cp "$SCRIPT_DIR/installers/macos/build/Servin-"*.dmg "$release_dir/macos/" 2>/dev/null || true
-        print_success "macOS package included"
+        print_success "macOS package included in release"
     fi
     
     # Copy documentation

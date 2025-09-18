@@ -258,6 +258,35 @@ jobs:
           echo "Unknown platform: ${{ matrix.platform }}"
           exit 1
         fi
+
+    # Debug post-build state 
+    - name: Debug post-build state
+      shell: bash
+      run: |
+        echo "======================================"
+        echo "POST-BUILD DEBUG STATE"
+        echo "Platform: ${{ matrix.platform }}"
+        echo "======================================"
+        echo "Working directory: $(pwd)"
+        echo ""
+        echo "🔍 All installer files in workspace:"
+        find . -name "*.exe" -o -name "*.AppImage" -o -name "*.pkg" -o -name "*.dmg" 2>/dev/null | sort
+        echo ""
+        echo "📁 Dist directory structure:"
+        if [ -d "dist" ]; then
+          ls -la dist/
+          echo "Dist contents (recursive):"
+          find dist/ -type f 2>/dev/null | sort
+        else
+          echo "dist/ directory does not exist"
+        fi
+        echo ""
+        echo "📁 Installers directory structure:"
+        if [ -d "installers" ]; then
+          find installers/ -name "*.exe" -o -name "*.AppImage" -o -name "*.pkg" -o -name "*.dmg" 2>/dev/null | sort
+        else
+          echo "installers/ directory does not exist"
+        fi
         
     # Comprehensive installer package verification
     - name: Verify complete installer packages
@@ -267,6 +296,19 @@ jobs:
         echo "COMPREHENSIVE INSTALLER PACKAGE VERIFICATION"
         echo "Platform: ${{ matrix.platform }}"
         echo "============================================"
+        
+        # Debug current working directory and file structure
+        echo "🔍 Debug Information"
+        echo "Current working directory: $(pwd)"
+        echo "Directory structure:"
+        find . -name "*.exe" -o -name "*.AppImage" -o -name "*.pkg" 2>/dev/null | head -20
+        echo ""
+        echo "Installers directory contents:"
+        ls -la installers/ 2>/dev/null || echo "installers/ directory not found"
+        echo ""
+        echo "Dist directory contents:"
+        ls -la dist/ 2>/dev/null || echo "dist/ directory not found"
+        echo ""
         
         # Initialize verification status
         VERIFICATION_PASSED=true
@@ -280,11 +322,27 @@ jobs:
           echo "🔍 Verifying Windows NSIS Installer..."
           echo "======================================"
           
-          # Check source NSIS installer
-          if [ -f "installers/windows/Servin-Installer-1.0.0.exe" ]; then
+          # Check multiple possible locations for Windows installer
+          WINDOWS_INSTALLER=""
+          for path in \
+            "installers/windows/Servin-Installer-1.0.0.exe" \
+            "installers/windows/servin-installer-1.0.0.exe" \
+            "dist/servin_1.0.0_installer.exe" \
+            "dist/Servin-Installer-1.0.0.exe"; do
+            
+            if [ -f "$path" ]; then
+              WINDOWS_INSTALLER="$path"
+              echo "✓ Windows installer found at: $path"
+              break
+            else
+              echo "✗ Not found: $path"
+            fi
+          done
+          
+          if [ -n "$WINDOWS_INSTALLER" ]; then
             INSTALLER_FOUND=true
-            INSTALLER_SIZE=$(stat -c%s "installers/windows/Servin-Installer-1.0.0.exe" 2>/dev/null || stat -f%z "installers/windows/Servin-Installer-1.0.0.exe" 2>/dev/null)
-            echo "✓ Source NSIS installer found: $(ls -lh installers/windows/Servin-Installer-*.exe)"
+            INSTALLER_SIZE=$(stat -c%s "$WINDOWS_INSTALLER" 2>/dev/null || stat -f%z "$WINDOWS_INSTALLER" 2>/dev/null)
+            echo "✓ Source NSIS installer found: $(ls -lh "$WINDOWS_INSTALLER")"
             echo "  Size: ${INSTALLER_SIZE} bytes ($(echo "scale=2; $INSTALLER_SIZE/1024/1024" | bc 2>/dev/null || echo "~$(($INSTALLER_SIZE/1024/1024))")MB)"
             
             # Verify minimum installer size (should be substantial with VM dependencies)
@@ -330,12 +388,26 @@ jobs:
           echo "🔍 Verifying Linux AppImage..."
           echo "============================="
           
-          # Check source AppImage
-          if ls installers/linux/build/Servin-*.AppImage >/dev/null 2>&1; then
+          # Check multiple possible locations for Linux AppImage
+          LINUX_APPIMAGE=""
+          for path in \
+            "installers/linux/build/Servin-"*.AppImage \
+            "dist/servin_1.0.0_installer.AppImage" \
+            "dist/Servin-"*.AppImage; do
+            
+            if ls $path >/dev/null 2>&1; then
+              LINUX_APPIMAGE=$(ls $path | head -1)
+              echo "✓ Linux AppImage found at: $LINUX_APPIMAGE"
+              break
+            else
+              echo "✗ Not found: $path"
+            fi
+          done
+          
+          if [ -n "$LINUX_APPIMAGE" ]; then
             INSTALLER_FOUND=true
-            APPIMAGE_FILE=$(ls installers/linux/build/Servin-*.AppImage | head -1)
-            INSTALLER_SIZE=$(stat -c%s "$APPIMAGE_FILE" 2>/dev/null || stat -f%z "$APPIMAGE_FILE" 2>/dev/null)
-            echo "✓ Source AppImage found: $(ls -lh installers/linux/build/Servin-*.AppImage)"
+            INSTALLER_SIZE=$(stat -c%s "$LINUX_APPIMAGE" 2>/dev/null || stat -f%z "$LINUX_APPIMAGE" 2>/dev/null)
+            echo "✓ Source AppImage found: $(ls -lh "$LINUX_APPIMAGE")"
             echo "  Size: ${INSTALLER_SIZE} bytes ($(echo "scale=2; $INSTALLER_SIZE/1024/1024" | bc 2>/dev/null || echo "~$(($INSTALLER_SIZE/1024/1024))")MB)"
             
             # Verify minimum AppImage size (should include QEMU)
@@ -349,7 +421,7 @@ jobs:
             
             # Verify AppImage structure
             echo "  Checking AppImage metadata..."
-            if file "$APPIMAGE_FILE" | grep -i "ELF.*executable" >/dev/null; then
+            if file "$LINUX_APPIMAGE" | grep -i "ELF.*executable" >/dev/null; then
               INSTALLER_STRUCTURE_OK=true
               echo "✓ Valid ELF executable structure"
             else
@@ -358,7 +430,7 @@ jobs:
             fi
             
             # Check if AppImage is executable
-            if [ -x "$APPIMAGE_FILE" ]; then
+            if [ -x "$LINUX_APPIMAGE" ]; then
               echo "✓ AppImage is executable"
             else
               echo "❌ AppImage is not executable"
@@ -368,7 +440,10 @@ jobs:
           else
             echo "❌ Source AppImage not found"
             VERIFICATION_PASSED=false
-            echo "  Expected: installers/linux/build/Servin-*.AppImage"
+            echo "  Expected locations:"
+            echo "    - installers/linux/build/Servin-*.AppImage"
+            echo "    - dist/servin_1.0.0_installer.AppImage"
+            echo "    - dist/Servin-*.AppImage"
             echo "  Directory contents:"
             ls -la installers/linux/build/ 2>/dev/null || echo "  Directory not found"
           fi
