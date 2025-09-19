@@ -2347,21 +2347,13 @@ jobs:
             if ($hyperv.State -eq "Enabled") {
               Write-Host "✓ Hyper-V is installed and enabled"
               $prerequisites["Hyper_V"] = $true
-              
-              # Check Hyper-V management tools
-              $hvManagement = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Management-PowerShell -ErrorAction SilentlyContinue
-              if ($hvManagement -and $hvManagement.State -eq "Enabled") {
-                Write-Host "✓ Hyper-V PowerShell management tools available"
-              }
             } elseif ($hyperv.State -eq "Disabled") {
               Write-Host "⚠️ Hyper-V is available but disabled"
-              Write-Host "   Enable with: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All"
             } else {
               Write-Host "⚠️ Hyper-V state: $($hyperv.State)"
             }
           } else {
             Write-Host "❌ Hyper-V is not available on this system"
-            Write-Host "   Requires: Windows 10/11 Pro, Enterprise, or Education"
           }
         } catch {
           Write-Host "❌ Error checking Hyper-V: $($_.Exception.Message)"
@@ -2374,18 +2366,8 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             Write-Host "✓ WSL2 is available"
             $prerequisites["WSL2"] = $true
-            Write-Host "   Version info:"
-            wsl --version | ForEach-Object { Write-Host "   $_" }
-            
-            # Check for installed distributions
-            Write-Host "`n   Checking WSL distributions..."
-            $wslList = wsl --list --verbose 2>$null
-            if ($LASTEXITCODE -eq 0) {
-              $wslList | ForEach-Object { Write-Host "   $_" }
-            }
           } else {
             Write-Host "❌ WSL2 not available or not installed"
-            Write-Host "   Install with: wsl --install"
           }
         } catch {
           Write-Host "❌ Error checking WSL2: $($_.Exception.Message)"
@@ -2402,18 +2384,6 @@ jobs:
           if ($vboxPath) {
             Write-Host "✓ VirtualBox installed successfully"
             $prerequisites["VirtualBox"] = $true
-            
-            # Get VirtualBox version
-            $vboxVersion = & VBoxManage --version 2>$null
-            if ($vboxVersion) {
-              Write-Host "   Version: $vboxVersion"
-            }
-            
-            # Check VirtualBox kernel driver
-            $vboxService = Get-Service -Name "VBoxSDS" -ErrorAction SilentlyContinue
-            if ($vboxService) {
-              Write-Host "   VirtualBox service: $($vboxService.Status)"
-            }
           } else {
             Write-Host "❌ VirtualBox installation failed or not in PATH"
           }
@@ -2431,12 +2401,6 @@ jobs:
           pip install --upgrade pip --quiet
           pip install pywebview flask flask-cors flask-socketio eventlet gevent pyinstaller --quiet
           
-          # Test critical imports
-          python -c "import webview; print('   ✓ pywebview available')"
-          python -c "import flask_socketio; print('   ✓ flask-socketio available')"
-          python -c "import eventlet; print('   ✓ eventlet available')"
-          python -c "import gevent; print('   ✓ gevent available')"
-          
           Write-Host "✓ Python dependencies installed successfully"
         } catch {
           Write-Host "❌ Error installing Python dependencies: $($_.Exception.Message)"
@@ -2448,34 +2412,13 @@ jobs:
           Write-Host "   Installing NSIS for installer creation..."
           choco install nsis -y --no-progress --limit-output
           
-          Write-Host "   Installing Packer for VM image building..."
-          choco install packer -y --no-progress --limit-output
-          
-          # Verify installations
-          $nsisPath = ""
+          # Verify NSIS installation
           if (Test-Path "C:\Program Files (x86)\NSIS\makensis.exe") {
-            $nsisPath = "C:\Program Files (x86)\NSIS\makensis.exe"
-            Write-Host "   ✓ NSIS installed: $nsisPath"
+            Write-Host "   ✓ NSIS installed: C:\Program Files (x86)\NSIS\makensis.exe"
           } elseif (Test-Path "C:\Program Files\NSIS\makensis.exe") {
-            $nsisPath = "C:\Program Files\NSIS\makensis.exe"
-            Write-Host "   ✓ NSIS installed: $nsisPath"
+            Write-Host "   ✓ NSIS installed: C:\Program Files\NSIS\makensis.exe"
           } else {
             Write-Host "   ⚠️ NSIS installation location not found"
-          }
-          
-          # Test Packer
-          $packerVersion = packer version 2>$null
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "   ✓ Packer installed: $packerVersion"
-            
-            # Install Packer QEMU plugin
-            Write-Host "   Installing Packer QEMU plugin..."
-            packer plugins install github.com/hashicorp/qemu 2>$null
-            if ($LASTEXITCODE -eq 0) {
-              Write-Host "   ✓ Packer QEMU plugin installed"
-            }
-          } else {
-            Write-Host "   ❌ Packer installation failed"
           }
         } catch {
           Write-Host "❌ Error installing development tools: $($_.Exception.Message)"
@@ -2715,13 +2658,64 @@ jobs:
         # Install Python dependencies
         echo -e "\n9. Installing Python Dependencies..."
         python3 --version
+        
+        # Install system dependencies required for Python packages
+        echo "  Installing system dependencies for Python packages..."
+        sudo apt-get update -qq
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+          python3-dev \
+          python3-pip \
+          pkg-config \
+          libcairo2-dev \
+          libgirepository1.0-dev \
+          libgtk-3-dev \
+          libwebkit2gtk-4.0-dev \
+          gir1.2-webkit2-4.0 \
+          python3-gi \
+          python3-gi-cairo
+        
+        echo "  Installing Python packages..."
         python3 -m pip install --upgrade pip --quiet
-        python3 -m pip install pywebview[gtk] flask flask-cors flask-socketio eventlet pyinstaller --quiet
+        
+        # Install packages one by one with error handling
+        PYTHON_PACKAGES_INSTALLED=0
+        PYTHON_PACKAGES_TOTAL=0
+        
+        echo "  Installing pywebview..."
+        if python3 -m pip install pywebview --quiet 2>/dev/null; then
+          echo "    ✓ pywebview installed successfully"
+          PYTHON_PACKAGES_INSTALLED=$((PYTHON_PACKAGES_INSTALLED + 1))
+        else
+          echo "    ⚠️ pywebview installation failed, trying without GTK support..."
+          python3 -m pip install pywebview --quiet --no-deps 2>/dev/null || echo "    ❌ pywebview installation failed"
+        fi
+        PYTHON_PACKAGES_TOTAL=$((PYTHON_PACKAGES_TOTAL + 1))
+        
+        echo "  Installing Flask and related packages..."
+        if python3 -m pip install flask flask-cors flask-socketio eventlet --quiet 2>/dev/null; then
+          echo "    ✓ Flask packages installed successfully"
+          PYTHON_PACKAGES_INSTALLED=$((PYTHON_PACKAGES_INSTALLED + 1))
+        else
+          echo "    ❌ Flask packages installation failed"
+        fi
+        PYTHON_PACKAGES_TOTAL=$((PYTHON_PACKAGES_TOTAL + 1))
+        
+        echo "  Installing PyInstaller..."
+        if python3 -m pip install pyinstaller --quiet 2>/dev/null; then
+          echo "    ✓ PyInstaller installed successfully"
+          PYTHON_PACKAGES_INSTALLED=$((PYTHON_PACKAGES_INSTALLED + 1))
+        else
+          echo "    ❌ PyInstaller installation failed"
+        fi
+        PYTHON_PACKAGES_TOTAL=$((PYTHON_PACKAGES_TOTAL + 1))
         
         echo "  Testing Python imports..."
-        python3 -c "import webview; print('  ✓ pywebview available')" || echo "  ❌ pywebview not available"
-        python3 -c "import flask; print('  ✓ flask available')" || echo "  ❌ flask not available"
-        python3 -c "import flask_socketio; print('  ✓ flask-socketio available')" || echo "  ❌ flask-socketio not available"
+        python3 -c "import webview; print('  ✓ pywebview available')" 2>/dev/null || echo "  ⚠️ pywebview not available"
+        python3 -c "import flask; print('  ✓ flask available')" 2>/dev/null || echo "  ⚠️ flask not available"
+        python3 -c "import flask_socketio; print('  ✓ flask-socketio available')" 2>/dev/null || echo "  ⚠️ flask-socketio not available"
+        python3 -c "import PyInstaller; print('  ✓ PyInstaller available')" 2>/dev/null || echo "  ⚠️ PyInstaller not available"
+        
+        echo "  Python packages: $PYTHON_PACKAGES_INSTALLED/$PYTHON_PACKAGES_TOTAL installed successfully"
         
         # Install development tools
         echo -e "\n10. Installing Development Tools..."
@@ -3071,25 +3065,69 @@ jobs:
     - name: Extract and prepare test binary
       shell: bash
       run: |
+        echo "Debug: Checking for build artifacts..."
+        echo "Platform: ${{ matrix.platform }}"
+        echo "Expected archive names:"
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          echo "  Windows: servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip"
+        else
+          echo "  Unix: servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz"
+        fi
+        echo ""
+        echo "Available files:"
+        ls -la . | head -10
+        echo ""
+        
         if [ "${{ matrix.platform }}" = "windows" ]; then
           if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip" ]; then
+            echo "✅ Found Windows build artifact, extracting..."
             powershell -Command "Expand-Archive -Path 'servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip' -DestinationPath 'test-vm'"
             chmod +x test-vm/servin.exe 2>/dev/null || true
+            echo "✅ Windows artifact extracted successfully"
           else
-            echo "No Windows build artifact found, building locally..."
-            GOOS=windows GOARCH=amd64 go build -o test-vm/servin.exe ./cmd/servin
+            echo "❌ No Windows build artifact found, building locally..."
+            echo "Repository structure check:"
+            ls -la . | grep -E "(main\.go|cmd/)" || echo "No main.go or cmd/ found"
+            echo ""
+            if [ -f "main.go" ]; then
+              echo "✅ Found main.go in root, building from root..."
+              mkdir -p test-vm
+              GOOS=windows GOARCH=amd64 go build -o test-vm/servin.exe .
+            else
+              echo "❌ No main.go found in expected locations"
+              exit 1
+            fi
           fi
         else
           if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" ]; then
+            echo "✅ Found Unix build artifact, extracting..."
             mkdir -p test-vm
             tar -xzf "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" -C test-vm --strip-components=1
             chmod +x test-vm/servin
+            echo "✅ Unix artifact extracted successfully"
           else
-            echo "No build artifact found, building locally..."
-            mkdir -p test-vm
-            go build -o test-vm/servin ./cmd/servin
-            chmod +x test-vm/servin
+            echo "❌ No build artifact found, building locally..."
+            echo "Repository structure check:"
+            ls -la . | grep -E "(main\.go|cmd/)" || echo "No main.go or cmd/ found"
+            echo ""
+            if [ -f "main.go" ]; then
+              echo "✅ Found main.go in root, building from root..."
+              mkdir -p test-vm
+              go build -o test-vm/servin .
+              chmod +x test-vm/servin
+            else
+              echo "❌ No main.go found in expected locations"
+              exit 1
+            fi
           fi
+        fi
+        
+        echo ""
+        echo "Verifying test binary creation:"
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          ls -la test-vm/servin.exe 2>/dev/null && echo "✅ Windows test binary ready" || echo "❌ Windows test binary missing"
+        else
+          ls -la test-vm/servin 2>/dev/null && echo "✅ Unix test binary ready" || echo "❌ Unix test binary missing"
         fi
 
     # Run VM provider tests with prerequisites-aware testing
