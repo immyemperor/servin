@@ -329,86 +329,76 @@ build_windows_installer() {
                 # Create a temporary batch file with proper error handling
                 cat > "build-debug.bat" << 'BATCH_EOF'
 @echo off
+setlocal enabledelayedexpansion
+
 echo ========================================
-echo NSIS Build Debug Script - Test Minimal First
+echo NSIS Build Debug Script
 echo ========================================
 echo Current directory: %CD%
 echo Date/Time: %DATE% %TIME%
 echo.
 
-echo === Quick File Check ===
-dir *.exe *.nsi
+echo === File Check ===
+dir *.nsi *.exe 2>nul
 
 echo.
 echo === NSIS Version Check ===
-makensis /VERSION
-echo.
-
-echo === Testing Minimal Installer First ===
-if exist "servin-minimal.nsi" (
-    echo Found servin-minimal.nsi, testing it first...
-    echo Running: makensis /V4 servin-minimal.nsi
-    makensis /V4 servin-minimal.nsi
-    set MINIMAL_EXIT=%errorlevel%
-    echo Minimal NSIS Exit Code: %MINIMAL_EXIT%
-    
-    if exist "servin-installer-1.0.0.exe" (
-        echo SUCCESS: Minimal installer created servin-installer-1.0.0.exe
-        dir servin-installer*.exe
-        copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
-        echo SUCCESS: Minimal installer ready as Servin-Installer-1.0.0.exe
-        goto success
+makensis /VERSION 2>nul
+if !errorlevel! neq 0 (
+    echo ERROR: makensis not found in PATH
+    echo Trying common NSIS locations...
+    if exist "C:\Program Files (x86)\NSIS\makensis.exe" (
+        set "MAKENSIS=C:\Program Files (x86)\NSIS\makensis.exe"
+        echo Found NSIS at: !MAKENSIS!
+    ) else if exist "C:\Program Files\NSIS\makensis.exe" (
+        set "MAKENSIS=C:\Program Files\NSIS\makensis.exe"
+        echo Found NSIS at: !MAKENSIS!
     ) else (
-        echo FAILED: Minimal installer also failed to create file
-        echo Minimal Exit Code: %MINIMAL_EXIT%
+        echo ERROR: NSIS not found in common locations
+        exit /b 1
     )
 ) else (
-    echo No servin-minimal.nsi found, skipping minimal test
+    set "MAKENSIS=makensis"
+    echo NSIS found in PATH
 )
 
 echo.
-echo === Primary NSIS Build Attempt ===
-echo Running: makensis /V4 servin-installer.nsi
-makensis /V4 servin-installer.nsi
-set NSIS_EXIT=%errorlevel%
-echo.
-echo Primary NSIS Exit Code: %NSIS_EXIT%
+echo === Building NSIS Installer ===
+echo Running: "!MAKENSIS!" /V4 servin-installer.nsi
+"!MAKENSIS!" /V4 servin-installer.nsi
+set NSIS_EXIT=!errorlevel!
+echo NSIS Exit Code: !NSIS_EXIT!
 
 echo.
-echo === Results Check ===
-if exist "servin-installer-1.0.0.exe" (
-    echo SUCCESS: servin-installer-1.0.0.exe created
-    dir servin-installer*.exe
-    copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
-    echo SUCCESS: Primary installer ready
-    goto success
+echo === Build Results ===
+if !NSIS_EXIT! equ 0 (
+    echo NSIS compilation completed successfully
+    dir *installer*.exe 2>nul
+    if exist "servin-installer-1.0.0.exe" (
+        echo SUCCESS: servin-installer-1.0.0.exe created
+        copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe" >nul 2>&1
+        echo Copied to: Servin-Installer-1.0.0.exe
+        exit /b 0
+    ) else (
+        echo WARNING: NSIS succeeded but expected file not found
+        echo Available files:
+        dir *.exe
+        exit /b 2
+    )
 ) else (
-    echo FAILED: servin-installer-1.0.0.exe NOT created
-    echo Primary NSIS Exit Code was: %NSIS_EXIT%
+    echo ERROR: NSIS compilation failed with exit code !NSIS_EXIT!
+    echo Available files:
+    dir *.exe 2>nul
     echo.
-    echo === Available files after build ===
-    dir *.exe
-    goto failure
+    echo Checking required files for NSIS:
+    if exist "servin.exe" (echo ✓ servin.exe found) else (echo ✗ servin.exe missing)
+    if exist "servin-tui.exe" (echo ✓ servin-tui.exe found) else (echo ✗ servin-tui.exe missing)
+    if exist "servin-gui.exe" (echo ✓ servin-gui.exe found) else (echo ✗ servin-gui.exe missing)
+    if exist "servin.conf" (echo ✓ servin.conf found) else (echo ✗ servin.conf missing)
+    if exist "LICENSE.txt" (echo ✓ LICENSE.txt found) else (echo ✗ LICENSE.txt missing)
+    if exist "servin-installer.nsi" (echo ✓ servin-installer.nsi found) else (echo ✗ servin-installer.nsi missing)
+    exit /b !NSIS_EXIT!
 )
-
-:success
-echo.
-echo === FINAL SUCCESS ===
-if exist "Servin-Installer*.exe" (
-    echo Installer file exists:
-    dir Servin-Installer*.exe
-    exit /b 0
-) else (
-    echo ERROR: Success path but no final installer file
-    exit /b 1
-)
-
-:failure
-echo.
-echo === FINAL FAILURE ===
-echo No installer file created by either method
-echo This suggests NSIS compilation errors
-exit /b 1
 BATCH_EOF
 
                 # Run the debug batch file with explicit output capture
@@ -429,6 +419,77 @@ BATCH_EOF
                         print_error "NSIS batch completed but no installer file created"
                         echo "NSIS output log contents:"
                         cat nsis-output.log
+                        
+                        # Try direct NSIS compilation as fallback
+                        print_info "Attempting direct NSIS compilation as fallback..."
+                        if cmd.exe /c "makensis /V4 servin-installer.nsi" > direct-nsis.log 2>&1; then
+                            print_info "Direct NSIS compilation attempted"
+                            echo "Direct NSIS output:"
+                            cat direct-nsis.log
+                            
+                            if ls -la *installer*.exe 2>/dev/null | grep -q installer; then
+                                print_success "Direct NSIS compilation succeeded"
+                            else
+                                print_error "Direct NSIS compilation also failed"
+                                print_info "Creating minimal NSIS script as last resort..."
+                                
+                                # Create a minimal NSIS script
+                                cat > "servin-minimal.nsi" << 'MINIMAL_NSI'
+!define PRODUCT_NAME "Servin Container Runtime"
+!define PRODUCT_VERSION "1.0.0"
+
+Name "${PRODUCT_NAME}"
+OutFile "servin-installer-${PRODUCT_VERSION}.exe"
+InstallDir "$PROGRAMFILES\Servin"
+RequestExecutionLevel admin
+
+Page directory
+Page instfiles
+
+Section "MainSection" SEC01
+  SetOutPath "$INSTDIR"
+  File "servin.exe"
+  File "servin-tui.exe"
+  File "servin-gui.exe"
+  File "servin.conf"
+  CreateDirectory "$SMPROGRAMS\Servin"
+  CreateShortCut "$SMPROGRAMS\Servin\Servin.lnk" "$INSTDIR\servin.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Servin" "DisplayName" "${PRODUCT_NAME}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Servin" "UninstallString" "$INSTDIR\uninstall.exe"
+  WriteUninstaller "$INSTDIR\uninstall.exe"
+SectionEnd
+
+Section "Uninstall"
+  Delete "$INSTDIR\servin.exe"
+  Delete "$INSTDIR\servin-tui.exe"
+  Delete "$INSTDIR\servin-gui.exe"
+  Delete "$INSTDIR\servin.conf"
+  Delete "$INSTDIR\uninstall.exe"
+  Delete "$SMPROGRAMS\Servin\Servin.lnk"
+  RMDir "$SMPROGRAMS\Servin"
+  RMDir "$INSTDIR"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Servin"
+SectionEnd
+MINIMAL_NSI
+                                
+                                print_info "Attempting minimal NSIS compilation..."
+                                if cmd.exe /c "makensis /V4 servin-minimal.nsi" > minimal-nsis.log 2>&1; then
+                                    cat minimal-nsis.log
+                                    if ls -la *installer*.exe 2>/dev/null | grep -q installer; then
+                                        print_success "Minimal NSIS compilation succeeded"
+                                    else
+                                        print_error "Even minimal NSIS compilation failed"
+                                        cat minimal-nsis.log
+                                    fi
+                                else
+                                    print_error "Minimal NSIS compilation failed"
+                                    cat minimal-nsis.log
+                                fi
+                            fi
+                        else
+                            print_error "Direct NSIS compilation failed"
+                            cat direct-nsis.log
+                        fi
                     fi
                 else
                     print_error "NSIS installer build failed"
