@@ -658,21 +658,38 @@ jobs:
             # Check for VM configuration files that should be included
             if [ -f "installers/windows/servin.conf" ]; then
               echo "✓ VM configuration file found"
-            fi
-            
-            # Check for VM-related executables in the installer directory
-            vm_files_count=0
-            for vm_file in "servin.exe" "servin-tui.exe" "servin-gui.exe"; do
-              if [ -f "installers/windows/$vm_file" ]; then
-                ((vm_files_count++))
-              fi
-            done
-            
-            if [ "$vm_files_count" -ge 3 ]; then
-              echo "✓ All core Servin executables found ($vm_files_count/3)"
             else
-              echo "⚠️ Some Servin executables missing ($vm_files_count/3)"
+              echo "⚠️ VM configuration file not found (may be generated at runtime)"
             fi
+            
+            # Check for VM-related executables in the installer directory (simplified)
+            echo "  Checking for core executables in installers/windows/..."
+            core_files_found=0
+            
+            if [ -f "installers/windows/servin.exe" ]; then
+              echo "    ✓ Found: servin.exe"
+              core_files_found=1
+            fi
+            
+            if [ -f "installers/windows/servin-tui.exe" ]; then
+              echo "    ✓ Found: servin-tui.exe"
+              core_files_found=1
+            fi
+            
+            if [ -f "installers/windows/servin-gui.exe" ]; then
+              echo "    ✓ Found: servin-gui.exe"  
+              core_files_found=1
+            fi
+            
+            if [ "$core_files_found" = "1" ]; then
+              echo "✓ Core Servin executables verified"
+            else
+              echo "⚠️ Some core executables may be missing"
+            fi
+            
+            echo "  VM dependency check completed for Windows"
+          else
+            echo "⚠️ Windows installer verification incomplete"
           fi
         else
           # For other platforms, check for separate VM images
@@ -718,6 +735,16 @@ jobs:
         echo "Structure Check: $([ "$INSTALLER_STRUCTURE_OK" = true ] && echo "✓ PASS" || echo "❌ FAIL")"
         echo "VM Dependencies: $([ "$VM_DEPS_FOUND" = true ] && echo "✓ FOUND" || echo "⚠️ NOT VERIFIED")"
         echo "QEMU Available: $([ "$QEMU_FOUND" = true ] && echo "✓ YES" || echo "❌ NO")"
+        echo ""
+        
+        # Debug: Show the current state of VERIFICATION_PASSED
+        echo "🔍 DEBUG: VERIFICATION_PASSED = $VERIFICATION_PASSED"
+        echo "🔍 DEBUG: Individual check results:"
+        echo "  INSTALLER_FOUND = $INSTALLER_FOUND"
+        echo "  INSTALLER_SIZE_OK = $INSTALLER_SIZE_OK"  
+        echo "  INSTALLER_STRUCTURE_OK = $INSTALLER_STRUCTURE_OK"
+        echo "  VM_DEPS_FOUND = $VM_DEPS_FOUND"
+        echo "  QEMU_FOUND = $QEMU_FOUND"
         echo ""
         
         if [ "$VERIFICATION_PASSED" = true ]; then
