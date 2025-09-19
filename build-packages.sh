@@ -291,65 +291,101 @@ build_windows_installer() {
             # Direct NSIS execution with enhanced error detection
             print_info "Attempting direct NSIS compilation with error detection..."
             
-            # Check NSIS availability first
-            if cmd.exe /c "where makensis"; then
+            # Check NSIS availability and path
+            print_info "Checking NSIS installation..."
+            
+            # Try common NSIS locations on Windows
+            NSIS_PATHS=(
+                "/c/Program Files (x86)/NSIS"
+                "/c/Program Files/NSIS"
+                "/cygdrive/c/Program Files (x86)/NSIS"
+                "/cygdrive/c/Program Files/NSIS"
+            )
+            
+            MAKENSIS_PATH=""
+            
+            # Check if makensis is in PATH
+            if cmd.exe /c "where makensis" >/dev/null 2>&1; then
+                MAKENSIS_PATH="makensis"
+                print_info "NSIS makensis found in PATH"
+            else
+                # Try to find NSIS in common locations
+                for nsis_path in "${NSIS_PATHS[@]}"; do
+                    if [[ -f "$nsis_path/makensis.exe" ]]; then
+                        MAKENSIS_PATH="\"$nsis_path/makensis.exe\""
+                        print_info "NSIS found at: $nsis_path/makensis.exe"
+                        break
+                    fi
+                done
+            fi
+            
+            if [[ -n "$MAKENSIS_PATH" ]]; then
+                # Get NSIS version for verification
+                print_info "Checking NSIS version..."
+                cmd.exe /c "$MAKENSIS_PATH /VERSION" 2>/dev/null || print_warning "Could not get NSIS version"
+                
                 print_info "NSIS found, attempting compilation..."
                 
-                # Try direct NSIS execution without batch file first
-                print_info "Attempting direct NSIS execution..."
-                echo "=== DIRECT NSIS EXECUTION START ==="
+                # Try PowerShell execution first (more reliable)
+                print_info "Attempting NSIS execution via PowerShell..."
+                echo "=== POWERSHELL NSIS EXECUTION START ==="
                 
-                if cmd.exe /c "cd /d $(pwd) && makensis /V4 servin-installer.nsi" > direct-nsis.log 2>&1; then
-                    echo "Direct NSIS execution completed"
-                    echo "=== DIRECT NSIS OUTPUT ==="
-                    cat direct-nsis.log
-                    echo "=== END DIRECT NSIS OUTPUT ==="
+                if powershell.exe -Command "cd '$PWD'; & $MAKENSIS_PATH /V4 servin-installer.nsi" > powershell-nsis.log 2>&1; then
+                    echo "PowerShell NSIS execution completed"
+                    echo "=== POWERSHELL NSIS OUTPUT ==="
+                    cat powershell-nsis.log
+                    echo "=== END POWERSHELL NSIS OUTPUT ==="
                     
                     # Check if installer was created
                     if ls -la *installer*.exe 2>/dev/null | grep -q installer; then
-                        print_success "NSIS installer build completed successfully (direct method)"
+                        print_success "NSIS installer build completed successfully (PowerShell method)"
                     else
-                        print_warning "Direct NSIS completed but no installer created, trying batch method..."
+                        print_warning "PowerShell NSIS completed but no installer created, trying cmd method..."
                         
-                        # Create a very simple batch file as backup
-                        cat > "simple-build.bat" << 'BATCH_EOF'
-@echo off
-echo Starting NSIS build...
-makensis /V4 servin-installer.nsi
-echo NSIS exit code: %errorlevel%
-if exist "servin-installer-1.0.0.exe" (
-    echo SUCCESS: Installer created
-    copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
-) else (
-    echo FAILED: No installer created
-    echo Trying minimal installer...
-    makensis /V4 servin-minimal.nsi
-    if exist "servin-installer-1.0.0.exe" (
-        echo SUCCESS: Minimal installer created
-        copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
-    )
-)
-BATCH_EOF
+                        # Try cmd.exe with proper quoting and explicit NSIS path
+                        print_info "Attempting NSIS execution via cmd.exe..."
                         
-                        print_info "Running simple batch file..."
-                        if cmd.exe /c "simple-build.bat" > batch-nsis.log 2>&1; then
-                            echo "=== BATCH NSIS OUTPUT ==="
-                            cat batch-nsis.log
-                            echo "=== END BATCH NSIS OUTPUT ==="
+                        if cmd.exe /c "cd /d \"$(pwd)\" && $MAKENSIS_PATH /V4 servin-installer.nsi" > cmd-nsis.log 2>&1; then
+                            echo "=== CMD NSIS OUTPUT ==="
+                            cat cmd-nsis.log  
+                            echo "=== END CMD NSIS OUTPUT ==="
+                            
+                            if ls -la *installer*.exe 2>/dev/null | grep -q installer; then
+                                print_success "NSIS installer build completed successfully (cmd method)"
+                            else
+                                print_warning "CMD NSIS also failed, trying minimal installer..."
+                                
+                                # Try minimal installer with PowerShell
+                                powershell.exe -Command "cd '$PWD'; & $MAKENSIS_PATH /V4 servin-minimal.nsi" > minimal-nsis.log 2>&1
+                                echo "=== MINIMAL NSIS OUTPUT ==="
+                                cat minimal-nsis.log
+                                echo "=== END MINIMAL NSIS OUTPUT ==="
+                                
+                                if ls -la *installer*.exe 2>/dev/null | grep -q installer; then
+                                    print_success "Minimal NSIS installer created successfully"
+                                else
+                                    print_error "All NSIS methods failed"
+                                fi
+                            fi
                         else
-                            print_error "Batch file execution failed"
-                            cat batch-nsis.log
+                            print_error "CMD NSIS execution failed"
+                            echo "CMD error output:"
+                            cat cmd-nsis.log
                         fi
-                        
-                        rm -f "simple-build.bat"
                     fi
                 else
-                    print_error "Direct NSIS execution failed"
-                    echo "Direct NSIS error output:"
-                    cat direct-nsis.log
+                    print_error "PowerShell NSIS execution failed"
+                    echo "PowerShell error output:"
+                    cat powershell-nsis.log
                 fi
                 
-                rm -f "direct-nsis.log" "batch-nsis.log"
+                rm -f "powershell-nsis.log" "cmd-nsis.log" "minimal-nsis.log"
+            else
+                print_error "NSIS not found in PATH or common locations"
+                print_info "Checked locations:"
+                for path in "${NSIS_PATHS[@]}"; do
+                    print_info "  - $path/makensis.exe"
+                done
                 
                 # Additional verification after execution
                 print_info "Post-execution verification:"
