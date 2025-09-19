@@ -295,118 +295,63 @@ build_windows_installer() {
             if cmd.exe /c "where makensis"; then
                 print_info "NSIS found, attempting compilation..."
                 
-                # Create a temporary batch file with proper error handling
-                cat > "build-debug.bat" << 'EOF'
-@echo off
-echo ========================================
-echo NSIS Build Debug Script - Test Minimal First
-echo ========================================
-echo Current directory: %CD%
-echo Date/Time: %DATE% %TIME%
-echo.
-
-echo === Quick File Check ===
-dir *.exe *.nsi
-
-echo.
-echo === NSIS Version Check ===
-makensis /VERSION
-echo.
-
-echo === Testing Minimal Installer First ===
-if exist "servin-minimal.nsi" (
-    echo Found servin-minimal.nsi, testing it first...
-    echo Running: makensis /V4 servin-minimal.nsi
-    makensis /V4 servin-minimal.nsi
-    set MINIMAL_EXIT=%errorlevel%
-    echo Minimal NSIS Exit Code: %MINIMAL_EXIT%
-    
-    if exist "servin-installer-1.0.0.exe" (
-        echo SUCCESS: Minimal installer created servin-installer-1.0.0.exe
-        dir servin-installer*.exe
-        copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
-        echo SUCCESS: Minimal installer ready as Servin-Installer-1.0.0.exe
-        goto success
-    ) else (
-        echo FAILED: Minimal installer also failed to create file
-        echo Minimal Exit Code: %MINIMAL_EXIT%
-    )
-) else (
-    echo No servin-minimal.nsi found, skipping minimal test
-)
-
-echo.
-echo === Primary NSIS Build Attempt ===
-echo Running: makensis /V4 servin-installer.nsi
-makensis /V4 servin-installer.nsi
-set NSIS_EXIT=%errorlevel%
-echo.
-echo Primary NSIS Exit Code: %NSIS_EXIT%
-
-echo.
-echo === Results Check ===
-if exist "servin-installer-1.0.0.exe" (
-    echo SUCCESS: servin-installer-1.0.0.exe created
-    dir servin-installer*.exe
-    copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
-    echo SUCCESS: Primary installer ready
-    goto success
-) else (
-    echo FAILED: servin-installer-1.0.0.exe NOT created
-    echo Primary NSIS Exit Code was: %NSIS_EXIT%
-    echo.
-    echo === Available files after build ===
-    dir *.exe
-    goto failure
-)
-
-:success
-echo.
-echo === FINAL SUCCESS ===
-if exist "Servin-Installer*.exe" (
-    echo Installer file exists:
-    dir Servin-Installer*.exe
-    exit /b 0
-) else (
-    echo ERROR: Success path but no final installer file
-    exit /b 1
-)
-
-:failure
-echo.
-echo === FINAL FAILURE ===
-echo No installer file created by either method
-echo This suggests NSIS compilation errors
-exit /b 1
-EOF
-
-                # Run the debug batch file with explicit output capture
-                print_info "Running debug batch file with comprehensive error checking..."
-                echo "=== BATCH FILE OUTPUT START ==="
+                # Try direct NSIS execution without batch file first
+                print_info "Attempting direct NSIS execution..."
+                echo "=== DIRECT NSIS EXECUTION START ==="
                 
-                # Execute batch file and capture output explicitly
-                if cmd.exe /c "build-debug.bat" > nsis-output.log 2>&1; then
-                    echo "Batch file execution completed"
-                    echo "=== CAPTURED NSIS OUTPUT ==="
-                    cat nsis-output.log
-                    echo "=== END NSIS OUTPUT ==="
+                if cmd.exe /c "cd /d $(pwd) && makensis /V4 servin-installer.nsi" > direct-nsis.log 2>&1; then
+                    echo "Direct NSIS execution completed"
+                    echo "=== DIRECT NSIS OUTPUT ==="
+                    cat direct-nsis.log
+                    echo "=== END DIRECT NSIS OUTPUT ==="
                     
-                    # Check if installer was actually created
+                    # Check if installer was created
                     if ls -la *installer*.exe 2>/dev/null | grep -q installer; then
-                        print_success "NSIS installer build completed successfully"
+                        print_success "NSIS installer build completed successfully (direct method)"
                     else
-                        print_error "NSIS batch completed but no installer file created"
-                        echo "NSIS output log contents:"
-                        cat nsis-output.log
+                        print_warning "Direct NSIS completed but no installer created, trying batch method..."
+                        
+                        # Create a very simple batch file as backup
+                        cat > "simple-build.bat" << 'BATCH_EOF'
+@echo off
+echo Starting NSIS build...
+makensis /V4 servin-installer.nsi
+echo NSIS exit code: %errorlevel%
+if exist "servin-installer-1.0.0.exe" (
+    echo SUCCESS: Installer created
+    copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
+) else (
+    echo FAILED: No installer created
+    echo Trying minimal installer...
+    makensis /V4 servin-minimal.nsi
+    if exist "servin-installer-1.0.0.exe" (
+        echo SUCCESS: Minimal installer created
+        copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
+    )
+)
+BATCH_EOF
+                        
+                        print_info "Running simple batch file..."
+                        if cmd.exe /c "simple-build.bat" > batch-nsis.log 2>&1; then
+                            echo "=== BATCH NSIS OUTPUT ==="
+                            cat batch-nsis.log
+                            echo "=== END BATCH NSIS OUTPUT ==="
+                        else
+                            print_error "Batch file execution failed"
+                            cat batch-nsis.log
+                        fi
+                        
+                        rm -f "simple-build.bat"
                     fi
                 else
-                    print_error "NSIS installer build failed"
-                    echo "NSIS error output:"
-                    cat nsis-output.log
+                    print_error "Direct NSIS execution failed"
+                    echo "Direct NSIS error output:"
+                    cat direct-nsis.log
                 fi
-                echo "=== BATCH FILE OUTPUT END ==="
                 
-                # Additional verification after batch execution
+                rm -f "direct-nsis.log" "batch-nsis.log"
+                
+                # Additional verification after execution
                 print_info "Post-execution verification:"
                 echo "Files matching *installer*.exe:"
                 ls -la *installer*.exe 2>/dev/null || echo "No installer files found"
@@ -414,9 +359,6 @@ EOF
                 ls -la servin-installer* 2>/dev/null || echo "No servin-installer files found"
                 echo "Files matching Servin-Installer*:"
                 ls -la Servin-Installer* 2>/dev/null || echo "No Servin-Installer files found"
-                
-                # Clean up temporary file
-                rm -f "build-debug.bat"
                 
             else
                 print_error "NSIS (makensis) not found in PATH"
