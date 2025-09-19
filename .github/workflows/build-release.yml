@@ -2315,66 +2315,71 @@ jobs:
         }
         
         # Check CPU virtualization support
-        Write-Host "`n1. Checking CPU Virtualization Support..."
+        Write-Host ""
+        Write-Host "1. Checking CPU Virtualization Support..."
         try {
           $cpuFeatures = Get-WmiObject -Class Win32_Processor | Select-Object VMMonitorModeExtensions
           if ($cpuFeatures.VMMonitorModeExtensions -eq $true) {
-            Write-Host "✓ CPU supports hardware virtualization (VT-x/AMD-V)"
+            Write-Host "[PASS] CPU supports hardware virtualization (VT-x/AMD-V)"
             $prerequisites["CPU_Virtualization"] = $true
           } else {
-            Write-Host "❌ CPU does not support hardware virtualization"
+            Write-Host "[FAIL] CPU does not support hardware virtualization"
           }
         } catch {
-          Write-Host "⚠️ Unable to detect CPU virtualization support: $($_.Exception.Message)"
+          Write-Host "[WARN] Unable to detect CPU virtualization support: $($_.Exception.Message)"
         }
         
         # Check if running as Administrator
-        Write-Host "`n2. Checking Administrative Rights..."
+        Write-Host ""
+        Write-Host "2. Checking Administrative Rights..."
         $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
         if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-          Write-Host "✓ Running with Administrator privileges"
+          Write-Host "[PASS] Running with Administrator privileges"
           $prerequisites["Admin_Rights"] = $true
         } else {
-          Write-Host "⚠️ Not running as Administrator (some checks may be limited)"
+          Write-Host "[WARN] Not running as Administrator (some checks may be limited)"
         }
         
         # Check Hyper-V availability and status
-        Write-Host "`n3. Checking Hyper-V Support..."
+        Write-Host ""
+        Write-Host "3. Checking Hyper-V Support..."
         try {
           $hyperv = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -ErrorAction SilentlyContinue
           if ($hyperv) {
             if ($hyperv.State -eq "Enabled") {
-              Write-Host "✓ Hyper-V is installed and enabled"
+              Write-Host "[PASS] Hyper-V is installed and enabled"
               $prerequisites["Hyper_V"] = $true
             } elseif ($hyperv.State -eq "Disabled") {
-              Write-Host "⚠️ Hyper-V is available but disabled"
+              Write-Host "[WARN] Hyper-V is available but disabled"
             } else {
-              Write-Host "⚠️ Hyper-V state: $($hyperv.State)"
+              Write-Host "[WARN] Hyper-V state: $($hyperv.State)"
             }
           } else {
-            Write-Host "❌ Hyper-V is not available on this system"
+            Write-Host "[FAIL] Hyper-V is not available on this system"
           }
         } catch {
-          Write-Host "❌ Error checking Hyper-V: $($_.Exception.Message)"
+          Write-Host "[FAIL] Error checking Hyper-V: $($_.Exception.Message)"
         }
         
         # Check WSL2 availability
-        Write-Host "`n4. Checking WSL2 Support..."
+        Write-Host ""
+        Write-Host "4. Checking WSL2 Support..."
         try {
-          $wslVersion = wsl --version 2>$null
+          $output = cmd /c "wsl --version 2>nul"
           if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ WSL2 is available"
+            Write-Host "[PASS] WSL2 is available"
             $prerequisites["WSL2"] = $true
           } else {
-            Write-Host "❌ WSL2 not available or not installed"
+            Write-Host "[FAIL] WSL2 not available or not installed"
           }
         } catch {
-          Write-Host "❌ Error checking WSL2: $($_.Exception.Message)"
+          Write-Host "[FAIL] Error checking WSL2: $($_.Exception.Message)"
         }
         
         # Install and check VirtualBox
-        Write-Host "`n5. Installing and Checking VirtualBox..."
+        Write-Host ""
+        Write-Host "5. Installing and Checking VirtualBox..."
         try {
           Write-Host "   Installing VirtualBox (headless)..."
           choco install virtualbox --params "/NoDesktopShortcut /NoQuickLaunchShortcut /NoStartupShortcut" -y --no-progress --limit-output
@@ -2382,17 +2387,18 @@ jobs:
           # Verify VirtualBox installation
           $vboxPath = Get-Command VBoxManage -ErrorAction SilentlyContinue
           if ($vboxPath) {
-            Write-Host "✓ VirtualBox installed successfully"
+            Write-Host "[PASS] VirtualBox installed successfully"
             $prerequisites["VirtualBox"] = $true
           } else {
-            Write-Host "❌ VirtualBox installation failed or not in PATH"
+            Write-Host "[FAIL] VirtualBox installation failed or not in PATH"
           }
         } catch {
-          Write-Host "❌ Error installing VirtualBox: $($_.Exception.Message)"
+          Write-Host "[FAIL] Error installing VirtualBox: $($_.Exception.Message)"
         }
         
         # Install Python WebView dependencies for Windows
-        Write-Host "`n6. Installing Python Dependencies..."
+        Write-Host ""
+        Write-Host "6. Installing Python Dependencies..."
         try {
           python --version
           pip --version
@@ -2401,60 +2407,65 @@ jobs:
           pip install --upgrade pip --quiet
           pip install pywebview flask flask-cors flask-socketio eventlet gevent pyinstaller --quiet
           
-          Write-Host "✓ Python dependencies installed successfully"
+          Write-Host "[PASS] Python dependencies installed successfully"
         } catch {
-          Write-Host "❌ Error installing Python dependencies: $($_.Exception.Message)"
+          Write-Host "[FAIL] Error installing Python dependencies: $($_.Exception.Message)"
         }
         
         # Install development tools
-        Write-Host "`n7. Installing Development Tools..."
+        Write-Host ""
+        Write-Host "7. Installing Development Tools..."
         try {
           Write-Host "   Installing NSIS for installer creation..."
           choco install nsis -y --no-progress --limit-output
           
           # Verify NSIS installation
           if (Test-Path "C:\Program Files (x86)\NSIS\makensis.exe") {
-            Write-Host "   ✓ NSIS installed: C:\Program Files (x86)\NSIS\makensis.exe"
+            Write-Host "   [PASS] NSIS installed: C:\Program Files (x86)\NSIS\makensis.exe"
           } elseif (Test-Path "C:\Program Files\NSIS\makensis.exe") {
-            Write-Host "   ✓ NSIS installed: C:\Program Files\NSIS\makensis.exe"
+            Write-Host "   [PASS] NSIS installed: C:\Program Files\NSIS\makensis.exe"
           } else {
-            Write-Host "   ⚠️ NSIS installation location not found"
+            Write-Host "   [WARN] NSIS installation location not found"
           }
         } catch {
-          Write-Host "❌ Error installing development tools: $($_.Exception.Message)"
+          Write-Host "[FAIL] Error installing development tools: $($_.Exception.Message)"
         }
         
         # Summary of prerequisites
-        Write-Host "`n============================================"
+        Write-Host ""
+        Write-Host "============================================"
         Write-Host "Windows VM Prerequisites Summary"
         Write-Host "============================================"
         $passed = 0
         $total = $prerequisites.Count
         
         foreach ($prereq in $prerequisites.GetEnumerator()) {
-          $status = if ($prereq.Value) { "✓ PASS" } else { "❌ FAIL" }
+          $status = if ($prereq.Value) { "[PASS]" } else { "[FAIL]" }
           $name = $prereq.Key -replace "_", " "
           Write-Host "$status - $name"
           if ($prereq.Value) { $passed++ }
         }
         
-        Write-Host "`nSummary: $passed/$total prerequisites met"
+        Write-Host ""
+        Write-Host "Summary: $passed/$total prerequisites met"
         
         if ($prerequisites["CPU_Virtualization"]) {
-          Write-Host "`n🚀 Hardware acceleration available for VM testing"
+          Write-Host ""
+          Write-Host "[INFO] Hardware acceleration available for VM testing"
         } else {
-          Write-Host "`n⚠️ Hardware acceleration not available - testing will use software emulation"
+          Write-Host ""
+          Write-Host "[WARN] Hardware acceleration not available - testing will use software emulation"
         }
         
         # Set environment variables for later steps
         if ($prerequisites["Hyper_V"]) {
-          echo "HYPERV_AVAILABLE=true" >> $env:GITHUB_ENV
+          "HYPERV_AVAILABLE=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         }
         if ($prerequisites["WSL2"]) {
-          echo "WSL2_AVAILABLE=true" >> $env:GITHUB_ENV
+          "WSL2_AVAILABLE=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         }
         if ($prerequisites["VirtualBox"]) {
-          echo "VBOX_AVAILABLE=true" >> $env:GITHUB_ENV
+          "VBOX_AVAILABLE=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         }
 
     - name: Check VM Prerequisites and Install Dependencies (Linux)
@@ -2669,10 +2680,25 @@ jobs:
           libcairo2-dev \
           libgirepository1.0-dev \
           libgtk-3-dev \
-          libwebkit2gtk-4.0-dev \
-          gir1.2-webkit2-4.0 \
+          libwebkit2gtk-4.1-dev \
+          gir1.2-webkit2-4.1 \
           python3-gi \
-          python3-gi-cairo
+          python3-gi-cairo || {
+          echo "  ⚠️ Some system dependencies failed to install, trying alternative packages..."
+          
+          # Fallback: try older WebKit versions or skip WebKit entirely
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            python3-dev \
+            python3-pip \
+            pkg-config \
+            libcairo2-dev \
+            libgirepository1.0-dev \
+            libgtk-3-dev \
+            python3-gi \
+            python3-gi-cairo || {
+            echo "  ❌ Critical system dependencies failed to install"
+          }
+        }
         
         echo "  Installing Python packages..."
         python3 -m pip install --upgrade pip --quiet
