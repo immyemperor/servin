@@ -1228,9 +1228,12 @@ jobs:
           echo "Windows NSIS Installer:"
           if [ -f "installers/windows/Servin-Installer-1.0.0.exe" ]; then
             echo "✓ Source NSIS installer found"
-            ls -lh installers/windows/Servin-Installer-*.exe
+            ls -lh installers/windows/Servin-Installer-1.0.0.exe
           else
             echo "❌ Source NSIS installer not found"
+            echo "  Looking for: installers/windows/Servin-Installer-1.0.0.exe"
+            echo "  Available files in installers/windows/:"
+            ls -la installers/windows/ 2>/dev/null || echo "  Directory not found"
           fi
           
           if ls dist/servin_*_installer.exe >/dev/null 2>&1; then
