@@ -299,64 +299,122 @@ build_windows_installer() {
                 cat > "build-debug.bat" << 'EOF'
 @echo off
 echo ========================================
-echo NSIS Build Debug Script
+echo NSIS Build Debug Script - Enhanced
 echo ========================================
 echo Current directory: %CD%
+echo Date/Time: %DATE% %TIME%
 echo.
 
-echo Checking for required files...
+echo === Environment Check ===
+where makensis
+echo NSIS Version:
+makensis /VERSION
+echo.
+
+echo === Directory Listing Before Build ===
+echo All EXE files:
+dir *.exe 2>nul | find /v "Directory"
+echo All NSI files:
+dir *.nsi 2>nul | find /v "Directory"
+echo.
+
+echo === File Verification ===
 if not exist "servin.exe" (
     echo ERROR: servin.exe not found
     exit /b 1
+) else (
+    echo OK: servin.exe found
+    for %%F in (servin.exe) do echo   Size: %%~zF bytes
 )
+
 if not exist "servin-tui.exe" (
     echo ERROR: servin-tui.exe not found  
     exit /b 1
+) else (
+    echo OK: servin-tui.exe found
+    for %%F in (servin-tui.exe) do echo   Size: %%~zF bytes
 )
+
 if not exist "servin-installer.nsi" (
     echo ERROR: servin-installer.nsi not found
     exit /b 1
+) else (
+    echo OK: servin-installer.nsi found
 )
-echo OK: All required files found
 
 echo.
-echo Running makensis...
+echo === Running Primary NSIS Build ===
+echo Command: makensis /V4 servin-installer.nsi
+echo Starting at: %TIME%
 makensis /V4 servin-installer.nsi
 set NSIS_EXIT=%errorlevel%
+echo Finished at: %TIME%
 echo NSIS exit code: %NSIS_EXIT%
 
 echo.
-echo Checking results...
+echo === Directory Listing After Build ===
+echo All EXE files:
+dir *.exe 2>nul | find /v "Directory"
+echo.
+
+echo === Results Analysis ===
 if exist "servin-installer-1.0.0.exe" (
     echo SUCCESS: servin-installer-1.0.0.exe created
-    dir servin-installer*.exe
+    for %%F in (servin-installer-1.0.0.exe) do echo   Size: %%~zF bytes, Date: %%~tF
     copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
-    echo SUCCESS: Installer ready
+    echo SUCCESS: Installer copied to standard name
     exit /b 0
 ) else (
-    echo FAILED: Main installer not created
-    echo Trying minimal installer...
-    makensis /V4 servin-minimal.nsi
-    if exist "servin-installer-1.0.0.exe" (
-        echo SUCCESS: Minimal installer created
-        copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
-        exit /b 0
+    echo FAILED: Primary installer (servin-installer-1.0.0.exe) not created
+    echo.
+    echo === Fallback to Minimal Installer ===
+    if exist "servin-minimal.nsi" (
+        echo Attempting minimal installer build...
+        echo Command: makensis /V4 servin-minimal.nsi
+        makensis /V4 servin-minimal.nsi
+        set MINIMAL_EXIT=%errorlevel%
+        echo Minimal NSIS exit code: %MINIMAL_EXIT%
+        
+        if exist "servin-installer-1.0.0.exe" (
+            echo SUCCESS: Minimal installer created
+            for %%F in (servin-installer-1.0.0.exe) do echo   Size: %%~zF bytes
+            copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
+            exit /b 0
+        ) else (
+            echo FAILED: Minimal installer also failed to create file
+        )
     ) else (
-        echo FAILED: No installer created
-        echo Available files:
-        dir *.exe
-        exit /b 1
+        echo ERROR: servin-minimal.nsi not found for fallback
     )
+    
+    echo.
+    echo === Final Failure Analysis ===
+    echo Current directory contents:
+    dir
+    echo.
+    echo NSIS may have failed silently. Check installer script syntax.
+    exit /b 1
 )
 EOF
 
                 # Run the debug batch file
                 print_info "Running debug batch file with comprehensive error checking..."
-                if cmd.exe /c "build-debug.bat"; then
+                echo "=== BATCH FILE OUTPUT START ==="
+                if cmd.exe /c "build-debug.bat 2>&1"; then
                     print_success "NSIS installer build completed successfully"
                 else
                     print_error "NSIS installer build failed"
                 fi
+                echo "=== BATCH FILE OUTPUT END ==="
+                
+                # Additional verification after batch execution
+                print_info "Post-execution verification:"
+                echo "Files matching *installer*.exe:"
+                ls -la *installer*.exe 2>/dev/null || echo "No installer files found"
+                echo "Files matching servin-installer*:"
+                ls -la servin-installer* 2>/dev/null || echo "No servin-installer files found"
+                echo "Files matching Servin-Installer*:"
+                ls -la Servin-Installer* 2>/dev/null || echo "No Servin-Installer files found"
                 
                 # Clean up temporary file
                 rm -f "build-debug.bat"

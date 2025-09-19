@@ -249,7 +249,15 @@ jobs:
         
         # Use our comprehensive package builder
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          ./build-packages.sh --windows
+          echo "Running Windows build with output capture..."
+          ./build-packages.sh --windows 2>&1 | tee windows-build-output.log
+          echo "Windows build script exit code: $?"
+          echo "=== WINDOWS BUILD OUTPUT SUMMARY ==="
+          if [ -f windows-build-output.log ]; then
+            echo "Log file size: $(wc -l < windows-build-output.log) lines"
+            echo "Last 20 lines of output:"
+            tail -20 windows-build-output.log
+          fi
         elif [ "${{ matrix.platform }}" = "linux" ]; then
           ./build-packages.sh --linux
         elif [ "${{ matrix.platform }}" = "mac" ]; then
