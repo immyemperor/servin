@@ -288,26 +288,48 @@ build_windows_installer() {
         if [[ "$OS" == "Windows_NT" ]] || command -v cmd.exe >/dev/null 2>&1; then
             print_info "Running Windows batch file via cmd.exe..."
             
-            # Try simple build first for debugging
-            print_info "Attempting build with enhanced debugging..."
-            cmd.exe /c "build-installer.bat" || {
-                print_warning "Main build failed, trying simple build for debugging..."
-                cmd.exe /c "build-simple.bat" || true
-            }
+            # Try simple build first for better CI debugging
+            print_info "Attempting simple build first for CI compatibility..."
+            if cmd.exe /c "build-simple.bat"; then
+                print_success "Simple NSIS build completed successfully"
+            else
+                print_warning "Simple build failed, trying main build for enhanced features..."
+                cmd.exe /c "build-installer.bat" || {
+                    print_error "Both build methods failed"
+                }
+            fi
             
         else
             print_info "Running batch file directly..."
-            chmod +x build-installer.bat
-            ./build-installer.bat || {
-                print_warning "Main build failed, trying simple build for debugging..."
-                chmod +x build-simple.bat
-                ./build-simple.bat || true
-            }
+            chmod +x build-simple.bat
+            if ./build-simple.bat; then
+                print_success "Simple NSIS build completed successfully"
+            else
+                print_warning "Simple build failed, trying main build for enhanced features..."
+                chmod +x build-installer.bat
+                ./build-installer.bat || {
+                    print_error "Both build methods failed"
+                }
+            fi
         fi
         
         # Verify installer was created and copy to dist
         local installer_created=false
         mkdir -p "$SCRIPT_DIR/dist"
+        
+        # Enhanced debugging for NSIS build failures
+        print_info "Checking NSIS build results..."
+        echo "Files in installers/windows directory:"
+        ls -la
+        
+        if [[ -f "build.log" ]]; then
+            print_info "NSIS build log found:"
+            echo "=== NSIS BUILD LOG ==="
+            cat build.log
+            echo "=== END BUILD LOG ==="
+        else
+            print_warning "No NSIS build.log found"
+        fi
         
         if [[ -f "Servin-Installer-1.0.0.exe" ]]; then
             print_success "Windows installer built successfully: Servin-Installer-1.0.0.exe"
