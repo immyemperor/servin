@@ -295,35 +295,43 @@ build_windows_installer() {
             if cmd.exe /c "where makensis"; then
                 print_info "NSIS found, attempting compilation..."
                 
-                # Run NSIS directly with full output capture
-                print_info "Running: makensis /V4 servin-installer.nsi"
-                if cmd.exe /c "makensis /V4 servin-installer.nsi"; then
-                    print_info "NSIS compilation completed without errors"
-                else
-                    print_error "NSIS compilation failed with exit code"
-                fi
+                # Run NSIS compilation and file operations in single command context
+                print_info "Running NSIS compilation with immediate verification..."
+                cmd.exe /c "
+                echo Running makensis /V4 servin-installer.nsi
+                makensis /V4 servin-installer.nsi
+                echo NSIS exit code: %errorlevel%
+                echo.
+                echo Checking for installer file...
+                if exist servin-installer-1.0.0.exe (
+                    echo SUCCESS: servin-installer-1.0.0.exe found
+                    dir servin-installer*.exe
+                    copy servin-installer-1.0.0.exe Servin-Installer-1.0.0.exe
+                    echo Copied to Servin-Installer-1.0.0.exe
+                    dir Servin-Installer*.exe
+                    echo INSTALLER_CREATED=YES
+                ) else (
+                    echo FAILED: servin-installer-1.0.0.exe not found
+                    echo Trying minimal installer...
+                    makensis /V4 servin-minimal.nsi
+                    if exist servin-installer-1.0.0.exe (
+                        echo SUCCESS: Minimal installer created
+                        copy servin-installer-1.0.0.exe Servin-Installer-1.0.0.exe
+                        echo INSTALLER_CREATED=YES
+                    ) else (
+                        echo FAILED: Even minimal installer failed
+                        echo Available files:
+                        dir *.exe
+                        echo INSTALLER_CREATED=NO
+                    )
+                )
+                "
                 
-                # Check if installer was actually created
-                if cmd.exe /c "if exist servin-installer-1.0.0.exe echo INSTALLER_EXISTS"; then
-                    print_success "Installer file found: servin-installer-1.0.0.exe"
-                    cmd.exe /c "copy servin-installer-1.0.0.exe Servin-Installer-1.0.0.exe"
-                    print_success "Created standardized installer name"
+                # Check results after the command completes
+                if [[ -f "servin-installer-1.0.0.exe" ]] || [[ -f "Servin-Installer-1.0.0.exe" ]]; then
+                    print_success "Windows installer successfully created"
                 else
-                    print_error "Main NSIS script failed, trying minimal installer..."
-                    print_info "Running: makensis /V4 servin-minimal.nsi"
-                    if cmd.exe /c "makensis /V4 servin-minimal.nsi"; then
-                        print_info "Minimal NSIS compilation completed"
-                        if cmd.exe /c "if exist servin-installer-1.0.0.exe echo MINIMAL_INSTALLER_EXISTS"; then
-                            print_success "Minimal installer created successfully"
-                            cmd.exe /c "copy servin-installer-1.0.0.exe Servin-Installer-1.0.0.exe"
-                        else
-                            print_error "Even minimal installer failed to create"
-                        fi
-                    else
-                        print_error "Minimal NSIS compilation also failed"
-                        print_info "Checking directory contents:"
-                        cmd.exe /c "dir *.exe"
-                    fi
+                    print_error "Installer creation failed - file not found after NSIS completion"
                 fi
             else
                 print_error "NSIS (makensis) not found in PATH"
