@@ -468,7 +468,7 @@ jobs:
           # Check packaged AppImage in dist
           echo ""
           echo "  Checking packaged AppImage..."
-          local packaged_found=false
+          packaged_found=false
           
           # Check multiple possible naming patterns for packaged AppImage
           for pattern in \
