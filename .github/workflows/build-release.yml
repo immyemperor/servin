@@ -2747,24 +2747,34 @@ jobs:
         echo -e "\n10. Installing Development Tools..."
         echo "Installing HashiCorp Packer..."
         PACKER_VERSION="1.10.0"
-        wget -q "https://releases.hashicorp.com/packer/\${PACKER_VERSION}/packer_\${PACKER_VERSION}_linux_amd64.zip" -O packer.zip
-        unzip -q packer.zip
-        sudo mv packer /usr/local/bin/hc-packer
-        sudo chmod +x /usr/local/bin/hc-packer
-        sudo ln -sf /usr/local/bin/hc-packer /usr/local/bin/packer
-        rm packer.zip
         
-        # Verify Packer installation
-        if /usr/local/bin/hc-packer version >/dev/null 2>&1; then
-          echo "✓ Packer installed successfully"
-          PACKER_VERSION_INSTALLED=$(/usr/local/bin/hc-packer version | head -n1)
-          echo "  $PACKER_VERSION_INSTALLED"
-          
-          # Install Packer QEMU plugin
-          echo "  Installing Packer QEMU plugin..."
-          /usr/local/bin/hc-packer plugins install github.com/hashicorp/qemu 2>/dev/null || echo "  ⚠️ Packer QEMU plugin installation failed"
+        # Download and install Packer with proper error handling
+        if wget -q "https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip" -O packer.zip; then
+          if unzip -q packer.zip && [ -f packer ]; then
+            sudo mv packer /usr/local/bin/hc-packer
+            sudo chmod +x /usr/local/bin/hc-packer
+            sudo ln -sf /usr/local/bin/hc-packer /usr/local/bin/packer
+            rm packer.zip
+            
+            # Verify Packer installation
+            if /usr/local/bin/hc-packer version >/dev/null 2>&1; then
+              echo "✓ Packer installed successfully"
+              PACKER_VERSION_INSTALLED=$(/usr/local/bin/hc-packer version | head -n1)
+              echo "  $PACKER_VERSION_INSTALLED"
+              
+              # Install Packer QEMU plugin
+              echo "  Installing Packer QEMU plugin..."
+              /usr/local/bin/hc-packer plugins install github.com/hashicorp/qemu 2>/dev/null || echo "  ⚠️ Packer QEMU plugin installation failed"
+            else
+              echo "❌ Packer installation failed - binary not working"
+            fi
+          else
+            echo "❌ Packer installation failed - extraction failed"
+            rm -f packer.zip packer
+          fi
         else
-          echo "❌ Packer installation failed"
+          echo "❌ Packer installation failed - download failed"
+          echo "  Skipping Packer installation (not critical for basic VM functionality)"
         fi
         
         # Summary of prerequisites
