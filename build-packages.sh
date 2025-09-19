@@ -216,28 +216,61 @@ build_windows_installer() {
     local windows_dir="$SCRIPT_DIR/installers/windows"
     
     # Ensure Windows executables exist
-    if [[ ! -f "$SCRIPT_DIR/build/windows-amd64/servin.exe" ]]; then
-        print_error "servin.exe not found - build executables first"
+    local main_exe_path=""
+    if [[ -f "$SCRIPT_DIR/build/windows-amd64/servin.exe" ]]; then
+        main_exe_path="$SCRIPT_DIR/build/windows-amd64/servin.exe"
+    elif [[ -f "$SCRIPT_DIR/build/windows/servin.exe" ]]; then
+        main_exe_path="$SCRIPT_DIR/build/windows/servin.exe"
+    fi
+    
+    if [[ -z "$main_exe_path" ]]; then
+        print_error "servin.exe not found in either location:"
+        print_error "  - $SCRIPT_DIR/build/windows-amd64/servin.exe"
+        print_error "  - $SCRIPT_DIR/build/windows/servin.exe"
+        print_error "Build executables first with: ./build-all.sh"
         return 1
     fi
     
     # Copy Windows executables
     print_info "Copying Windows executables..."
-    cp "$SCRIPT_DIR/build/windows-amd64/servin.exe" "$windows_dir/"
+    cp "$main_exe_path" "$windows_dir/"
+    print_success "Main executable copied from: $main_exe_path"
     
+    # Copy TUI executable if available
+    local tui_copied=false
     if [[ -f "$SCRIPT_DIR/build/windows-amd64/servin-tui.exe" ]]; then
         cp "$SCRIPT_DIR/build/windows-amd64/servin-tui.exe" "$windows_dir/"
-        print_success "TUI executable copied"
-    else
-        print_warning "servin-tui.exe not found - installer will be CLI-only"
+        tui_copied=true
+        print_success "TUI executable copied (from windows-amd64)"
+    elif [[ -f "$SCRIPT_DIR/build/windows/servin-tui.exe" ]]; then
+        cp "$SCRIPT_DIR/build/windows/servin-tui.exe" "$windows_dir/"
+        tui_copied=true
+        print_success "TUI executable copied (from windows)"
+    fi
+    
+    if [[ "$tui_copied" == "false" ]]; then
+        print_warning "servin-tui.exe not found - installer will be main CLI only"
     fi
     
     # Copy GUI executable if it was built
+    local gui_copied=false
+    
+    # Check both possible locations for GUI executable
     if [[ -f "$SCRIPT_DIR/build/windows-amd64/servin-gui.exe" ]]; then
         cp "$SCRIPT_DIR/build/windows-amd64/servin-gui.exe" "$windows_dir/"
-        print_success "GUI executable included in Windows installer"
-    else
-        print_warning "GUI executable not found, building CLI-only installer"
+        gui_copied=true
+        print_success "GUI executable included in Windows installer (from windows-amd64)"
+    elif [[ -f "$SCRIPT_DIR/build/windows/servin-gui.exe" ]]; then
+        cp "$SCRIPT_DIR/build/windows/servin-gui.exe" "$windows_dir/"
+        gui_copied=true
+        print_success "GUI executable included in Windows installer (from windows)"
+    fi
+    
+    if [[ "$gui_copied" == "false" ]]; then
+        print_warning "GUI executable not found in either location:"
+        print_warning "  - $SCRIPT_DIR/build/windows-amd64/servin-gui.exe"
+        print_warning "  - $SCRIPT_DIR/build/windows/servin-gui.exe"
+        print_info "Building CLI-only installer"
         print_info "Windows installer will work without GUI components"
     fi
     

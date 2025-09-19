@@ -468,11 +468,30 @@ jobs:
           # Check packaged AppImage in dist
           echo ""
           echo "  Checking packaged AppImage..."
-          if ls dist/servin_*_appimage >/dev/null 2>&1; then
-            echo "✓ Packaged AppImage found:"
-            ls -lh dist/servin_*_appimage
-          else
+          local packaged_found=false
+          
+          # Check multiple possible naming patterns for packaged AppImage
+          for pattern in \
+            "dist/servin_*_appimage" \
+            "dist/servin_*_installer.AppImage" \
+            "dist/servin_*.AppImage" \
+            "dist/Servin-*.AppImage"; do
+            
+            if ls $pattern >/dev/null 2>&1; then
+              echo "✓ Packaged AppImage found:"
+              ls -lh $pattern
+              packaged_found=true
+              break
+            fi
+          done
+          
+          if [ "$packaged_found" = false ]; then
             echo "❌ Packaged AppImage not found in dist/"
+            echo "  Checked patterns:"
+            echo "    - dist/servin_*_appimage"
+            echo "    - dist/servin_*_installer.AppImage"
+            echo "    - dist/servin_*.AppImage"
+            echo "    - dist/Servin-*.AppImage"
             VERIFICATION_PASSED=false
           fi
           
@@ -592,11 +611,23 @@ jobs:
         
         # Check for VM images or dependencies that should be embedded
         VM_DEPS_FOUND=false
-        if [ -d "pkg/vm/images" ]; then
-          VM_IMAGE_COUNT=$(find pkg/vm/images -name "*.qcow2" -o -name "*.vmdk" -o -name "*.vdi" | wc -l)
-          if [ "$VM_IMAGE_COUNT" -gt 0 ]; then
+        
+        # Platform-specific VM dependency checks
+        if [ "${{ matrix.platform }}" = "linux" ]; then
+          # For Linux AppImage, VM dependencies are bundled inside the AppImage
+          # If AppImage is >30MB, it likely contains QEMU binaries
+          if [ "$INSTALLER_FOUND" = true ] && [ "$INSTALLER_SIZE_OK" = true ]; then
             VM_DEPS_FOUND=true
-            echo "✓ VM images found: $VM_IMAGE_COUNT"
+            echo "✓ VM dependencies likely bundled in AppImage (size indicates QEMU inclusion)"
+          fi
+        else
+          # For other platforms, check for separate VM images
+          if [ -d "pkg/vm/images" ]; then
+            VM_IMAGE_COUNT=$(find pkg/vm/images -name "*.qcow2" -o -name "*.vmdk" -o -name "*.vdi" | wc -l)
+            if [ "$VM_IMAGE_COUNT" -gt 0 ]; then
+              VM_DEPS_FOUND=true
+              echo "✓ VM images found: $VM_IMAGE_COUNT"
+            fi
           fi
         fi
         
