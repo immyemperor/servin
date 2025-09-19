@@ -295,44 +295,72 @@ build_windows_installer() {
             if cmd.exe /c "where makensis"; then
                 print_info "NSIS found, attempting compilation..."
                 
-                # Run NSIS compilation and file operations in single command context
-                print_info "Running NSIS compilation with immediate verification..."
-                cmd.exe /c "
-                echo Running makensis /V4 servin-installer.nsi
-                makensis /V4 servin-installer.nsi
-                echo NSIS exit code: %errorlevel%
-                echo.
-                echo Checking for installer file...
-                if exist servin-installer-1.0.0.exe (
-                    echo SUCCESS: servin-installer-1.0.0.exe found
-                    dir servin-installer*.exe
-                    copy servin-installer-1.0.0.exe Servin-Installer-1.0.0.exe
-                    echo Copied to Servin-Installer-1.0.0.exe
-                    dir Servin-Installer*.exe
-                    echo INSTALLER_CREATED=YES
-                ) else (
-                    echo FAILED: servin-installer-1.0.0.exe not found
-                    echo Trying minimal installer...
-                    makensis /V4 servin-minimal.nsi
-                    if exist servin-installer-1.0.0.exe (
-                        echo SUCCESS: Minimal installer created
-                        copy servin-installer-1.0.0.exe Servin-Installer-1.0.0.exe
-                        echo INSTALLER_CREATED=YES
-                    ) else (
-                        echo FAILED: Even minimal installer failed
-                        echo Available files:
-                        dir *.exe
-                        echo INSTALLER_CREATED=NO
-                    )
-                )
-                "
-                
-                # Check results after the command completes
-                if [[ -f "servin-installer-1.0.0.exe" ]] || [[ -f "Servin-Installer-1.0.0.exe" ]]; then
-                    print_success "Windows installer successfully created"
+                # Create a temporary batch file with proper error handling
+                cat > "build-debug.bat" << 'EOF'
+@echo off
+echo ========================================
+echo NSIS Build Debug Script
+echo ========================================
+echo Current directory: %CD%
+echo.
+
+echo Checking for required files...
+if not exist "servin.exe" (
+    echo ERROR: servin.exe not found
+    exit /b 1
+)
+if not exist "servin-tui.exe" (
+    echo ERROR: servin-tui.exe not found  
+    exit /b 1
+)
+if not exist "servin-installer.nsi" (
+    echo ERROR: servin-installer.nsi not found
+    exit /b 1
+)
+echo OK: All required files found
+
+echo.
+echo Running makensis...
+makensis /V4 servin-installer.nsi
+set NSIS_EXIT=%errorlevel%
+echo NSIS exit code: %NSIS_EXIT%
+
+echo.
+echo Checking results...
+if exist "servin-installer-1.0.0.exe" (
+    echo SUCCESS: servin-installer-1.0.0.exe created
+    dir servin-installer*.exe
+    copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
+    echo SUCCESS: Installer ready
+    exit /b 0
+) else (
+    echo FAILED: Main installer not created
+    echo Trying minimal installer...
+    makensis /V4 servin-minimal.nsi
+    if exist "servin-installer-1.0.0.exe" (
+        echo SUCCESS: Minimal installer created
+        copy "servin-installer-1.0.0.exe" "Servin-Installer-1.0.0.exe"
+        exit /b 0
+    ) else (
+        echo FAILED: No installer created
+        echo Available files:
+        dir *.exe
+        exit /b 1
+    )
+)
+EOF
+
+                # Run the debug batch file
+                print_info "Running debug batch file with comprehensive error checking..."
+                if cmd.exe /c "build-debug.bat"; then
+                    print_success "NSIS installer build completed successfully"
                 else
-                    print_error "Installer creation failed - file not found after NSIS completion"
+                    print_error "NSIS installer build failed"
                 fi
+                
+                # Clean up temporary file
+                rm -f "build-debug.bat"
+                
             else
                 print_error "NSIS (makensis) not found in PATH"
             fi
