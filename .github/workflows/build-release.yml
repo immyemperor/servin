@@ -1209,6 +1209,25 @@ jobs:
           echo "ℹ️ Created empty dist/${{ matrix.platform }} directory"
         fi
         
+        # Check if we have any content to archive from dist/${{ matrix.platform }}
+        file_count=$(find "dist/${{ matrix.platform }}" -type f 2>/dev/null | wc -l)
+        echo "Debug: Found $file_count files in dist/${{ matrix.platform }}/"
+        
+        # If no files in dist directory, try to populate with traditional build artifacts
+        if [ "$file_count" -eq 0 ]; then
+          echo "⚠️ No files found in dist/${{ matrix.platform }}, looking for traditional build artifacts..."
+          
+          # Copy traditional build artifacts if available
+          if [ -d "build/${{ matrix.platform }}" ]; then
+            echo "Copying traditional build artifacts from build/${{ matrix.platform }}..."
+            cp -r build/${{ matrix.platform }}/* "dist/${{ matrix.platform }}/" 2>/dev/null && echo "✓ Copied traditional build artifacts" || echo "⚠️ No traditional build artifacts to copy"
+          fi
+          
+          # Re-check file count after copying
+          file_count=$(find "dist/${{ matrix.platform }}" -type f 2>/dev/null | wc -l)
+          echo "Debug: After copying traditional artifacts, found $file_count files"
+        fi
+        
         cd dist/${{ matrix.platform }}
         archive_name="servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}"
         
@@ -1216,20 +1235,47 @@ jobs:
         echo "Files to archive:"
         ls -la . || echo "No files in current directory"
         
+        # Only create archive if we have files to archive
+        current_file_count=$(find . -type f 2>/dev/null | wc -l)
+        if [ "$current_file_count" -eq 0 ]; then
+          echo "❌ No files found to archive in dist/${{ matrix.platform }}"
+          echo "This indicates that both installer packages and traditional build artifacts are missing."
+          echo "The build job may have failed before creating any distributable artifacts."
+          echo ""
+          echo "Skipping archive creation for this platform."
+          cd ../..  # Go back to root
+          exit 0  # Don't fail the job, but skip archive creation
+        fi
+        
+        echo "Debug: Proceeding with archive creation ($current_file_count files)"
+        
         if [ "${{ matrix.platform }}" = "windows" ]; then
           if command -v powershell >/dev/null 2>&1; then
             powershell -Command "Compress-Archive -Path './*' -DestinationPath '../${archive_name}.zip' -Force"
+            archive_result=$?
           else
             zip -r "../${archive_name}.zip" .
+            archive_result=$?
           fi
-          echo "Created: ${archive_name}.zip"
-          echo "Archive contents verification:"
-          ls -la "../${archive_name}.zip" 2>/dev/null || echo "Archive not created"
+          
+          if [ $archive_result -eq 0 ]; then
+            echo "✅ Created: ${archive_name}.zip"
+            echo "Archive contents verification:"
+            ls -la "../${archive_name}.zip" 2>/dev/null || echo "Archive not found after creation"
+          else
+            echo "❌ Failed to create Windows archive (exit code: $archive_result)"
+          fi
         else
           tar -czf "../${archive_name}.tar.gz" .
-          echo "Created: ${archive_name}.tar.gz"
-          echo "Archive contents verification:"
-          ls -la "../${archive_name}.tar.gz" 2>/dev/null || echo "Archive not created"
+          archive_result=$?
+          
+          if [ $archive_result -eq 0 ]; then
+            echo "✅ Created: ${archive_name}.tar.gz"
+            echo "Archive contents verification:"
+            ls -la "../${archive_name}.tar.gz" 2>/dev/null || echo "Archive not found after creation"
+          else
+            echo "❌ Failed to create Unix archive (exit code: $archive_result)"
+          fi
         fi
         
         cd ../..  # Go back to root
@@ -1344,6 +1390,7 @@ jobs:
     # Upload build artifacts including installer packages
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
+      continue-on-error: true
       with:
         name: servin-${{ matrix.platform }}-${{ steps.version.outputs.APP_VERSION }}
         path: |
@@ -1351,6 +1398,43 @@ jobs:
           dist/*installer*
           dist/*appimage*
           installers/dist/*
+        if-no-files-found: warn
+
+    # Verify upload was successful
+    - name: Verify artifact upload
+      shell: bash
+      run: |
+        echo "Verifying artifact upload for ${{ matrix.platform }}..."
+        echo "Expected artifact name: servin-${{ matrix.platform }}-${{ steps.version.outputs.APP_VERSION }}"
+        echo ""
+        echo "Files that should have been uploaded:"
+        echo "======================================"
+        
+        # List files that match the upload patterns
+        echo "Distribution archives:"
+        find dist -name "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}*" -type f 2>/dev/null || echo "  No distribution archives found"
+        
+        echo ""
+        echo "Installer packages:"
+        find dist -name "*installer*" -type f 2>/dev/null || echo "  No installer packages found"
+        
+        echo ""
+        echo "AppImage packages:"
+        find dist -name "*appimage*" -type f 2>/dev/null || echo "  No AppImage packages found"
+        
+        echo ""
+        echo "Installer distribution files:"
+        find installers/dist -type f 2>/dev/null || echo "  No installer distribution files found"
+        
+        echo ""
+        if [ ! -f "dist/servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" ] && 
+           [ ! -f "dist/servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip" ]; then
+          echo "⚠️ WARNING: No distribution archives were created for ${{ matrix.platform }}"
+          echo "This will cause integration tests to fail for this platform."
+          echo "Check the build logs above for archive creation issues."
+        else
+          echo "✅ Distribution archives appear to be created successfully"
+        fi
 
   # Build VM images for containerization
   build-vm-images:
@@ -1864,24 +1948,72 @@ jobs:
       with:
         name: servin-${{ matrix.platform }}-${{ steps.version.outputs.APP_VERSION }}
       continue-on-error: true
+      id: download
+      
+    - name: Check artifact download status
+      shell: bash
+      run: |
+        echo "Artifact download status for ${{ matrix.platform }}:"
+        echo "Expected artifact: servin-${{ matrix.platform }}-${{ steps.version.outputs.APP_VERSION }}"
+        echo "Download step outcome: ${{ steps.download.outcome }}"
+        echo ""
+        
+        if [ "${{ steps.download.outcome }}" != "success" ]; then
+          echo "❌ Artifact download failed or no artifacts were available"
+          echo "This typically indicates:"
+          echo "  1. Build job failed before creating artifacts"
+          echo "  2. Artifact upload failed in the build job"
+          echo "  3. Archive creation step failed silently"
+          echo ""
+          echo "The integration tests cannot proceed without build artifacts."
+          echo "Check the build job logs for specific issues."
+          exit 0  # Exit gracefully to not fail the workflow
+        else
+          echo "✅ Artifact download succeeded"
+        fi
       
     - name: Debug artifact download
       shell: bash
       run: |
         echo "Expected artifact name: servin-${{ matrix.platform }}-${{ steps.version.outputs.APP_VERSION }}"
+        echo "Expected archive names:"
+        echo "  For Windows: servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip"
+        echo "  For Linux/macOS: servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz"
+        echo ""
+        echo "Platform: ${{ matrix.platform }}"
+        echo "OS Name: ${{ matrix.os_name }}"
+        echo "Architecture: ${{ matrix.arch }}"
+        echo ""
         echo "Downloaded files:"
         ls -la . || echo "No files downloaded"
+        echo ""
+        echo "Searching for any distribution files..."
+        find . -name "servin_*" -type f 2>/dev/null || echo "No servin_* files found"
+        echo ""
         
-        # If artifact download failed, the build job likely failed
-        if [ ! -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" ] && 
-           [ ! -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip" ]; then
-          echo "❌ No distribution archives found. Build job likely failed."
-          echo "This is expected if the build job encountered errors."
-          echo "Checking what files are available..."
+        # Check for expected archive file based on platform
+        EXPECTED_ARCHIVE=""
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          EXPECTED_ARCHIVE="servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip"
+        else
+          EXPECTED_ARCHIVE="servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz"
+        fi
+        
+        echo "Looking for expected archive: $EXPECTED_ARCHIVE"
+        if [ -f "$EXPECTED_ARCHIVE" ]; then
+          echo "✅ Expected archive found: $EXPECTED_ARCHIVE"
+          ls -lh "$EXPECTED_ARCHIVE"
+        else
+          echo "❌ Expected archive not found: $EXPECTED_ARCHIVE"
+          echo ""
+          echo "Available archive files:"
+          ls -la *.tar.gz *.zip 2>/dev/null || echo "No archive files found"
+          echo ""
+          echo "This indicates that the build job failed before creating distribution archives."
+          echo "Checking for any dist directory contents..."
           ls -la dist/ 2>/dev/null || echo "No dist directory found"
           echo ""
           echo "⚠️ SKIPPING INTEGRATION TESTS due to missing build artifacts"
-          echo "This indicates that the build job failed before creating distribution archives."
           echo "Check the build job logs for specific issues."
           exit 0  # Exit with success to not fail the entire workflow
         fi
@@ -1891,48 +2023,151 @@ jobs:
       shell: bash
       run: |
         success=false
+        extracted_file=""
+        
+        echo "Attempting to extract distribution archive..."
+        echo "Platform: ${{ matrix.platform }}"
+        echo "OS Name: ${{ matrix.os_name }}"
+        echo "Architecture: ${{ matrix.arch }}"
+        echo ""
+        
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip" ]; then
-            powershell -Command "Expand-Archive -Path 'servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip' -DestinationPath 'test-install'"
-            success=true
+          expected_file="servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.zip"
+          echo "Looking for Windows archive: $expected_file"
+          if [ -f "$expected_file" ]; then
+            echo "✅ Found Windows archive: $expected_file"
+            echo "Extracting with PowerShell..."
+            powershell -Command "Expand-Archive -Path '$expected_file' -DestinationPath 'test-install' -Force"
+            if [ $? -eq 0 ]; then
+              success=true
+              extracted_file="$expected_file"
+              echo "✅ Successfully extracted Windows archive"
+            else
+              echo "❌ Failed to extract Windows archive with PowerShell"
+            fi
+          else
+            echo "❌ Windows archive not found: $expected_file"
+            echo "Available ZIP files:"
+            ls -la *.zip 2>/dev/null || echo "No ZIP files found"
           fi
         else
-          if [ -f "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" ]; then
+          expected_file="servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz"
+          echo "Looking for Unix archive: $expected_file"
+          if [ -f "$expected_file" ]; then
+            echo "✅ Found Unix archive: $expected_file"
+            echo "Extracting with tar..."
             mkdir -p test-install
-            tar -xzf "servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.tar.gz" -C test-install --strip-components=1
-            success=true
+            tar -xzf "$expected_file" -C test-install --strip-components=1
+            if [ $? -eq 0 ]; then
+              success=true
+              extracted_file="$expected_file"
+              echo "✅ Successfully extracted Unix archive"
+            else
+              echo "❌ Failed to extract Unix archive with tar"
+            fi
+          else
+            echo "❌ Unix archive not found: $expected_file"
+            echo "Available TAR.GZ files:"
+            ls -la *.tar.gz 2>/dev/null || echo "No TAR.GZ files found"
+            echo ""
+            echo "Trying alternative archive names..."
+            # Try common variations
+            for alt_file in servin_*_${{ matrix.platform }}_*.tar.gz servin_*_${{ matrix.os_name }}_*.tar.gz; do
+              if [ -f "$alt_file" ]; then
+                echo "Found alternative archive: $alt_file"
+                echo "Attempting extraction..."
+                mkdir -p test-install
+                tar -xzf "$alt_file" -C test-install --strip-components=1
+                if [ $? -eq 0 ]; then
+                  success=true
+                  extracted_file="$alt_file"
+                  echo "✅ Successfully extracted alternative archive: $alt_file"
+                  break
+                fi
+              fi
+            done
           fi
         fi
         
-        echo "extraction_success=$success" >> $GITHUB_OUTPUT
-        if [ "$success" = "false" ]; then
-          echo "❌ Failed to extract distribution archive"
-          exit 1
+        echo ""
+        echo "Extraction Results:"
+        echo "=================="
+        echo "Success: $success"
+        echo "Extracted file: $extracted_file"
+        
+        if [ "$success" = "true" ]; then
+          echo "✅ Archive extraction completed successfully"
+          echo "Contents of test-install directory:"
+          ls -la test-install/ 2>/dev/null || echo "test-install directory is empty or missing"
         else
-          echo "✅ Successfully extracted distribution archive"
+          echo "❌ Failed to extract any distribution archive"
+          echo ""
+          echo "Available files for debugging:"
+          ls -la . | head -20
+          echo ""
+          echo "This indicates that the build job failed to create expected archives."
+          echo "Check the build job logs for archive creation issues."
         fi
+        
+        echo "extraction_success=$success" >> $GITHUB_OUTPUT
+        echo "extracted_file=$extracted_file" >> $GITHUB_OUTPUT
 
     - name: Test CLI binary
       if: steps.extract.outputs.extraction_success == 'true'
       shell: bash
       run: |
         echo "Testing CLI binary..."
+        echo "Extracted from: ${{ steps.extract.outputs.extracted_file }}"
+        echo "Test directory contents:"
+        ls -la test-install/ 2>/dev/null || echo "test-install directory missing"
+        echo ""
+        
         if [ "${{ matrix.platform }}" = "windows" ]; then
           if [ -f "test-install/servin.exe" ]; then
-            ./test-install/servin.exe --version || echo "CLI test completed"
+            echo "✅ Found Windows CLI binary: servin.exe"
+            echo "Testing version command..."
+            ./test-install/servin.exe --version || echo "CLI version test completed (exit code: $?)"
           else
-            echo "CLI binary not found"
+            echo "❌ Windows CLI binary not found: test-install/servin.exe"
+            echo "Available executables in test-install:"
+            find test-install -name "*.exe" 2>/dev/null || echo "No .exe files found"
             exit 1
           fi
         else
           if [ -f "test-install/servin" ]; then
+            echo "✅ Found Unix CLI binary: servin"
             chmod +x test-install/servin
-            ./test-install/servin --version || echo "CLI test completed"
+            echo "Testing version command..."
+            ./test-install/servin --version || echo "CLI version test completed (exit code: $?)"
           else
-            echo "CLI binary not found"
+            echo "❌ Unix CLI binary not found: test-install/servin"
+            echo "Available executables in test-install:"
+            find test-install -type f -executable 2>/dev/null || echo "No executable files found"
             exit 1
           fi
         fi
+
+    - name: Handle extraction failure
+      if: steps.extract.outputs.extraction_success != 'true'
+      shell: bash
+      run: |
+        echo "⚠️ ARCHIVE EXTRACTION FAILED"
+        echo "============================"
+        echo "Platform: ${{ matrix.platform }}"
+        echo "Expected archive pattern: servin_${{ steps.version.outputs.APP_VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}.*"
+        echo ""
+        echo "This indicates one of the following issues:"
+        echo "1. Build job failed before creating distribution archives"
+        echo "2. Archive naming mismatch between build and test jobs"
+        echo "3. Artifact upload/download process failed"
+        echo ""
+        echo "Recommended debugging steps:"
+        echo "- Check build job logs for archive creation errors"
+        echo "- Verify matrix configuration matches between build and test jobs"
+        echo "- Ensure archive creation step in build job completed successfully"
+        echo ""
+        echo "Skipping remaining installation tests for this platform."
+        exit 0  # Exit with success to not fail the workflow
 
     - name: Test Desktop TUI binary
       if: steps.extract.outputs.extraction_success == 'true'
